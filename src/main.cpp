@@ -1,0 +1,14 @@
+
+#include"lexer.h"
+#include "parser.h"
+#include <ctime>
+
+int main(int argc, char** argv)
+{
+	const auto start = clock();
+	lexer::LoadFile("a.txt");
+	parser::Parse();
+	printf("\nfinished in %.0fms...\n", static_cast<double>(clock() - start));
+	system("pause");
+}
+  
