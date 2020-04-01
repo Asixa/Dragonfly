@@ -1,6 +1,6 @@
 
 <div align="center">
-  <img width="500px" src="misc/images/banner.jpg">
+  <img width="500px" src="https://raw.githubusercontent.com/Asixa/Dragonfly-docs/master/misc/images/banner.jpg">
   <h3> 
   <a href="#"> Docs </a> | 
   <a href="#"> Tutorial </a> | 
