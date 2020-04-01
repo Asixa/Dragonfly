@@ -3,7 +3,10 @@ cmake_minimum_required (VERSION 3.8)
 project(dragonfly)
 
 
-set(LLVM_DIR F:/Codes/Projects/Academic/ComputerCompiler/llvm-10.0.0.src/build/lib/cmake/llvm)
+if(${LLVM_DIR} MATCHES "LLVM_DIR-NOTFOUND" )
+	message("Using LLVM_DIR From cmake/FindLLVM.cmake")
+	include("${PROJECT_SOURCE_DIR}/cmake/FindLLVM.cmake")
+endif(${LLVM_DIR} MATCHES "LLVM_DIR-NOTFOUND" )
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
