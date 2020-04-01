@@ -28,11 +28,7 @@ using namespace lexer;
 using namespace llvm;
 namespace parser
 {
-	static LLVMContext TheContext;
-	static IRBuilder<> Builder(TheContext);
-	static std::unique_ptr<Module> TheModule;
-	static std::map<std::string, Value*> NamedValues;
-	
+	 
 	class AST{};
 	class Expr:public AST { public: virtual ~Expr() {} };
 
@@ -147,7 +143,11 @@ namespace parser
 			if (token->type == NewLine)Next();
 			printf("[Parsed] Function declaration\n");
 			Match('{');
+			
+
 			// statements();
+			while (token->type == NewLine)Next();
+			
 			Match('}');
 			printf("[Parsed] Function end\n");
 			return function;
