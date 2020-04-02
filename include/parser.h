@@ -8,38 +8,48 @@
 #define UNI(a)a*
 #define MAKE(a)new a
 
-#include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Type.h" 
-#include "llvm/IR/Verifier.h"
+
 #include <iostream>
 #include "lexer.h"
 #include <utility>
 #include <vector>
-
+#include <llvm/IR/Value.h>
 using namespace lexer;
 using namespace llvm;
 namespace parser
 {
-	 
-	class AST{};
+	class AST{ public: virtual llvm::Value* gen()=0; };
 	class Expr:public AST { public: virtual ~Expr() {} };
 
-
-	class Factor:public Expr
+	class Number final :public Expr
 	{
 	public:
+		double value;
+		Number(double d):value(d){}
+		Value* gen() override;
+	};
+
+	class Boolean final :public Expr
+	{
+	public:
+		bool value;
+		Boolean(bool d) :value(d) {}
+		Value* gen() override;
+	};
+	class String final :public Expr
+	{
+	public:
+		bool value;
+		String(char* d) :value(d) {}
+		Value* gen() override;
+	};
+	class Factor final :public Expr
+	{
+	public: 
 		Token* tok;
 		Factor(Token* t):tok(t){}
 		static UNI(Expr) Parse();
-
+		Value* gen() override;
 	};
 
 
@@ -63,7 +73,7 @@ namespace parser
 				return Factor::Parse();
 			}
 		}
-
+		Value* gen() override;
 		
 	};
 	
@@ -75,13 +85,16 @@ namespace parser
 		UNI(Expr) RHS;
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
 		
-		TEMPALTE_PARSE_LOOP(SubParse4, Unary::Parse, (token->type == Mul || token->type == Div), Binary)
+		TEMPALTE_PARSE_LOOP(SubParse5, Unary::Parse, (token->type =='.'), Binary)
+		TEMPALTE_PARSE_LOOP(SubParse4, SubParse5, (token->type == Mul || token->type == Div), Binary)
 		TEMPALTE_PARSE_LOOP(SubParse3, SubParse4, token->type == Add || token->type == Sub, Binary)
 		TEMPALTE_PARSE(SubParse2, SubParse3, token->type == Gt || token->type == Lt || token->type == Ge || token->type == Le, Binary)
 		TEMPALTE_PARSE_LOOP(SubParse1, SubParse2, token->type == Eq || token->type == Ne, Binary)
 		TEMPALTE_PARSE_LOOP(Parse,SubParse1, token->type == Or || token->type == And,Binary)
+
+		Value* gen() override;
 	};
-	
+
 	inline Expr* Factor::Parse()
 	{
 		UNI(Expr) factor;
@@ -98,7 +111,8 @@ namespace parser
 		return factor;
 	}
 
-	
+
+
 	/// function definition
 	class FuncParam {
 	public:
@@ -122,6 +136,7 @@ namespace parser
 		
 		bool differentiable = false, kernal = false;
 	public:
+		Function* gen();
 		static UNI(Function) Parse()
 		{
 			auto function = MAKE(Function)();

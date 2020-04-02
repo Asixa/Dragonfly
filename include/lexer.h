@@ -228,7 +228,7 @@ namespace lexer
 			}
 			// directly return the character as token;
 			else if (peek == '~' || peek == ';' || peek == '{' || peek == '}' || peek == '('
-				|| peek == ')' || peek == ']' || peek == ',' || peek == ':')
+				|| peek == ')' || peek == ']' || peek == ',' || peek == '.' || peek == ':')
 			{
 				token = new Token(peek);
 				return;
