@@ -31,7 +31,7 @@ using namespace parser;
 
 namespace parser
 {
-	inline Value* Number::gen()
+	inline Value* NumberConst::gen()
 	{
 		return ConstantFP::get(TheContext, APFloat(value));
 	}
@@ -63,11 +63,11 @@ namespace parser
 		if (!L || !R)return nullptr;
 		
 		switch (op) {
-			case Add:
+			case '+':
 				return Builder.CreateFAdd(L, R, "addtmp");
-			case Sub:
+			case '-':
 				return Builder.CreateFSub(L, R, "subtmp");
-			case Mul:
+			case '*':
 				return Builder.CreateFMul(L, R, "multmp");
 			case '<':
 				L = Builder.CreateFCmpULT(L, R, "cmptmp");
@@ -78,9 +78,15 @@ namespace parser
 		}
 	}
 
+
+	inline Value* Ternary::gen()
+	{
+		return nullptr;
+	}
 	inline Function* Function::gen()
 	{
 		return nullptr;
 	}
+	
 }
 #endif

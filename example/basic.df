@@ -1,7 +1,1 @@
-let a = 1;
-let b = -(1+2)*3-4==5/7;
-
-func f(int a, int b):int
-{
-
-}
+let z = a %= (b ^ c|d)

@@ -5,27 +5,43 @@
 #include "symbol.h"
 
 
-#define SYMBOL(a,b) else if (peek == a){token = new Token(b);return;}
-#define D_SYMBOL(a,b,at,bt)\
-else if (peek == a){if (*src == b){src++;token = new Token(bt);}\
-else{token = new Token(at);}return;}
-#define T_SYMBOL(a,b,c,at,bt,ct)\
-else if (peek == a){if (*src == b){src++;token = new Token(bt);}\
-else if (*src == c){src++;token = new Token(ct);}\
-else{token = new Token(at);}return;}
+#define SYMBOL(a) else if (peek == a){token = new Token(a);return;}
+#define U_SYMBOL(c,b,t)\
+		else if (peek == c){if (*src == b){src++;token = new Token(t);}\
+		else{token = new Token(c);}return;}
+
+#define D_SYMBOL(c,t,ta)\
+		else if (peek == c){if (*src == c){src++;token = new Token(t);}\
+		else if (*src == '=') {src++; token = new Token(ta);}\
+		else{token = new Token(c);}return;}
+#define T_SYMBOL(c,ta,tt,tta)\
+			else if (peek == c) {\
+					if (*src == '=') { src++; token = new Token(ta); }\
+					else if (*src == c) { src++; if (*src == '=') { src++; token = new Token(tta); } else token = new Token(tt); }\
+					else token = new Token(c);\
+					return; }
+
 #define KEYWORD(a,b)else if(!memcmp(a,last_pos,src-last_pos)&&strlen(a)==src-last_pos){token = new Token(b);return;}
 #define DToken(a,b)else if(type==a)return b;
 enum
 {
-	Num = 128,Str, Fun, Sys, Glo, Loc, Id,
+	Num = 128, Id, NewLine,Str,
+	Int,Float,Long,Double,Number,Bool,
+	True,False,
+	If,Else,For,While,Switch,Repeat,
+	Let,Var,Func,Dfunc,Kernal,
+	Return,Continue,Break,Try,Catch,Throw,
+	Import,Typedef,Extension,Operator,
+	Struct,Class,Enum,Interface,
+	Get,Set,Init,Deinit,
+	Sizeof,Print,
+	In,
 
-	NewLine,
-	Char, Else, Enum, If, Int, Return, Sizeof, While, Print,
-	Func, Dfunc, Kernal, Let,
 
-	// don't change the order below, it is important
-	Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr,
-	Add, Sub, Mul, Div, Mod, Inc, Dec, Brak,
+	Or, And, Eq, Ne, Le, Ge, Shl, Shr,
+	AddAgn, SubAgn, MulAgn, DivAgn, ModAgn,
+	Inc, Dec,
+	BAndAgn, BXORAgn, BORAgn, ShlAgn, ShrAgn,
 };
 
 namespace lexer
@@ -35,27 +51,45 @@ namespace lexer
 	public:
 		int type, value;
 		explicit Token(const int t, const int v = 0) :type(t), value(v) {}
-		static const char* name(int type)
-		{
-			if (type == ' ')return "Space";
-			DToken('~', " ~ ") DToken(';', " ; ") DToken('{', " { ") DToken('}', " } ")
-				DToken('(', " ( ") DToken(')', " ) ") DToken('[', " [ ") DToken(']', " ] ")
-				DToken(',', " , ") DToken(':', " : ") DToken('"', " STRING ")
-				DToken(Num, " Number ") DToken(Fun, "  ") DToken(Sys, "  ") DToken(Glo, "  ")
-				DToken(Loc, "  ")		DToken(Id, " ID ") DToken(Assign, " = ") DToken(Cond, "  ")
-				DToken(Lor, "  ")		DToken(Lan, "  ") DToken(Or, " || ") DToken(Xor, "  ")
-				DToken(And, " && ")		DToken(Eq, " == ") DToken(Ne, " != ") DToken(Lt, " < ")
-				DToken(Gt, " > ")		DToken(Le, " <= ") DToken(Ge, " >= ") DToken(Shl, "  ")
-				DToken(Shr, "  ")		DToken(Add, " + ") DToken(Sub, " - ") DToken(Mul, " * ")
-				DToken(Div, " / ")		DToken(Mod, "  ") DToken(Inc, "  ") DToken(Dec, "  ")
-				DToken(Brak, " break ")		DToken(NewLine, " newline ") DToken(Char, " char ")
-				DToken(Else, " else ")		DToken(Enum, " enum ")		 DToken(If, " if ") DToken(Int, " int ")
-				DToken(Return, " return ")	DToken(Sizeof, " sizeof ")   DToken(While, " while ")
-				DToken(Print, " print ")	DToken(Func, " func ")		 DToken(Dfunc, " dfunc ") DToken(Kernal, " kernal ")
-				DToken(Let, " let ")
-		}
-
+		static const char* Name(int type);
 	};
+
+	inline const char* Token::Name(int type)
+	{
+		// if(type<128) printf("(%c)", type);
+		if (type == ' ')return "Space";
+		DToken(Id, "ID") DToken(NewLine, "newline") DToken(Str, "str")
+			DToken(Int, "int") DToken(Float, "float") DToken(Long, "long") DToken(Double, "double") DToken(Number, "number") DToken(Bool, "bool")
+			DToken(True, "true") DToken(False, "false")
+			DToken(If, "if") DToken(Else, "else") DToken(For, "for") DToken(While, "while") DToken(Switch, "switch") DToken(Repeat, "repeat")
+			DToken(Let, "let") DToken(Var, "var") DToken(Func, "func") DToken(Dfunc, "dfunc") DToken(Kernal, "kernal")
+			DToken(Return, "return") DToken(Continue, "continue") DToken(Break, "break") DToken(Try, "try") DToken(Catch, "catch") DToken(Throw, "throw")
+			DToken(Import, "import") DToken(Typedef, "typedef") DToken(Extension, "extension") DToken(Operator, "operator")
+			DToken(Struct, "struct") DToken(Class, "class") DToken(Enum, "enum") DToken(Interface, "interface")
+			DToken(Get, "get") DToken(Set, "set") DToken(Init, "init") DToken(Deinit, "deinit")
+			DToken(Sizeof, "size") DToken(Print, "print")
+			DToken(In, "in")
+			DToken(Or, "||") DToken(And, "&&")
+			DToken(Eq, "==") DToken(Ne, "!=") DToken(Le, "<=") DToken(Ge, ">=")
+			DToken(Shl, "<<") DToken(Shr, ">>")
+			DToken(Inc, "++") DToken(Dec, "--")
+			DToken(AddAgn, "+=") DToken(SubAgn, "-=") DToken(MulAgn, "*=") DToken(DivAgn, "/=") DToken(ModAgn, "%=")
+			DToken(BAndAgn, "&=") DToken(BXORAgn, "^=") DToken(BORAgn, "|=") DToken(ShlAgn, "<<=") DToken(ShrAgn, ">>=")
+
+			DToken('~', "~") DToken(';', ";")
+			DToken('{', "{") DToken('}', "}")
+			DToken('(', "(") DToken(')', ")")
+			DToken('[', "[") DToken(']', "]")
+			DToken(',', ",") DToken('?', "?")
+			DToken('.', ".") DToken(':', ":")
+			DToken('^', "^") DToken('%', "%")
+			DToken('*', "*") DToken('!', "!")
+			DToken('>', ">") DToken('<', "<")
+			DToken('&', "&") DToken('|', "|")
+			DToken('=', "=")
+			DToken('+', "+")DToken('-', "-")DToken('*', "*")DToken('/', "/")
+			return "ERROR";
+	}
 
 	static char* src;
 	static char* root;
@@ -87,7 +121,7 @@ namespace lexer
 		while ((peek = *src++))
 		{
 			// printf("%c", peek);
-			
+
 			if ((src - root) > size) {
 				token = nullptr;
 				return;
@@ -114,11 +148,7 @@ namespace lexer
 				if (*src == '/')
 					while (*src != 0 && *src != '\n')
 						++src;
-				else
-				{
-					token = new Token(Div);
-					return;
-				}
+				U_SYMBOL('/', '=', DivAgn)
 			}
 			else if ((peek >= 'a' && peek <= 'z') || (peek >= 'A' && peek <= 'Z') || (peek == '_'))
 			{
@@ -131,31 +161,18 @@ namespace lexer
 				}
 
 				// reserved keywords
-				if (0);
-				KEYWORD("if", If)
-				KEYWORD("return", Return)
-				KEYWORD("while", While)
-				KEYWORD("let", Let)
-				KEYWORD("func", Func)
-				KEYWORD("dfunc", Dfunc)
-				KEYWORD("kernal", Kernal)
-				KEYWORD("print", Print)
-					// look for existing identifier, linear search
-					// current_id = symbols;
-					// while (current_id[Token])
-					// {
-					// 	if (current_id[Hash] == hash && !memcmp((char*)current_id[Name], last_pos, src - last_pos))
-					// 	{
-					// 		//found one, return
-					// 		token = current_id[Token];
-					// 		return;
-					// 	}
-					// 	current_id = current_id + IdSize;
-					// }
-					// // store new ID
-					// current_id[Name] = (int)last_pos;
-					// current_id[Hash] = hash;
-					token = new Token(Id);
+				if constexpr (false);
+				KEYWORD("int", Int) KEYWORD("long", Long) KEYWORD("float", Float) KEYWORD("double", Double) KEYWORD("number", Number) KEYWORD("bool", Bool)
+				KEYWORD("true", True) KEYWORD("false", False)
+				KEYWORD("if", If) KEYWORD("else", Else) KEYWORD("for", For) KEYWORD("while", While) KEYWORD("switch", Switch) KEYWORD("repeat", Repeat)
+				KEYWORD("let", Let) KEYWORD("var", Var) KEYWORD("func", Func) KEYWORD("dfunc", Dfunc) KEYWORD("kernal", Kernal)
+				KEYWORD("return", Return) KEYWORD("continue", Continue) KEYWORD("break", Break) KEYWORD("try", Try) KEYWORD("catch", Catch) KEYWORD("throw", Throw)
+				KEYWORD("import", Import) KEYWORD("typedef", Typedef)KEYWORD("extension", Extension)KEYWORD("operator", Operator)
+				KEYWORD("struct", Struct) KEYWORD("class", Class)KEYWORD("enum", Enum)KEYWORD("interface", Interface)
+				KEYWORD("get", Get)KEYWORD("set", Set)KEYWORD("init", Init)KEYWORD("deinit", Deinit)
+				KEYWORD("sizeof", Sizeof)KEYWORD("print", Print)
+				KEYWORD("in", In)
+				token = new Token(Id);
 				return;
 			}
 
@@ -216,41 +233,39 @@ namespace lexer
 				token = new Token(Str, value);
 				return;
 			}
-			else if (peek == '!')  // parse '!='
-			{
-				if (*src == '=')
-				{
-					src++;
-					token = new Token(Ne);
-				}
-				token = new Token('!');
-				return;
-			}
-			// directly return the character as token;
-			else if (peek == '~' || peek == ';' || peek == '{' || peek == '}' || peek == '('
-				|| peek == ')' || peek == ']' || peek == ',' || peek == '.' || peek == ':')
-			{
-				token = new Token(peek);
-				return;
-			}
-			D_SYMBOL('=', '=', Assign, Eq)
-			D_SYMBOL('+', '+', Add, Inc)
-			D_SYMBOL('-', '-', Sub, Dec)
-			T_SYMBOL('<', '=', '<', Lt, Le, Shl)
-			T_SYMBOL('>', '=', '>', Gt, Ge, Shr)  // parse '>=', '>>' or '>'
-			D_SYMBOL('|', '|',  Lor, Or )
-			D_SYMBOL('&', '&', Lan, And) // parse '&' and '&&'
-			SYMBOL('^', Xor)
-			SYMBOL('%', Mod)
-			SYMBOL('*', Mul)
-			SYMBOL('[', Brak)
-			SYMBOL('?', Cond)
+
+
+				SYMBOL('~') SYMBOL(';')
+				SYMBOL('{') SYMBOL('}')
+				SYMBOL('(') SYMBOL(')')
+				SYMBOL('[') SYMBOL(']')
+				SYMBOL(',') SYMBOL('?')
+				SYMBOL('.') SYMBOL(':')
+
+
+			
+				U_SYMBOL('=','=',Eq)
+				U_SYMBOL('!','=',Ne)
+				U_SYMBOL('*', '=', MulAgn) 
+				U_SYMBOL('%', '=', ModAgn)
+				U_SYMBOL('^','=',BXORAgn)
+			
+				D_SYMBOL('+', Inc,AddAgn)
+				D_SYMBOL('-', Dec,SubAgn)
+			
+				D_SYMBOL('&', And,BAndAgn)
+				D_SYMBOL('|', Or,BORAgn)
+				T_SYMBOL('<',Le,Shl,ShlAgn)
+				T_SYMBOL('>',Ge,Shr,ShrAgn)
+			
 		}
+			
+
 	}
 
 	Token* Match(int tk) {
 		if (token->type != tk) {
-			printf("expected :%s,but got:%s\n", Token::name(tk), Token::name(token->type), 10, src);
+			printf("expected \"%s\" but got \"%s\" at \"%.5s\"\n", Token::Name(tk), Token::Name(token->type), src);
 			system("PAUSE");
 			exit(-1);
 		}

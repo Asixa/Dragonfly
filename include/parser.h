@@ -1,8 +1,9 @@
 #ifndef PARSER
 #define PARSER
 
-#define TEMPALTE_PARSE(name,func,condition,Type)static UNI(Expr) name(){auto left = func();if(condition){auto op = token->type;Next();return MAKE(Type)(left, func(), op);}return left;}
-#define TEMPALTE_PARSE_LOOP(name,func,condition,Type)static UNI(Expr) name(){auto left = func();while(condition){auto op = token->type;Next();left= MAKE(Type)(left, func(), op);}return left;}
+#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();if(condition){auto op = token->type;Next();return MAKE(Binary)(left, func(), op);}return left;}
+#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();while(condition){auto op = token->type;Next();left= MAKE(Binary)(left, func(), op);}return left;}
+#define CHECK token->type==
 #define UNI(a)std::unique_ptr<a>
 #define MAKE(a)std::make_unique<a>
 #define UNI(a)a*
@@ -18,15 +19,19 @@ using namespace lexer;
 using namespace llvm;
 namespace parser
 {
-	class AST{ public: virtual llvm::Value* gen()=0; };
-	class Expr:public AST { public: virtual ~Expr() {} };
 
-	class Number final :public Expr
+	class AST{ public: virtual llvm::Value* gen()=0; };
+	class Expr :public AST {
+	public: virtual ~Expr() {} virtual void print() = 0;
+	};
+
+	class NumberConst final :public Expr
 	{
 	public:
 		double value;
-		Number(double d):value(d){}
+		NumberConst(double d):value(d){}
 		Value* gen() override;
+		void print() override { printf("[number]"); }
 	};
 
 	class Boolean final :public Expr
@@ -50,6 +55,7 @@ namespace parser
 		Factor(Token* t):tok(t){}
 		static UNI(Expr) Parse();
 		Value* gen() override;
+		void print() override { printf("[Factor]"); }
 	};
 
 
@@ -59,23 +65,66 @@ namespace parser
 		int op;
 		UNI(Expr) expr;
 		Unary(UNI(Expr) expr, const int op):op(op),expr(std::move(expr)){}
-		static UNI(Expr) Parse()
+		void print() override { printf("<%s>", Token::Name(op)); expr->print(); }
+
+		
+		static UNI(Expr) ParsePrefix()
 		{
 			switch (token->type)
 			{
-			case Sub:
-				Next();
-				return MAKE(Unary)(Parse(), Sub);
+			case '-':
 			case '!':
 				Next();
-				return MAKE(Unary)(Parse(), '!');
+				return MAKE(Unary)(Parse(), token->type);
 			default:
 				return Factor::Parse();
 			}
 		}
+		static UNI(Expr) ParsePostfix()
+		{
+			const auto factor = ParsePrefix();
+			
+			switch (token->type)
+			{
+			case Inc:
+			case Dec:
+				Next();
+				return MAKE(Unary)(factor, token->type);
+			default:
+				return factor;
+			}
+		}
+		static UNI(Expr) Parse()
+		{
+			return ParsePostfix();
+		}
+		
 		Value* gen() override;
 		
 	};
+	
+	class Ternary final :public Expr
+	{
+		UNI(Expr) a;
+		UNI(Expr) b;
+		UNI(Expr) c;
+	public:
+		Ternary(UNI(Expr) x, UNI(Expr) y, UNI(Expr) z) :a(x), b(y), c(z) {}
+
+		static UNI(Expr) Parse();
+		Value* gen() override;
+		void print() override
+		{
+			printf("[");
+			a->print();
+			printf("?");
+			b->print();
+			printf(":");
+			c->print();
+			printf("]");
+		}
+	};
+
 	
 	class Binary final :public Expr
 	{
@@ -84,16 +133,33 @@ namespace parser
 		UNI(Expr) LHS;
 		UNI(Expr) RHS;
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
-		
-		TEMPALTE_PARSE_LOOP(SubParse5, Unary::Parse, (token->type =='.'), Binary)
-		TEMPALTE_PARSE_LOOP(SubParse4, SubParse5, (token->type == Mul || token->type == Div), Binary)
-		TEMPALTE_PARSE_LOOP(SubParse3, SubParse4, token->type == Add || token->type == Sub, Binary)
-		TEMPALTE_PARSE(SubParse2, SubParse3, token->type == Gt || token->type == Lt || token->type == Ge || token->type == Le, Binary)
-		TEMPALTE_PARSE_LOOP(SubParse1, SubParse2, token->type == Eq || token->type == Ne, Binary)
-		TEMPALTE_PARSE_LOOP(Parse,SubParse1, token->type == Or || token->type == And,Binary)
-
+		PARSE_LOOP(Sub0, Unary::Parse, (CHECK'.')) // Wrong
+		PARSE_LOOP(Sub1, Sub0, CHECK '*' || CHECK '/' ||CHECK '%')
+		PARSE_LOOP(Sub2, Sub1, CHECK '+' || CHECK '-')
+		PARSE_LOOP(Sub3, Sub2, CHECK Shl || CHECK Shr)
+		PARSE_ONCE(Sub4, Sub3, CHECK '>' || CHECK '<' || CHECK Ge || CHECK Le)
+		PARSE_LOOP(Sub5, Sub4, CHECK Eq || CHECK Ne)
+		PARSE_LOOP(Sub6, Sub5, CHECK '|' || CHECK '^'|| CHECK '&')
+		PARSE_LOOP(Sub7,Sub6, CHECK Or || CHECK And)
+		PARSE_LOOP(Parse, Ternary::Parse, CHECK '='|| 
+			CHECK AddAgn || CHECK SubAgn || CHECK DivAgn || CHECK MulAgn  ||CHECK ModAgn ||  
+			CHECK ShlAgn|| CHECK ShrAgn || CHECK BAndAgn||CHECK BXORAgn|| CHECK BORAgn)
 		Value* gen() override;
+		void print() override { printf("("); LHS->print(); printf(" %s ", Token::Name(op)); RHS->print(); printf(")");
+		}
 	};
+
+
+	inline Expr* Ternary::Parse()
+	{
+		auto a = Binary::Sub7();
+		if (token->type != '?')return a;
+		Next();
+		auto b = Binary::Sub7();
+		Match(':');
+		auto c = Binary::Sub7();
+		return MAKE(Ternary)(a, b, c);
+	}
 
 	inline Expr* Factor::Parse()
 	{
@@ -122,7 +188,7 @@ namespace parser
 			while (token->type != ')') {
 				Match(Id);
 				Match(Id);
-				if (token->type == ',') Match(',');
+				if (CHECK ',') Match(',');
 			}
 			return param;
 		}
@@ -140,8 +206,8 @@ namespace parser
 		static UNI(Function) Parse()
 		{
 			auto function = MAKE(Function)();
-			if (token->type == Dfunc)function->differentiable = true;
-			else if (token->type == Kernal)function->kernal = true;
+			if (CHECK Dfunc)function->differentiable = true;
+			else if (CHECK Kernal)function->kernal = true;
 			Next();
 
 			function->name = Match(Id);
@@ -150,18 +216,18 @@ namespace parser
 			function->param = FuncParam::Parse();
 			Match(')');
 
-			if (token->type == ':')
+			if (CHECK ':')
 			{
 				Next();
 				Match(Id);
 			}
-			if (token->type == NewLine)Next();
+			if (CHECK NewLine)Next();
 			printf("[Parsed] Function declaration\n");
 			Match('{');
 			
 
 			// statements();
-			while (token->type == NewLine)Next();
+			while (CHECK NewLine)Next();
 			
 			Match('}');
 			printf("[Parsed] Function end\n");
@@ -170,26 +236,31 @@ namespace parser
 	};
 	
 	/// Let
-	class VaribleDecl
+	class FieldDecl
 	{
+		bool constant;
 		Token* name=nullptr,*type=nullptr;
 		Expr* value;
 	public:
-		static UNI(VaribleDecl) Parse()
+		static UNI(FieldDecl) Parse(const bool is_const)
 		{
-			auto let = MAKE(VaribleDecl)();
+			auto let = MAKE(FieldDecl)();
+			let->constant = is_const;
 			Next();
 			let->name = Match(Id);
-			if(token->type == ':')
+			if(CHECK ':')
 			{
 				Next();
 				let->type= Match(Id);
 			}
-			Match(Assign);
+			Match('=');
 			let->value = Binary::Parse();
-			if (token->type == ';'||token->type == NewLine)Next();
+			
+			if (CHECK ';'||CHECK NewLine)Next();
 
-			printf("[Parsed] Let statement\n");
+			printf("[Parsed] %s field declaration\n", is_const ?"Constant":"Variable");
+			let->value->print();
+			printf("\n");
 			return let;
 		}
 	};
@@ -197,13 +268,18 @@ namespace parser
 
 	static void Program()
 	{
-		while (token->type == NewLine)Next();
+		while (CHECK NewLine)Next();
 		switch (token->type)
 		{
-			case Let:		VaribleDecl::Parse(); break;
+			case Let:		FieldDecl::Parse(true); break;
+			case Var:		FieldDecl::Parse(false); break;
 			case Func:
 			case Dfunc:
 			case Kernal:	Function::Parse(); break;
+			// case Return:
+			// case If:
+			// case While:
+			// case For
 		}
 	}
 
@@ -212,8 +288,8 @@ namespace parser
 		Next();
 		while (peek > 0 && token != nullptr) Program();
 		// while (peek > 0) {
-		// 	printf("[%s] ", Token::name(token->type));
-		// 	if (token->type == NewLine || token->type == ';')printf("\n");
+		// 	printf("[%s] ", Token::Name(token->type));
+		// 	if (CHECK NewLine || CHECK ';')printf("\n");
 		// 	Next();
 		// }
 	}
