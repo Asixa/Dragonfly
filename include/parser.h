@@ -1,73 +1,67 @@
 #ifndef PARSER
 #define PARSER
 
-#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();if(condition){auto op = token->type;Next();return MAKE(Binary)(left, func(), op);}return left;}
-#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();while(condition){auto op = token->type;Next();left= MAKE(Binary)(left, func(), op);}return left;}
-#define CHECK token->type==
-#define UNI(a)std::unique_ptr<a>
-#define MAKE(a)std::make_unique<a>
 #define UNI(a)a*
 #define MAKE(a)new a
 
+#define CHECK token->type==
+#define GEN	void print() override; Value* gen() override;
 
 #include <iostream>
 #include "lexer.h"
 #include <utility>
-#include <vector>
 #include <llvm/IR/Value.h>
 using namespace lexer;
 using namespace llvm;
 namespace parser
 {
-
-	class AST{ public: virtual llvm::Value* gen()=0; };
+	
+	class AST
+	{
+		public: virtual Value* gen()=0;
+	};
 	class Expr :public AST {
-	public: virtual ~Expr() {} virtual void print() = 0;
+	public:
+		virtual ~Expr() {}
+		virtual void print() = 0;
 	};
 
 	class NumberConst final :public Expr
 	{
 	public:
 		double value;
-		NumberConst(double d):value(d){}
+		explicit NumberConst(const double d):value(d){}
 		Value* gen() override;
-		void print() override { printf("[number]"); }
+		void print() override;
 	};
 
 	class Boolean final :public Expr
 	{
-	public:
+	public:GEN
 		bool value;
-		Boolean(bool d) :value(d) {}
-		Value* gen() override;
+		explicit Boolean(const bool d) :value(d) {}
 	};
 	class String final :public Expr
 	{
-	public:
+	public:GEN
 		bool value;
 		String(char* d) :value(d) {}
-		Value* gen() override;
 	};
 	class Factor final :public Expr
 	{
-	public: 
+	public:GEN
 		Token* tok;
 		Factor(Token* t):tok(t){}
 		static UNI(Expr) Parse();
-		Value* gen() override;
-		void print() override { printf("[Factor]"); }
 	};
-
 
 	class Unary:public Expr
 	{
-	public:
+	public:GEN
 		int op;
 		UNI(Expr) expr;
-		Unary(UNI(Expr) expr, const int op):op(op),expr(std::move(expr)){}
-		void print() override { printf("<%s>", Token::Name(op)); expr->print(); }
-
 		
+		Unary(UNI(Expr) expr, const int op):op(op),expr(std::move(expr)){}
 		static UNI(Expr) ParsePrefix()
 		{
 			switch (token->type)
@@ -98,9 +92,7 @@ namespace parser
 		{
 			return ParsePostfix();
 		}
-		
-		Value* gen() override;
-		
+
 	};
 	
 	class Ternary final :public Expr
@@ -108,31 +100,21 @@ namespace parser
 		UNI(Expr) a;
 		UNI(Expr) b;
 		UNI(Expr) c;
-	public:
+	public:GEN
 		Ternary(UNI(Expr) x, UNI(Expr) y, UNI(Expr) z) :a(x), b(y), c(z) {}
-
 		static UNI(Expr) Parse();
-		Value* gen() override;
-		void print() override
-		{
-			printf("[");
-			a->print();
-			printf("?");
-			b->print();
-			printf(":");
-			c->print();
-			printf("]");
-		}
 	};
 
 	
 	class Binary final :public Expr
 	{
-	public:
+	public:GEN
 		int op;
 		UNI(Expr) LHS;
 		UNI(Expr) RHS;
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
+#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();if(condition){auto op = token->type;Next();return MAKE(Binary)(left, func(), op);}return left;}
+#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();while(condition){auto op = token->type;Next();left= MAKE(Binary)(left, func(), op);}return left;}
 		PARSE_LOOP(Sub0, Unary::Parse, (CHECK'.')) // Wrong
 		PARSE_LOOP(Sub1, Sub0, CHECK '*' || CHECK '/' ||CHECK '%')
 		PARSE_LOOP(Sub2, Sub1, CHECK '+' || CHECK '-')
@@ -144,20 +126,17 @@ namespace parser
 		PARSE_LOOP(Parse, Ternary::Parse, CHECK '='|| 
 			CHECK AddAgn || CHECK SubAgn || CHECK DivAgn || CHECK MulAgn  ||CHECK ModAgn ||  
 			CHECK ShlAgn|| CHECK ShrAgn || CHECK BAndAgn||CHECK BXORAgn|| CHECK BORAgn)
-		Value* gen() override;
-		void print() override { printf("("); LHS->print(); printf(" %s ", Token::Name(op)); RHS->print(); printf(")");
-		}
 	};
 
 
 	inline Expr* Ternary::Parse()
 	{
-		auto a = Binary::Sub7();
+		const auto a = Binary::Sub7();
 		if (token->type != '?')return a;
 		Next();
-		auto b = Binary::Sub7();
+		const auto b = Binary::Sub7();
 		Match(':');
-		auto c = Binary::Sub7();
+		const auto c = Binary::Sub7();
 		return MAKE(Ternary)(a, b, c);
 	}
 
@@ -176,8 +155,6 @@ namespace parser
 		Next();
 		return factor;
 	}
-
-
 
 	/// function definition
 	class FuncParam {
@@ -206,8 +183,8 @@ namespace parser
 		static UNI(Function) Parse()
 		{
 			auto function = MAKE(Function)();
-			if (CHECK Dfunc)function->differentiable = true;
-			else if (CHECK Kernal)function->kernal = true;
+			if (CHECK K_dfunc)function->differentiable = true;
+			else if (CHECK K_kernal)function->kernal = true;
 			Next();
 
 			function->name = Match(Id);
@@ -271,11 +248,11 @@ namespace parser
 		while (CHECK NewLine)Next();
 		switch (token->type)
 		{
-			case Let:		FieldDecl::Parse(true); break;
-			case Var:		FieldDecl::Parse(false); break;
-			case Func:
-			case Dfunc:
-			case Kernal:	Function::Parse(); break;
+			case K_let:		FieldDecl::Parse(true); break;
+			case K_var:		FieldDecl::Parse(false); break;
+			case K_func:
+			case K_dfunc:
+			case K_kernal:	Function::Parse(); break;
 			// case Return:
 			// case If:
 			// case While:
@@ -286,12 +263,8 @@ namespace parser
 	static void Parse()
 	{
 		Next();
-		while (peek > 0 && token != nullptr) Program();
-		// while (peek > 0) {
-		// 	printf("[%s] ", Token::Name(token->type));
-		// 	if (CHECK NewLine || CHECK ';')printf("\n");
-		// 	Next();
-		// }
+		// while (peek > 0 && token != nullptr) Program();
+		while (peek > 0) {printf("[%s] ", Token::Name(token->type));	if (CHECK NewLine || CHECK ';')printf("\n");Next();}
 	}
 };
 

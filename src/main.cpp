@@ -2,10 +2,8 @@
 #include"lexer.h"
 #include "parser.h"
 #include "gen.h"
+#include "debug.h"
 #include <ctime>
-#include <sstream>
-#include <fstream>
-#include <codecvt>
 std::wstring readFile(const char* filename)
 {
 	std::wifstream wif(filename);
@@ -18,20 +16,11 @@ int main(int argc, char** argv)
 {
 	std::wcout.imbue(std::locale(""));
 
-	// const auto start = clock();
-	//
-	// lexer::LoadFile("../example/basic.df"); 
-	// parser::Parse();
-	// printf("\nfinished in %.0fms...\n", static_cast<double>(clock() - start));
+	const auto start = clock();
+	LoadFile("F:/Codes/Projects/Academic/ComputerCompiler/Dragonfly/example/all_symbol.df"); 
+	Parse();
+	printf("\nfinished in %.0fms...\n", static_cast<double>(clock() - start));
 
-	
-	
-	
-	auto src = readFile("../example/UTF8.df");
-	
-	// std::wcout << "你好世界" << std::endl;
-	std::wcout <<src << std::endl;
-	
 	system("pause");
 }
   

@@ -4,7 +4,7 @@
 class Symbol
 {
 public:
-	static char* data;
+	static wchar_t* data;
 };
-char* Symbol::data = nullptr;
+wchar_t* Symbol::data = nullptr;
 #endif
