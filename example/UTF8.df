@@ -1,1 +1,33 @@
-let 草 = 牛逼 %= (b ^ c|d)
+extern printf(string a,...)
+
+struct MyStruct
+{
+	int x;
+	int y;
+}
+
+
+var a = MyStruct();
+a.x=1
+a.y=2
+
+printf("the struct is {%d,%d}\n",a.x,a.y)
+
+//var a = "Hello,World!\n"
+//printf(a)
+//var b = f(2,3) 
+//var c = b
+//printf("2 x 3 is : %d\n",b) 
+//var c = b = 9
+//printf("auto cast is : %d - %d\n",b,c) 
+
+//dfunc f(int a,int b):int
+//{
+//	return a*b
+//}
+
+//dfunc p(string a):int
+//{
+//	return 0
+//}
+ 
