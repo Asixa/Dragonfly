@@ -18,7 +18,6 @@ using namespace lexer;
 using namespace llvm;
 namespace parser
 {
-	
 	class AST
 	{
 		public: virtual Value* Gen(const int cmd=0)=0;
@@ -86,25 +85,22 @@ namespace parser
 	class Lambda final :public Expr
 	{
 		public:GEN
-		static UNI(Lambda) Parse()
-		{
-			return nullptr;
-		}
+		static UNI(Lambda) Parse(){return nullptr;}
 	};
 	
 	class Field final :public Expr
 	{
 	public:GEN
-		std::wstring name;
-		Field(std::wstring d) :name(std::move(d)) {}
+		std::vector<std::wstring> names;
+		Field(std::vector<std::wstring> d) :names(d) {}
 	};
 	class FuncCall final :public Expr
 	{
 	public:GEN
-		std::wstring func;
+		std::vector <std::wstring> names;
 		std::vector<UNI(Expr)> args;
-		FuncCall(std::wstring d) :func(std::move(d)) {}
-		static UNI(FuncCall) Parse(const std::wstring f);
+		FuncCall(std::vector <std::wstring> d) : names(d) {}
+		static UNI(FuncCall) Parse(std::vector <std::wstring> f);
 	};
 	
 	class Factor final :public Expr
@@ -178,8 +174,8 @@ namespace parser
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
 #define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();if(condition){auto op = token->type;Next();return MAKE(Binary)(left, func(), op);}return left;}
 #define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();while(condition){auto op = token->type;Next();left= MAKE(Binary)(left, func(), op);}return left;}
-		PARSE_LOOP(Sub0, Unary::Parse, (CHECK'.')) // Wrong
-		PARSE_LOOP(Sub1, Sub0, CHECK '*' || CHECK '/' ||CHECK '%')
+		// PARSE_LOOP(Sub0, , (CHECK'.')) // Wrong
+		PARSE_LOOP(Sub1, Unary::Parse, CHECK '*' || CHECK '/' ||CHECK '%')
 		PARSE_LOOP(Sub2, Sub1, CHECK '+' || CHECK '-')
 		PARSE_LOOP(Sub3, Sub2, CHECK Shl || CHECK Shr)
 		PARSE_ONCE(Sub4, Sub3, CHECK '>' || CHECK '<' || CHECK Ge || CHECK Le)
@@ -191,7 +187,7 @@ namespace parser
 			CHECK ShlAgn|| CHECK ShrAgn || CHECK BAndAgn||CHECK BXORAgn|| CHECK BORAgn)
 	};
 	
-	inline FuncCall* FuncCall::Parse(const std::wstring f)
+	inline FuncCall* FuncCall::Parse(std::vector <std::wstring> f)
 	{
 		auto func_call = MAKE(FuncCall)(f);
 		Next();
@@ -265,15 +261,23 @@ namespace parser
 		case K_int: case K_short: case K_long: case K_float: case K_double:
 		case K_uint:case K_ushort:case K_ulong:case K_string:
 		case Id:
-			const auto id = string_val;
-			const auto type = token->type;
+			// const auto id = string_val;
+			std::vector<std::wstring>names;
+			names.push_back(string_val);
 			Next();
-			if (CHECK '(')return FuncCall::Parse(id);
+			const auto type = token->type;
+			while (token->type=='.')
+			{
+				Next();
+				names.push_back(string_val);
+				Match(Id);
+			}
+			if (CHECK '(')return FuncCall::Parse(names);
 			else if (CHECK '[')
 			{
 
 			}
-			else return MAKE(Field)(id);
+			else return MAKE(Field)(names);
 		}
 		factor = MAKE(Factor)(token);
 		Next();
@@ -432,10 +436,11 @@ namespace parser
 	
 	class StructDecl:public Declaration
 	{
+		
+	public:
 		std::wstring name;
 		std::vector<std::wstring> fields;
 		std::vector<std::wstring> types;
-	public:
 		static UNI(StructDecl) Parse()
 		{
 			auto instance = MAKE(StructDecl);

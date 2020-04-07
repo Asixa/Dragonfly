@@ -1,15 +1,12 @@
 #ifndef LEXER
 #define LEXER
-
 #include <iostream>
-#include "symbol.h"
 #include <sstream>
 #include <fstream>
 #include <codecvt>
 #include "keywords.h"
 
-void PrintError(std::wstring msg,bool show_code=true);
-
+#include <vector>
 #define SYMBOL(a) else if (peek == a){token = new Token(a);return;}
 #define U_SYMBOL(c,t)\
 		else if (peek == c){														\
@@ -59,7 +56,8 @@ namespace lexer
 	static wchar_t peek;
 	static long size;
 	static Token* token;
-	static int line;
+	static int line,ch;
+	static std::vector<wchar_t*>lines;
 	
 	static std::wstring string_val;
 	static double number_val;
@@ -74,17 +72,19 @@ namespace lexer
 		wss << wif.rdbuf();
 		size = std::size(wss.str());
 		root=src = _wcsdup(wss.str().c_str());
-		// std::wcout<<L"---------\n" << src << L"\n---------\n";
 	}
-
+	static wchar_t* Move()
+	{
+		ch++;
+		src++;
+		return;
+	}
 	static void Next()
 	{
 		wchar_t* last_pos;
 		int hash;
 		while ((peek = *src++))
 		{
-			// std::wcout << peek;
-			// printf("[%wc,%d]",peek, peek);
 			if ((src - root) > size) {
 				size = src - root;
 				token = nullptr;
@@ -219,14 +219,8 @@ namespace lexer
 						else if (value == 'f')value = '\f';
 						else if (value == 'r')value = '\r';
 						else if (value == 'v')value = '\v';
-						// else if (value == 'U')
-						// {
-						// 	
-						// }
-						// else if (value == 'u')
-						// {
-						// 	
-						// }
+						// else if (value == 'U'){}
+						// else if (value == 'u'){}
 					}
 					if (peek == '"')
 					{
@@ -255,7 +249,6 @@ namespace lexer
 			else if (t == end)
 				if (--i == 0) return;
 		}
-		
 	}
 	
 	Token* Match(const int tk) {

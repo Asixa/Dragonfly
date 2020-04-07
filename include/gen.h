@@ -1,18 +1,17 @@
-#ifndef JUST_IN_TIME
-#define JUST_IN_TIME
+#ifndef CODEGEN
+#define CODEGEN
 #include "llvm/ADT/APFloat.h"
 
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 
 #include "llvm/IR/Type.h" 
- #include "llvm/IR/DerivedTypes.h"
- #include "llvm/IR/Function.h"
- #include "llvm/IR/IRBuilder.h"
- #include "llvm/IR/LLVMContext.h"
- #include "llvm/IR/Module.h"
- #include "llvm/IR/Verifier.h"
- #include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Verifier.h"
 #include "parser.h"
 
 using namespace lexer;
@@ -22,19 +21,17 @@ using namespace parser;
 
 	static LLVMContext the_context;
 	static std::unique_ptr<Module> the_module = std::make_unique<Module>("Program", the_context);;
-
 	static IRBuilder<> builder(the_context);
 	static Function* main_func;
 	static BasicBlock* main_block;
 	static std::map<std::string, Value*> named_values;
+	static std::map<std::string, StructDecl*> named_types;
 	
 	Value* LogErrorV(const char* str) {
 		printf("%s", str);
 		system("PAUSE");
 		exit(-1);
-		return nullptr;
 	}
-
 
 	inline GlobalVariable* CreateGlob(IRBuilder<>& builder, const std::string name,Type* ty) {
 		the_module->getOrInsertGlobal(name,ty);
@@ -50,12 +47,11 @@ using namespace parser;
 		return foo_func;
 	}
 
-	inline BasicBlock* CreateBb(Function* foo_func, const std::string name) {
-		return BasicBlock::Create(the_context, name, foo_func);
+	inline BasicBlock* CreateBb(Function* func, const std::string name) {
+		return BasicBlock::Create(the_context, name, func);
 	}
 
 	static AllocaInst* CreateEntryBlockAlloca(Function* the_function, Type* type,const std::string& var_name) {
-		
 		IRBuilder<> tmp_b(&the_function->getEntryBlock(),the_function->getEntryBlock().begin());
 		return tmp_b.CreateAlloca(type, 0, var_name);
 	}
@@ -70,8 +66,7 @@ using namespace parser;
 	static Type* GetType(std::wstring type_name)
 	{
 		auto type = 0;
-		if (type_name.size() == 1)
-			type = type_name[0];
+		if (type_name.size() == 1)type = type_name[0];
 		switch (type)
 		{
 		case '0':		return Type::getVoidTy(the_context);
@@ -81,16 +76,26 @@ using namespace parser;
 		case K_double:	return Type::getDoubleTy(the_context);
 		case K_bool:	return Type::getInt1Ty(the_context);
 		case K_string:	return Type::getInt8PtrTy(the_context);
-		default: return nullptr;
+		default: return the_module->getTypeByName(WstrToStr(type_name))->getPointerTo();
 		}
 	}
 
-	static Value* EValue(Value* v)
+	static StoreInst* AlignStore(StoreInst* a)
 	{
+		// a->setAlignment(MaybeAlign(8));
+		return a;
+	}
+	static LoadInst* AlignLoad(LoadInst* a)
+	{
+		// a->setAlignment(MaybeAlign(8));
+		return a;
+	}
 
-		if (v->getType()->getTypeID() == Type::PointerTyID)
-			return builder.CreateLoad(v);
-		return v;
+	static void BuildInFunc(const char* name,Type* ret, std::vector<Type*> types,bool isVarArg=false)
+	{
+		auto the_function = Function::Create(FunctionType::get(ret, types, isVarArg), 
+			Function::ExternalLinkage, name, the_module.get());
+
 	}
 namespace parser
 {
@@ -127,18 +132,40 @@ namespace parser
 		
 	inline Value* Field::Gen(int cmd)
 	{
-		
-		const auto v = named_values[WstrToStr(name)];
+		auto v = named_values[WstrToStr(names[0])];
 		if (!v) LogErrorV("Unknown variable name\n");
-	
+		std::string debugname;
+		for (auto i = 0; i < names.size(); i++)debugname += "_"+WstrToStr(names[i]);
+		if(names.size()>1)
+		{
+			for (auto i=1;i<names.size();i++)
+			{
+				auto name = names[i];
+				auto decl = named_types[v->getType()->getPointerElementType()->getPointerElementType()->getStructName().str()];
+				auto idx = -1;
+				for (int id=0,n= decl->fields.size(); id <n; id++)
+				{
+					// std::wcout << "cmp " << decl->fields[id] <<" - "<<n<<" - "<<id<< std::endl;
+					if (decl->fields[id] == name)
+					{
+						idx = id;
+						break;
+					}
+				}
+				if (idx == -1)return LogErrorV("Cannot find field... \n");
+				v = AlignLoad(builder.CreateLoad(v, debugname));
+				v = builder.CreateStructGEP(v, idx);
+			}
+		}
+		
 		if (v->getType()->getTypeID()== Type::PointerTyID&& cmd == 0)
-			return builder.CreateLoad(v, name.c_str());
+			return AlignLoad(builder.CreateLoad(v, debugname));
 		return v;
 	}
 		
 	inline Value* FuncCall::Gen(int cmd)
 	{
-		const auto callee = the_module->getFunction(WstrToStr(func));
+		const auto callee = the_module->getFunction(WstrToStr(names[0]));
 		if (!callee) return LogErrorV("Unknown function referenced");
 		if (callee->arg_size() != args.size()&&!callee->isVarArg())
 			return LogErrorV("Incorrect # arguments passed");
@@ -273,24 +300,37 @@ namespace parser
 		CMP(Eq, UEQ, EQ)
 		CMP(Ne, UNE, NE)
 
-		case '=':
-			builder.CreateStore( rhs,lhs);
-			return rhs;
-
-#define  BASIC_ASSGIN(a,b,c,d)case a: {\
-			if (type == Type::FloatTyID || type == Type::DoubleTyID)\
-				return builder.CreateStore(lhs,builder.Create##b(lhs, rhs, #b"_tmp")); \
-			else if (type == Type::IntegerTyID)\
-				lhs = builder.CreateStore(lhs,builder.Create##c(lhs, rhs, #c"_tmp")); \
-			else return LogErrorV(" "#d" operation cannot apply on Non-number variables\n");}
+		case '=': {
+			if(lhs->getType()->getTypeID()!=Type::PointerTyID)return LogErrorV("cannot reassign a constant\n");
+			auto rhv = rhs;
+			if(rhs->getType()->getTypeID() != lhs->getType()->getPointerElementType()->getTypeID())
+				rhv = rhs->getType()->getTypeID() == Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;
+			AlignStore(builder.CreateStore(rhv, lhs));
+			return lhs;
+		}
+#define BASIC_ASSGIN(a,b,c,d)case a:																					\
+			{																											\
+				auto rhv = rhs->getType()->getTypeID() == Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;			\
+				if (type == Type::PointerTyID)																			\
+				{																										\
+					type = lhs->getType()->getPointerElementType()->getTypeID();										\
+					const auto lhsv = AlignLoad(builder.CreateLoad(lhs));															\
+					if (type == Type::FloatTyID || type == Type::DoubleTyID)											\
+						return AlignStore(builder.CreateStore(builder.Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
+					if (type == Type::IntegerTyID)																		\
+						return AlignStore(builder.CreateStore(builder.Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
+					return LogErrorV(" "#d" operation cannot apply on Non-number variables\n");							\
+				}																										\
+				return LogErrorV(" cannot reassign a constant\n");														\
+			}
 			
 // #define  BITWISE_ASSGIN(a,b,c,d)case a: {\
 // 			if (type == Type::IntegerTyID)\
 // 				lhs = builder.Create##c(lhs, rhs, #c"_tmp"); \
 // 			else return LogErrorV(" "#d" operation cannot apply on Non-number variables\n");\
 // 			return lhs;}
-			
-		BASIC_ASSGIN(AddAgn,FAdd,Add,+=)	
+
+		BASIC_ASSGIN(AddAgn,FAdd,Add,+=)
 		BASIC_ASSGIN(SubAgn,FSub,Sub,-=)
 		BASIC_ASSGIN(MulAgn,FMul,Mul,*=)
 		BASIC_ASSGIN(DivAgn,FDiv,FDiv,/=)
@@ -381,68 +421,51 @@ namespace parser
 			named_values[_name] = v;
 		}
 		else {
-			if(val->getType()->getTypeID()==Type::PointerTyID)
-			{
-				const auto alloca = CreateEntryBlockAlloca(main_func, ty, _name);
-				// auto a=builder.CreateSExt(val, Type::getInt64Ty(the_context));
-				// auto b=builder.CreateIntToPtr(a, ty);
-				builder.CreateStore(val, alloca);
-				named_values[_name] = alloca;
-			}
-			else
-			{
-				const auto alloca = CreateEntryBlockAlloca(main_func, ty, _name);
-				builder.CreateStore(val, alloca);
-				named_values[_name] = alloca;
-			}
+			const auto alloca = CreateEntryBlockAlloca(main_func, ty, _name);
+			alloca->setAlignment(MaybeAlign(8));
+
+			AlignStore(builder.CreateStore(val, alloca));
+			named_values[_name] = alloca;
 		}
 		
 	}
-	inline void StructDecl::Gen(){}
+	
 
 	inline void StructDecl::GenHead()
 	{
-		
 		auto the_struct= the_module->getTypeByName(WstrToStr(name));
-		if (!the_struct)
-		{
-			std::wcout << name << std::endl;
-			std::vector<Type*> field_tys;
-			for (const auto& type : types)field_tys.push_back(GetType(type));
-			the_struct = StructType::create(the_context, field_tys, WstrToStr(name));
+		if (!the_struct) the_struct = StructType::create(the_context,  WstrToStr(name));
+		else std::wcout << "Type " << name << " already defined" << std::endl;
+	}
+	inline void StructDecl::Gen()
+	{
+		auto the_struct = the_module->getTypeByName(WstrToStr(name));
+		std::vector<Type*> field_tys;
+		for (const auto& type : types)field_tys.push_back(GetType(type));
+		the_struct->setBody(field_tys);
+		named_types[the_struct->getName().str()] = this;
+
+		//Create a Constructor function
+		const auto func_type = FunctionType::get(the_struct->getPointerTo(), std::vector<Type*>(), false);
+		auto the_function = Function::Create(func_type, Function::ExternalLinkage, WstrToStr(name), the_module.get());
+		const auto bb = BasicBlock::Create(the_context, WstrToStr(name) + "_entry", the_function);
+		the_function->setCallingConv(llvm::CallingConv::C);
+		builder.SetInsertPoint(bb);
+		//Constructor Body
+		
+		// const auto alloca = CreateEntryBlockAlloca(the_function, the_struct, "struct");
+		// alloca->setAlignment(MaybeAlign(8));
+
+		auto ptr=builder.CreateCall(the_module->getFunction("malloc"), 
+			ConstantInt::get(Type::getInt32Ty(the_context), 32));
+		auto p=builder.CreateCast(Instruction::BitCast, ptr, the_struct->getPointerTo());
+
+		builder.CreateRet(p);
+		// auto field1= builder.CreateStructGEP(the_struct, alloca, 1);
+		// builder.CreateStore(ConstantInt::get(Type::getInt32Ty(the_context), 233),field1);
 
 		
-
-			// FunctionType* funcTy = FunctionType::get(Type::getVoidTy(the_context), field_tys, false);
-			// Type* argsTy[1] = {field_tys[0]};
-			// CallInst* newInst = CallInst::Create(the_module->getOrInsertFunction("__myfun", funcTy), ArrayRef<Value*>(argsTy, 1), "");
-			//
-			//Create a Constructor function
-	
-			const auto func_type = FunctionType::get(the_struct->getPointerTo(), std::vector<Type*>(), false);
-			auto the_function = Function::Create(func_type, Function::ExternalLinkage, WstrToStr(name), the_module.get());
-			const auto bb = BasicBlock::Create(the_context, WstrToStr(name) + "_entry", the_function);
-			the_function->setCallingConv(llvm::CallingConv::C);
-			
-			builder.SetInsertPoint(bb);
-			//
-			const auto alloca = CreateEntryBlockAlloca(the_function, the_struct, "struct");
-			alloca->setAlignment(MaybeAlign(4));
-			
-
-			// auto field1= builder.CreateStructGEP(the_struct, alloca, 1);
-			// builder.CreateStore(ConstantInt::get(Type::getInt32Ty(the_context), 233),field1);
-			
-			
-			builder.CreateRet(alloca);
-
-			
-			verifyFunction(*the_function);
-		}
-		else
-		{
-			std::wcout << "type " << name << " already defined" << std::endl;
-		}
+		verifyFunction(*the_function);
 	}
 
 
@@ -509,8 +532,8 @@ namespace parser
 	inline void Return::Gen()
 	{
 		const auto val = value->Gen();
-		if (!val) { printf("Error in return"); return; }
-		builder.CreateRet(val);
+		if (!val) LogErrorV("Error in return");
+		else builder.CreateRet(val);
 	}
 
 	inline void Break::Gen()
@@ -527,13 +550,15 @@ namespace parser
 
 	inline void Program::Gen()
 	{
+		const std::vector<Type*> types{ Type::getInt32Ty(the_context) };
+		BuildInFunc("malloc", Type::getInt8PtrTy(the_context), types);
+		
 		for (auto& func : declarations)func->GenHead();
 		for (auto& func : declarations)func->Gen();
 		
 		main_func = CreateFunc(builder, "main");
 		const auto entry = CreateBb(main_func, "entry");
 		builder.SetInsertPoint(entry);
-		
 		
 		for (auto& statement : statements)
 		{

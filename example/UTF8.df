@@ -1,17 +1,24 @@
 extern printf(string a,...)
-
-struct MyStruct
+struct B
 {
-	int x;
+	A m;
+	int n;
+}
+struct A
+{
 	int y;
+	int x;
 }
 
+var b = B()
+var a= A()
+a.x=1001
+a.y=1000
+b.m=A()
+b.n=999
+printf("the struct is {%d,%d} {%d,%d}\n",a.x,a.y,b.m.x,b.n)
 
-var a = MyStruct();
-a.x=1
-a.y=2
 
-printf("the struct is {%d,%d}\n",a.x,a.y)
 
 //var a = "Hello,World!\n"
 //printf(a)

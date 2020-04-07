@@ -1,10 +1,25 @@
 
 #ifndef DEBUGGER
 #define DEBUGGER
+#include <string>
+#include <iostream>
 
-#include "lexer.h"
+
+
+void PrintError(const std::wstring msg, bool show_code = true) {
+	// SetColor(level);
+	// std::wcout << (level == static_cast<int>(RED)) ? "Error" : level == YELLOW ? "Warning" : "Log" << std::endl;
+	std::wcout << msg << std::endl;
+	system("Pause");
+	exit(-1);
+}
+
+#endif
+#ifdef PARSER
+#ifndef OUTPUT
+#define OUTPUT
 #include "parser.h"
-#include "keywords.h"
+
 inline const char* Token::Name(const int type)
 {
 		if (type == Id)return "ID";
@@ -36,10 +51,10 @@ inline void NumberConst::print()
 }
 inline void String::print() { std::wcout << "[\"" << value << "\"]"; }
 inline void Boolean::print() { printf("[%s]",value?"true":"false"); }
-inline void Field::print() { std::wcout << "[" <<name << "]"; }
+inline void Field::print() { std::wcout << "[" <<names[0] << "]"; }
 inline void FuncCall::print()
 {
-	std::wcout << "[CALL " <<func<<" ( ";
+	std::wcout << "[CALL " <<names[0]<<" ( ";
 	for (auto i=0;i<args.size();i++)
 	{
 		args[i]->print();
@@ -61,10 +76,6 @@ inline void Ternary::print()
 	printf("]");
 }
 
-inline void PrintError(const std::wstring msg,bool show_code)
-{
-	std::wcout << msg << std::endl;
-	system("Pause");
-	exit(-1);
-}
+
+#endif
 #endif
