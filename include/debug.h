@@ -1,17 +1,38 @@
-
+﻿
 #ifndef DEBUGGER
 #define DEBUGGER
 #include <string>
 #include <iostream>
+#include <vector>
 
+static int line, ch,chp;
+static std::vector<wchar_t*>lines;
+enum Color { Darkblue = 1, Darkgreen, Darkteal, Darkred, Darkpink, Darkyellow, Gray, Darkgray, Blue, Green, Teal, Red, Pink, Yellow, White };
+inline void SetColor(const int c);
 
+namespace lexer { static void MoveLine(); }
+void PrintError2() {
+		std::cout << "[" << line << "," << chp << "]: ";
+		SetColor(Red);
+		std::cout << "error: ";
+		SetColor(White);
+	}
 
 void PrintError(const std::wstring msg, bool show_code = true) {
 	// SetColor(level);
-	// std::wcout << (level == static_cast<int>(RED)) ? "Error" : level == YELLOW ? "Warning" : "Log" << std::endl;
-	std::wcout << msg << std::endl;
-	system("Pause");
-	exit(-1);
+	if (show_code) {
+		auto pt = lines[line];
+		std:std::wstring str;
+		while (*pt != L'\n')str += *pt++;
+		SetColor(Darkteal);
+		std::wcout << str << std::endl;
+		SetColor(Red);
+		std::cout << std::string(chp -1 , ' ')<<"↑" << std::string(ch - chp-1, '`')<< std::endl;
+		SetColor(White);
+	}
+	lexer::MoveLine();
+	// system("Pause");
+	// exit(-1);
 }
 
 #endif
@@ -22,7 +43,7 @@ void PrintError(const std::wstring msg, bool show_code = true) {
 
 inline const char* Token::Name(const int type)
 {
-		if (type == Id)return "ID";
+		if (type == Id)return "Identifier";
 		if (type == NewLine) return "NewLine";
 		if (type == Num) return "Num";
 		if (type == Str) return "Str";

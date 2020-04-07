@@ -1,40 +1,6 @@
-extern printf(string a,...)
-struct B
-{
-	A m;
-	int n;
-}
-struct A
-{
-	int y;
-	int x;
-}
-
-var b = B()
-var a= A()
-a.x=1001
-a.y=1000
-b.m=A()
-b.n=999
-printf("the struct is {%d,%d} {%d,%d}\n",a.x,a.y,b.m.x,b.n)
+var 人之初: int  性本善 = 0
+var 性相近: int  习相远 = 0
+var 苟不教: int  性乃迁 = 0
+var 教之道: int  贵以专 = 0
 
 
-
-//var a = "Hello,World!\n"
-//printf(a)
-//var b = f(2,3) 
-//var c = b
-//printf("2 x 3 is : %d\n",b) 
-//var c = b = 9
-//printf("auto cast is : %d - %d\n",b,c) 
-
-//dfunc f(int a,int b):int
-//{
-//	return a*b
-//}
-
-//dfunc p(string a):int
-//{
-//	return 0
-//}
- 

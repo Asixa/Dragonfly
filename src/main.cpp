@@ -8,7 +8,7 @@
 
 #include <windows.h>
 HANDLE handle;
-enum Color { Darkblue = 1, Darkgreen, Darkteal, Darkred, Darkpink, Darkyellow, Gray, Darkgray, Blue, Green, Teal, Red, Pink, Yellow, White };
+
 inline void SetColor(const int c) {
 	if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(handle, c);
@@ -20,11 +20,6 @@ int main(int argc, char** argv)
 {
 	std::wcout.imbue(std::locale(""));
 
-	SetColor(Darkteal);
-	std::cout<<  "Hello卧槽+=-2"<<std::endl;
-	SetColor(Red);
-	std::cout<<  "````````````↑"<<std::endl;
-	SetColor(White);
 	const auto start = clock();
 	LoadFile("F:/Codes/Projects/Academic/ComputerCompiler/Dragonfly/example/UTF8.df"); 
 	Parse()->Gen();

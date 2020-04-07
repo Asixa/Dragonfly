@@ -4,9 +4,11 @@
 #define UNI(a)a*
 #define MAKE(a)new a
 
-#define CHECK token->type==
-#define CHECK_TYPE CHECK K_int || CHECK K_short || CHECK K_long || CHECK K_float || CHECK K_double ||\
-CHECK K_bool || CHECK K_string || CHECK K_uint || CHECK K_ushort || CHECK K_short || CHECK K_byte
+//Micro for check token's type
+#define CHECK token->type==		
+//Micro for check if token is basic type
+#define CHECK_TYPE	 CHECK K_int || CHECK K_short || CHECK K_long || CHECK K_float || CHECK K_double ||CHECK K_bool || CHECK K_string || CHECK K_uint || CHECK K_ushort || CHECK K_short || CHECK K_byte
+//Micro for overriding the functions for expression classes
 #define GEN	void print() override; Value* Gen(const int cmd=0) override;
 
 #include <iostream>
@@ -14,67 +16,72 @@ CHECK K_bool || CHECK K_string || CHECK K_uint || CHECK K_ushort || CHECK K_shor
 #include <utility>
 #include <vector>
 #include <llvm/IR/Value.h>
+
 using namespace lexer;
 using namespace llvm;
 namespace parser
 {
-	class AST
+	//********************************************************************************************************
+	//*							AST
+	//********************************************************************************************************
+
+	// Base Class for Expressions
+	class Expr 
 	{
-		public: virtual Value* Gen(const int cmd=0)=0;
-	};
-	class Expr :public AST {
 	public:
-		int type;
 		virtual ~Expr() {}
 		virtual void print() = 0;
+		virtual Value* Gen(int cmd = 0) = 0;
 	};
+	
+	// Base Class for Statements
 	class Statement
 	{
-		public: virtual void Gen() = 0;
+	public:
+		virtual ~Statement() = default;
+		virtual void Gen() = 0;
 		static UNI(Statement) Parse();
 	};
+	
+	// Base Class for Declaration, which will generate codes before Statments
 	class Declaration:public Statement
 	{
 	public:
-		virtual void GenHead() = 0;
+		virtual void GenHeader() = 0;
 	};
 	
-	class Statements :Statement
+	// 'Statements' Class will match all statements in a binary-tree structure
+	class Statements final :Statement
 	{
 		UNI(Statement) stmt1;
 		UNI(Statement) stmt2;
 	public:
 		Statements(UNI(Statement) a, UNI(Statement) b):stmt1(a),stmt2(b){}
-		static UNI(Statement) Parse()
-		{
-			while (CHECK NewLine)Next();
-			if(CHECK '}') return nullptr;
-			const auto left = Statement::Parse();
-			const auto right = Statements::Parse();
-			if (right == nullptr)
-			{
-				return left;
-			}
-			return MAKE(Statements)(left, right);
-		}
+		static UNI(Statement) Parse();
 		void Gen() override;
 	};
 
-
+	//********************   Expressions ***********************
+	
+	// Expression node for literal numbers.
 	class NumberConst final :public Expr
 	{
 	public:
+		int type;
 		double value;
 		explicit NumberConst(const double d, const int t) :value(d) { type = t; }
 		GEN
 	};
-
+	
+	// Expression node for literal booleans.
 	class Boolean final :public Expr
 	{
 	public:GEN
 		bool value;
 		explicit Boolean(const bool d) :value(d) {}
 	};
+
+	// Expression node for literal strings.
 	class String final :public Expr
 	{
 	public:GEN
@@ -82,78 +89,57 @@ namespace parser
 		String(std::wstring d) :value(std::move(d)) {}
 	};
 
+	// Expression node for Lambda expression.
 	class Lambda final :public Expr
 	{
 		public:GEN
 		static UNI(Lambda) Parse(){return nullptr;}
 	};
 	
+	// Expression node for variable or fields.
 	class Field final :public Expr
 	{
 	public:GEN
 		std::vector<std::wstring> names;
-		Field(std::vector<std::wstring> d) :names(d) {}
+		explicit Field(std::vector<std::wstring> d) :names(d) {}
 	};
+	
+	// Expression node for function calls.
 	class FuncCall final :public Expr
 	{
 	public:GEN
 		std::vector <std::wstring> names;
 		std::vector<UNI(Expr)> args;
-		FuncCall(std::vector <std::wstring> d) : names(d) {}
+		explicit FuncCall(std::vector <std::wstring> d) : names(d) {}
 		static UNI(FuncCall) Parse(std::vector <std::wstring> f);
 	};
 	
+	// Expression node for All general factors (including all expression nodes above)
 	class Factor final :public Expr
 	{
 	public:GEN
 		Token* tok;
-		Factor(Token* t):tok(t){}
+		explicit Factor(Token* t):tok(t){}
 		static UNI(Expr) Parse();
 	};
-
-	class Unary:public Expr
+	
+	// Expression node for factors with prefix or postfix)
+	class Unary final :public Expr
 	{
 	public:GEN
 		int op;
 		bool prefix;
 		UNI(Expr) expr;
-		
 		Unary(UNI(Expr) expr, const int op,bool pre):op(op),expr(std::move(expr)),prefix(pre){}
-		static UNI(Expr) ParsePrefix()
-		{
-			switch (token->type)
-			{
-			case '-':
-			case '!':
-			case Inc:
-			case Dec:
-				Next();
-				return MAKE(Unary)(Parse(), token->type,true);
-			default:
-				return Factor::Parse();
-			}
-		}
-		static UNI(Expr) ParsePostfix()
-		{
-			const auto factor = ParsePrefix();
-			
-			switch (token->type)
-			{
-			case Inc:
-			case Dec:
-				Next();
-				return MAKE(Unary)(factor, token->type,false);
-			default:
-				return factor;
-			}
-		}
+		static UNI(Expr) ParsePrefix();
+		static UNI(Expr) ParsePostfix();
 		static UNI(Expr) Parse()
 		{
 			return ParsePostfix();
 		}
-
 	};
-	
+
+	// Expression node for Ternary expression like a?b:c
 	class Ternary final :public Expr
 	{
 		UNI(Expr) a;
@@ -163,8 +149,8 @@ namespace parser
 		Ternary(UNI(Expr) x, UNI(Expr) y, UNI(Expr) z) :a(x), b(y), c(z) {}
 		static UNI(Expr) Parse();
 	};
-
 	
+	// Expression node for all binary expressions
 	class Binary final :public Expr
 	{
 	public:GEN
@@ -174,7 +160,6 @@ namespace parser
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
 #define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();if(condition){auto op = token->type;Next();return MAKE(Binary)(left, func(), op);}return left;}
 #define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();while(condition){auto op = token->type;Next();left= MAKE(Binary)(left, func(), op);}return left;}
-		// PARSE_LOOP(Sub0, , (CHECK'.')) // Wrong
 		PARSE_LOOP(Sub1, Unary::Parse, CHECK '*' || CHECK '/' ||CHECK '%')
 		PARSE_LOOP(Sub2, Sub1, CHECK '+' || CHECK '-')
 		PARSE_LOOP(Sub3, Sub2, CHECK Shl || CHECK Shr)
@@ -186,6 +171,131 @@ namespace parser
 			CHECK AddAgn || CHECK SubAgn || CHECK DivAgn || CHECK MulAgn  ||CHECK ModAgn ||  
 			CHECK ShlAgn|| CHECK ShrAgn || CHECK BAndAgn||CHECK BXORAgn|| CHECK BORAgn)
 	};
+
+	//**********   End of Expressions ****************
+
+
+	//************************   Statements  ******************************
+
+	// class for matching function declaration parameters; 
+	class FuncParam {
+	public:
+		int size;
+		bool isVarArg = false;
+		std::vector<std::wstring> names,types;
+		static UNI(FuncParam) Parse();
+	};
+
+	// class for matching function definition.
+	class FunctionDecl final :public Declaration {
+		bool differentiable = false,
+			kernal = false,
+			is_extern = false;
+		std::wstring name;
+		std::wstring return_type;
+		UNI(FuncParam) args;
+		UNI(Statement) statements;
+	public:
+		void Gen() override;
+		void GenHeader() override;
+		static UNI(FunctionDecl) Parse(bool ext = false);
+	};
+
+	// class for matching variable declaration.
+	class FieldDecl :public Statement
+	{
+		bool constant;
+		std::wstring name, type;
+		Expr* value;
+	public:
+		void Gen() override;
+		static UNI(FieldDecl) Parse(bool is_const);
+	};
+
+	// class for matching class declaration.
+	class StructDecl final :public Declaration
+	{
+	public:
+		std::wstring name;
+		std::vector<std::wstring> fields;
+		std::vector<std::wstring> types;
+		static UNI(StructDecl) Parse();
+		void Gen() override;
+		void GenHeader() override;
+	};
+	
+	// class for if statement.
+	class If :Statement
+	{
+		UNI(Expr) condition;
+		UNI(Statement) stmts;
+	public:
+		static UNI(If) Parse();
+		void Gen() override;
+	};
+
+	class Empty :public Statement
+	{
+		UNI(Expr) value;
+	public:
+		static UNI(Empty) Parse();
+		void Gen() override;
+	};
+
+	class Throw :Statement
+	{
+		UNI(Expr) value;
+	public:
+		static UNI(Throw) Parse();
+		void Gen() override;
+	};
+
+	class Return :public Statement
+	{
+		UNI(Expr) value;
+	public:
+		static UNI(Return) Parse();
+		void Gen() override;
+	};
+
+	class Break final :Statement
+	{
+	public:
+		static UNI(Break) Parse();
+		void Gen() override;
+	};
+
+	class Continue final :Statement
+	{
+	public:
+		static UNI(Continue) Parse();
+		void Gen() override;
+	};
+
+	class Import final :Statement
+	{
+	public:
+		static UNI(Import) Parse();
+		void Gen() override;
+	};
+	
+	//********************************************************************************************************
+	//*							Parser
+	//********************************************************************************************************
+
+	inline Statement* Statements::Parse()
+	{
+	
+		while (CHECK NewLine)Next();
+		if (CHECK '}') return nullptr;
+		const auto left = Statement::Parse();
+		const auto right = Statements::Parse();
+		if (right == nullptr)
+		{
+			return left;
+		}
+		return MAKE(Statements)(left, right);
+	}
 	
 	inline FuncCall* FuncCall::Parse(std::vector <std::wstring> f)
 	{
@@ -197,6 +307,36 @@ namespace parser
 		}
 		Match(')');
 		return func_call;
+	}
+
+	inline Expr* Unary::ParsePostfix()
+	{
+		const auto factor = ParsePrefix();
+
+		switch (token->type)
+		{
+		case Inc:
+		case Dec:
+			Next();
+			return MAKE(Unary)(factor, token->type, false);
+		default:
+			return factor;
+		}
+	}
+
+	inline Expr* Unary::ParsePrefix()
+	{
+		switch (token->type)
+		{
+		case '-':
+		case '!':
+		case Inc:
+		case Dec:
+			Next();
+			return MAKE(Unary)(Parse(), token->type, true);
+		default:
+			return Factor::Parse();
+		}
 	}
 
 	inline Expr* Ternary::Parse()
@@ -285,319 +425,6 @@ namespace parser
 	}
 
 
-
-	/// function definition
-	class FuncParam {
-	public:
-		int size;
-		bool isVarArg = false;
-		std::vector<std::wstring> names;
-		std::vector<std::wstring> types;
-		static UNI(FuncParam) Parse()
-		{
-			auto param = MAKE(FuncParam)();
-			while (token->type != ')') {
-				param->size++;
-				if (CHECK_TYPE)
-				{
-					std::wstring t; t+= static_cast<wchar_t>(token->type) ;
-					param->types.push_back(t);
-					Next();
-				}
-				else if(token->type=='.')
-				{
-					Next();
-					Match('.');
-					Match('.');
-					param->size--;
-					param->isVarArg = true;
-					return param;
-				}
-				else
-				{
-					param->types.push_back(string_val);
-					Match(Id);
-				}
-				
-				param->names.push_back(string_val);
-				Match(Id);
-				if (CHECK ',') Match(',');
-			}
-			return param;
-		}
-	};
-	
-	/// Function - This class represents a function definition itself.
-	class FunctionDecl final:public Declaration {
-		
-		UNI(FuncParam) args;
-		std::wstring name;
-		UNI(Statement) statements;
-
-		std::wstring return_type;
-	
-		bool differentiable = false, kernal = false,is_extern=false;
-	public:
-		void Gen() override;
-		void GenHead() override;
-		static UNI(FunctionDecl) Parse(bool ext=false)
-		{
-			auto function = MAKE(FunctionDecl)();
-			function->is_extern = ext;
-			if (CHECK K_dfunc)function->differentiable = true;
-			else if (CHECK K_kernal)function->kernal = true;
-			Next();
-			if(CHECK Id)
-			{
-				function->name = string_val;
-				Match(Id);
-			}
-			Match('(');
-			function->args = FuncParam::Parse();
-			Match(')');
-
-			function->return_type = '0';
-			if (CHECK ':')
-			{
-				Next();
-				if(CHECK_TYPE)
-				{
-					function->return_type = static_cast<wchar_t>(token->type);
-					Next();
-				}
-				else
-				{
-					function->return_type= string_val;
-					Match(Id);
-				}
-				
-			}
-			
-			if (CHECK NewLine)Next();
-			if(ext)
-			{
-				printf("[Parsed] Extern function declaration\n");
-				return function;
-			}
-			printf("[Parsed] Function declaration\n");
-			Match('{');
-
-			function->statements = Statements::Parse();
-			while (CHECK NewLine)Next();
-			
-			Match('}');
-			printf("[Parsed] Function end\n");
-			return function;
-		}
-	};
-	
-
-
-	class FieldDecl:public Statement
-	{
-		bool constant;
-		std::wstring name, type;
-		Expr* value;
-	public:
-		static UNI(FieldDecl) Parse(const bool is_const)
-		{
-			auto let = MAKE(FieldDecl)();
-			let->constant = is_const;
-			Next();
-			let->name = string_val;
-			Match(Id);
-			if(CHECK ':')
-			{
-				Next();
-				if (CHECK_TYPE)
-				{
-					let->type = static_cast<wchar_t>(token->type);
-					Next();
-				}
-				else
-				{
-					let->type = string_val;
-					Match(Id);
-				}
-			}
-			Match('=');
-			let->value = Binary::Parse();
-			
-			if (CHECK ';'||CHECK NewLine)Next();
-
-			printf("[Parsed] %s field declaration\n", is_const ?"Constant":"Variable");
-			let->value->print();
-			printf("\n");
-			return let;
-		}
-		void Gen() override;
-		
-	};
-	
-	class StructDecl:public Declaration
-	{
-		
-	public:
-		std::wstring name;
-		std::vector<std::wstring> fields;
-		std::vector<std::wstring> types;
-		static UNI(StructDecl) Parse()
-		{
-			auto instance = MAKE(StructDecl);
-			Next();
-			instance->name = string_val;
-			Match(Id);
-			Match('{');
-			while (token->type != '}') {
-				if (CHECK_TYPE)
-				{
-					std::wstring t; t += static_cast<wchar_t>(token->type);
-					instance->types.push_back(t);
-					Next();
-				}
-				else
-				{
-					instance->types.push_back(string_val);
-					Match(Id);
-				}
-				instance->fields.push_back(string_val);
-				Match(Id);
-				if (CHECK ';') Match(';');
-				else Match(NewLine);
-			}
-			Match('}');
-			return instance;
-		}
-		void Gen() override;
-		void GenHead() override;
-	};
-
-
-	
-	class Else :Statement
-	{
-
-	public:
-		static UNI(Else) Parse()
-		{
-
-		}
-		void Gen() override;
-	};
-	
-	class Elif :Else
-	{
-
-	public:
-		static UNI(Elif) Parse()
-		{
-
-		}
-		void Gen() override;
-	};
-	
-	class If:Statement
-	{
-		UNI(Expr) condition;
-		UNI(Statement) stmts;
-		UNI(Else) else_stmt;
-	public:
-		static UNI(If) Parse()
-		{
-			auto instance = new If();
-			Next();
-			instance->condition = Binary::Parse();
-			const auto brackets = CHECK '{';
-			if (brackets)Next();
-			instance->stmts = Statements::Parse();
-			if (brackets)Match('}');
-			if (CHECK K_else||CHECK K_elif) 
-				instance->else_stmt = Else::Parse();
-			return instance;
-		}
-		// Value* Gen();
-		void Gen() override;
-	};
-	
-	class Empty :public Statement
-	{
-		UNI(Expr) value;
-	public:
-		static UNI(Empty) Parse()
-		{
-			auto instance = MAKE(Empty);
-			instance->value = Binary::Parse();
-			printf("[Parsed] Expression \n");
-			instance->value->print();
-			return instance;
-		}
-		void Gen() override;
-	};
-	
-	class Throw:Statement
-	{
-		UNI(Expr) value;
-	public:
-		static UNI(Throw) Parse()
-		{
-			Next();
-			auto instance = MAKE(Throw);
-			instance->value = Factor::Parse();
-			return instance;
-		}
-		void Gen() override;
-	};
-
-	class Return :public Statement
-	{
-		UNI(Expr) value;
-	public:
-		static UNI(Return) Parse()
-		{
-			Next();
-			auto instance = MAKE(Return);
-			instance->value = Binary::Parse();
-			printf("[Parsed] Return Statement\n");
-			return instance;
-		}
-		void Gen() override;
-	};
-
-	class Break :Statement
-	{
-	public:
-		static UNI(Break) Parse()
-		{
-			Next();
-			auto instance = MAKE(Break);
-			return instance;
-		}
-		void Gen() override;
-	};
-
-	class Continue :Statement
-	{
-	public:
-		static UNI(Continue) Parse()
-		{
-			Next();
-			auto instance = MAKE(Continue);
-			return instance;
-		}
-		void Gen() override;
-	};
-	
-	class Import :Statement
-	{
-	public:
-		static UNI(Import) Parse()
-		{
-			Next();
-			auto instance = MAKE(Import);
-			return instance;
-		}
-		void Gen() override;
-	};
 	
 	inline Statement* Statement::Parse()
 	{
@@ -610,15 +437,220 @@ namespace parser
 		default: return Empty::Parse();
 		}
 	}
+	
+	inline FuncParam* FuncParam::Parse()
+	{
+		auto param = MAKE(FuncParam)();
+		while (token->type != ')') {
+			param->size++;
+			if (CHECK_TYPE)
+			{
+				std::wstring t; t += static_cast<wchar_t>(token->type);
+				param->types.push_back(t);
+				Next();
+			}
+			else if (token->type == '.')
+			{
+				Next();
+				Match('.');
+				Match('.');
+				param->size--;
+				param->isVarArg = true;
+				return param;
+			}
+			else
+			{
+				param->types.push_back(string_val);
+				Match(Id);
+			}
 
+			param->names.push_back(string_val);
+			Match(Id);
+			if (CHECK ',') Match(',');
+		}
+		return param;
+	}
+	
+	inline FunctionDecl* FunctionDecl::Parse(const bool ext)
+	{
+		auto function = MAKE(FunctionDecl)();
+		function->is_extern = ext;
+		if (CHECK K_dfunc)function->differentiable = true;
+		else if (CHECK K_kernal)function->kernal = true;
+		Next();
+		if (CHECK Id)
+		{
+			function->name = string_val;
+			Match(Id);
+		}
+		Match('(');
+		function->args = FuncParam::Parse();
+		Match(')');
+
+		function->return_type = '0';
+		if (CHECK ':')
+		{
+			Next();
+			if (CHECK_TYPE)
+			{
+				function->return_type = static_cast<wchar_t>(token->type);
+				Next();
+			}
+			else
+			{
+				function->return_type = string_val;
+				Match(Id);
+			}
+
+		}
+
+		if (CHECK NewLine)Next();
+		if (ext)
+		{
+			printf("[Parsed] Extern function declaration\n");
+			return function;
+		}
+		printf("[Parsed] Function declaration\n");
+		Match('{');
+
+		function->statements = Statements::Parse();
+		while (CHECK NewLine)Next();
+
+		Match('}');
+		printf("[Parsed] Function end\n");
+		return function;
+	}
+	
+	inline FieldDecl* FieldDecl::Parse(const bool is_const)
+	{
+		auto let = MAKE(FieldDecl)();
+		let->constant = is_const;
+		Next();
+		let->name = string_val;
+		Match(Id);
+		if (CHECK ':')
+		{
+			Next();
+			if (CHECK_TYPE)
+			{
+				let->type = static_cast<wchar_t>(token->type);
+				Next();
+			}
+			else
+			{
+				let->type = string_val;
+				Match(Id);
+			}
+		}
+		Match('=');
+		let->value = Binary::Parse();
+
+		if (CHECK ';' || CHECK NewLine)Next();
+
+		printf("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");
+		let->value->print();
+		printf("\n");
+		return let;
+	}
+
+	inline StructDecl* StructDecl::Parse()
+	{
+		auto instance = MAKE(StructDecl);
+		Next();
+		instance->name = string_val;
+		Match(Id);
+		Match('{');
+		while (token->type != '}') {
+			if (CHECK_TYPE)
+			{
+				std::wstring t; t += static_cast<wchar_t>(token->type);
+				instance->types.push_back(t);
+				Next();
+			}
+			else
+			{
+				instance->types.push_back(string_val);
+				Match(Id);
+			}
+			instance->fields.push_back(string_val);
+			Match(Id);
+			if (CHECK ';') Match(';');
+			else Match(NewLine);
+		}
+		Match('}');
+		return instance;
+	}
+	
+	inline If* If::Parse()
+	{
+		auto instance = new If();
+		// Next();
+		// instance->condition = Binary::Parse();
+		// const auto brackets = CHECK '{';
+		// if (brackets)Next();
+		// instance->stmts = Statements::Parse();
+		// if (brackets)Match('}');
+		// if (CHECK K_else || CHECK K_elif)
+		// 	instance->else_stmt = nullptr;// Else::Parse();
+		return instance;
+	}
+	
+	inline Throw* Throw::Parse()
+	{
+		Next();
+		auto instance = MAKE(Throw);
+		instance->value = Factor::Parse();
+		return instance;
+	}
+	
+	inline Empty* Empty::Parse()
+	{
+		auto instance = MAKE(Empty);
+		instance->value = Binary::Parse();
+		printf("[Parsed] Expression \n");
+		instance->value->print();
+		return instance;
+	}
+
+	inline Return* Return::Parse()
+	{
+		Next();
+		auto instance = MAKE(Return);
+		instance->value = Binary::Parse();
+		printf("[Parsed] Return Statement\n");
+		return instance;
+	}
+
+	inline Import* Import::Parse()
+	{
+		Next();
+		auto instance = MAKE(Import);
+		return instance;
+	}
+	
+	inline Break* Break::Parse()
+	{
+		Next();
+		auto instance = MAKE(Break);
+		return instance;
+	}
+	
+	inline Continue* Continue::Parse()
+	{
+		Next();
+		auto instance = MAKE(Continue);
+		return instance;
+	}
+
+
+
+	//***************** Driver ***************
+	// Program is a class that will match and store all the codes, it is the root of AST
 	class Program
 	{
 		std::vector<Statement*> statements;
 		std::vector<Declaration*> declarations;
 		void ParseSingle() {
-			// while (token->type== )Next();
-			// if(peek <= 0 || token == nullptr)return;
-			
 			switch (token->type)
 			{
 			case NewLine:Next(); break;
@@ -629,11 +661,6 @@ namespace parser
 			case K_extern:	declarations.push_back(FunctionDecl::Parse(true));break;
 			case K_import:	Import::Parse(); break;
 			case K_struct:	declarations.push_back(StructDecl::Parse()); break;
-			// case K_let:		statements.push_back(FieldDecl::Parse(true)); break;
-			// case K_var:		statements.push_back(FieldDecl::Parse(false)); break;
-				// case If:
-				// case While:
-				// case For
 			default: statements.push_back(Statement::Parse());
 			}
 		}
@@ -645,10 +672,7 @@ namespace parser
 			printf("\n-----------------\n");
 			return program;
 		}
-
 		void Gen();
-		
-		
 	};
 
 	static UNI(Program) Parse()

@@ -93,12 +93,12 @@ using namespace parser;
 
 	static void BuildInFunc(const char* name,Type* ret, std::vector<Type*> types,bool isVarArg=false)
 	{
-		auto the_function = Function::Create(FunctionType::get(ret, types, isVarArg), 
-			Function::ExternalLinkage, name, the_module.get());
-
+		Function::Create(FunctionType::get(ret, types, isVarArg), Function::ExternalLinkage, name, the_module.get());
 	}
+
 namespace parser
 {
+
 	inline void Statements::Gen()
 	{
 		stmt1->Gen();
@@ -118,14 +118,12 @@ namespace parser
 
 	inline Value* Boolean::Gen(int cmd)
 	{
-		type = K_bool;
 		const auto bool_type=IntegerType::get(the_context, 1);
 		return ConstantInt::get(bool_type, value);
 	}
 		
 	inline Value* String::Gen(int cmd)
 	{
-		type = K_string;
 		return builder.CreateGlobalStringPtr(StringRef(WstrToStr(value)));
 		// return ConstantDataArray::getString(the_context, WstrToStr(value), true);
 	}
@@ -348,7 +346,7 @@ namespace parser
 		return nullptr;
 	}
 
-	inline void FunctionDecl::GenHead()
+	inline void FunctionDecl::GenHeader()
 	{
 		auto the_function = the_module->getFunction(WstrToStr(name));
 
@@ -373,7 +371,7 @@ namespace parser
 		}
 
 	}
-		
+
 	inline void FunctionDecl::Gen()
 	{
 		if(is_extern)return;
@@ -405,7 +403,6 @@ namespace parser
 		return;
 	}
 
-
 	inline void FieldDecl::Gen()
 	{
 		const auto _name = WstrToStr(name);
@@ -429,14 +426,14 @@ namespace parser
 		}
 		
 	}
-	
 
-	inline void StructDecl::GenHead()
+	inline void StructDecl::GenHeader()
 	{
 		auto the_struct= the_module->getTypeByName(WstrToStr(name));
 		if (!the_struct) the_struct = StructType::create(the_context,  WstrToStr(name));
 		else std::wcout << "Type " << name << " already defined" << std::endl;
 	}
+
 	inline void StructDecl::Gen()
 	{
 		auto the_struct = the_module->getTypeByName(WstrToStr(name));
@@ -467,7 +464,6 @@ namespace parser
 		
 		verifyFunction(*the_function);
 	}
-
 
 	inline void If::Gen()
 	{
@@ -550,20 +546,19 @@ namespace parser
 
 	inline void Program::Gen()
 	{
-		const std::vector<Type*> types{ Type::getInt32Ty(the_context) };
-		BuildInFunc("malloc", Type::getInt8PtrTy(the_context), types);
-		
-		for (auto& func : declarations)func->GenHead();
-		for (auto& func : declarations)func->Gen();
+		BuildInFunc("malloc", Type::getInt8PtrTy(the_context), std::vector<Type*>{ Type::getInt32Ty(the_context) });
+		BuildInFunc("free", Type::getVoidTy(the_context), std::vector<Type*>{ Type::getInt8PtrTy(the_context) });
+		BuildInFunc("printf", Type::getVoidTy(the_context), std::vector<Type*>{ Type::getInt8PtrTy(the_context)->getPointerTo() });
+
+		for (auto& declaration : declarations)declaration->GenHeader();
+		for (auto& declaration : declarations)declaration->Gen();
 		
 		main_func = CreateFunc(builder, "main");
 		const auto entry = CreateBb(main_func, "entry");
 		builder.SetInsertPoint(entry);
 		
-		for (auto& statement : statements)
-		{
-			statement->Gen();
-		}
+		for (auto& statement : statements)statement->Gen();
+		
 		builder.CreateRet(ConstantInt::get(Type::getInt32Ty(the_context), 0));
 		verifyFunction(*main_func);
 	}
