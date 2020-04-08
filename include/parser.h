@@ -430,7 +430,7 @@ namespace parser
 			else return MAKE(Field)(names);
 		}
 		default:
-			ALERT("unexpected \" "<<Token::Name(token->type)<<"\" ")
+			ALERT("unexpected \""<<Token::Name(token->type)<<"\" ")
 			return nullptr;
 		}
 		factor = MAKE(Factor)(token);
@@ -562,8 +562,9 @@ namespace parser
 		Match('='); VERIFY
 		let->value = Binary::Parse(); VERIFY
 
-		if (CHECK ';' || CHECK NewLine)Next(); VERIFY
-
+		if (CHECK ';') Next();
+		else Match(NewLine);
+		VERIFY
 		// printf("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->print();printf("\n");
 		return let;
 	}
@@ -627,8 +628,9 @@ namespace parser
 	
 		auto instance = MAKE(Empty);
 		instance->value = Binary::Parse(); VERIFY
-			printf(Token::Name(token->type));
-		printf("************%d ********", instance->value==nullptr);
+		if (token->type == ';')Next();
+		else Match(NewLine);
+								VERIFY
 		// printf("[Parsed] Expression \n");instance->value->print();
 		return instance;
 	}

@@ -548,7 +548,7 @@ namespace parser
 	{
 		BuildInFunc("malloc", Type::getInt8PtrTy(the_context), std::vector<Type*>{ Type::getInt32Ty(the_context) });
 		BuildInFunc("free", Type::getVoidTy(the_context), std::vector<Type*>{ Type::getInt8PtrTy(the_context) });
-		BuildInFunc("printf", Type::getVoidTy(the_context), std::vector<Type*>{ Type::getInt8PtrTy(the_context)->getPointerTo() });
+		BuildInFunc("printf", Type::getVoidTy(the_context), std::vector<Type*>{ Type::getInt8PtrTy(the_context)->getPointerTo() },true);
 
 		for (auto& declaration : declarations)declaration->GenHeader();
 		for (auto& declaration : declarations)declaration->Gen();
