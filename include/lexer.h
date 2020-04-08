@@ -5,6 +5,8 @@
 #include <fstream>
 #include <codecvt>
 #include "keywords.h"
+#include "debug.h"
+
 #include <vector>
 #define SYMBOL(a) else if (peek == a){token = new Token(a);return;}
 #define U_SYMBOL(c,t)\
@@ -56,90 +58,88 @@ namespace lexer
 	static long size;
 	static Token* token;
 
-	
 	static std::wstring string_val;
 	static double number_val;
 
-	
+
 	static void LoadFile(const char* file)
 	{
 		std::wifstream wif(file);
-		if (wif.fail()) PrintError(L"File doesn't exist\n",false);
+		if (wif.fail()) PrintErrorInfo(L"No such file or directory", false);
 		wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
 		std::wstringstream wss;
 		wss << wif.rdbuf();
-		size = std::size(wss.str());
-		root=src = _wcsdup(wss.str().c_str());
+		size = std::size(wss.str()) + 1;
+		root = src = _wcsdup((wss.str() + L"\n").c_str());
 		lines.push_back(src);
-		// std::wcout << src << std::endl;
+		end = root + size;
 	}
-	inline static wchar_t* Move(const bool pre=false)
-	{
-		auto nl = *src == '\n';
-		ch++;
-		if ((*src > 128))ch++;
+	 static wchar_t* Move()
+	 {
+		auto p = src;
+	 	ch++;
+		if (*src > 128)ch++;
 		src++;
-		if (nl)
-		{
-			ch = 0;
-			lines.push_back(src);
-		}
-		return pre?src:src-1;
+	 	return p;
 	}
 	static void MoveLine()
 	{
-		while (*src != '\n')src++;
-		ch = chp = 0;
-		line++;
-		lines.push_back(src);
-		src++;
+		if (skipline) {
+			while (*src != 0 && *src != '\n')src++;
+			ch = chp = 0;
+			src++;
+		}
+		skipline = true;
 	}
 	static void Next()
 	{
 		chp = ch;
 		wchar_t* last_pos;
 		int hash;
-		while ((peek = *Move()))
+		while ((peek = *src))
 		{
-
+			Move();
 			if ((src - root) > size) {
 				size = src - root;
-				// std::wcout<<"overflowed with "<<peek<<std::endl;
 				token = nullptr;
 				return;
 			}
-
+			if (peek == '\n')
+			{
+				line++; chp = ch = 0;
+				lines.push_back(src);
+				token = new Token(NewLine);
+				return;
+			}
 			while (peek == ' ' || peek == '\t' || peek == '\n')
 			{
 				chp = ch;
 				peek = *src;
 				if (peek == '\n')
 				{
-					++line;
+					printf("lol(%d)", peek == '\n');
+					line++; chp = ch = 0;
 					Move();
+					lines.push_back(src);
 					token = new Token(NewLine);
 					return;
 				}
 				Move();
 			}
 
-			if (peek == '#')							// skip preprocessor
-				while (*src != 0 && *src != '\n')
-					Move();
+			if (peek == '#') { MoveLine(); Next();return; }
 			else if (peek == '/')						// skip comments
 			{
-				if (*src == '/')
-					while (*src != 0 && *src != '\n')
-						Move(true);
+				if (*src == '/') { MoveLine(); Next(); return; }
 				U_SYMBOL('/', '=', DivAgn)
 			}
-			else if (CR(peek,'a','z') || CR(peek, 'A', 'Z') || (peek == '_')|| CHINESE(peek))
+			else if (CR(peek, 'a', 'z') || CR(peek, 'A', 'Z') || (peek == '_') || CHINESE(peek))
 			{
 				last_pos = src - 1;
 				hash = peek;
 				string_val = L"";
 				string_val += peek;
-				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_')|| CHINESE(*src))
+				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_') || CHINESE(*src))
 				{
 					hash = hash * 147 + *src;
 					string_val += *src;
@@ -147,10 +147,10 @@ namespace lexer
 				}
 				// reserved keywords
 				if constexpr (false);
-				#define MATCH(a)else if(!wmemcmp(L#a,last_pos,src-last_pos)&&wcslen(L#a)==src-last_pos){token = new Token(K_##a);return;}
+#define MATCH(a)else if(!wmemcmp(L#a,last_pos,src-last_pos)&&wcslen(L#a)==src-last_pos){token = new Token(K_##a);return;}
 				KEYWORDS(MATCH)
-				#undef MATCH
-				token = new Token(Id);
+#undef MATCH
+					token = new Token(Id);
 				return;
 			}
 
@@ -168,14 +168,18 @@ namespace lexer
 						if (*src == '.')
 						{
 							type = K_double;
-							if (decimal != 0) PrintError(L"There are more than 1 dot at%c\n");
+							if (decimal != 0) {
+								ALERT(L"There are more than 1 dot in the number")
+									token = nullptr;
+								return;
+							}
 							Move();
 							decimal = 1;
 						}
 						else if (decimal != 0) value = value + (*Move() - '0') * pow(0.1, decimal++);
 						else value = value * 10 + (*Move() - '0');
 					}
-					if(*src=='f'||*src=='F')
+					if (*src == 'f' || *src == 'F')
 					{
 						Move();
 						type = K_float;
@@ -183,13 +187,17 @@ namespace lexer
 				}
 				else // starts with number 0
 				{
-					if(*src=='.')
+					if (*src == '.')
 					{
 						type = K_double;
 						auto decimal = 1;
 						Move();
 						while ((*src >= '0' && *src <= '9') || *src == '.') {
-							if (*src == '.')PrintError(L"There are more than 1 dot at%c\n");
+							if (*src == '.') {
+								ALERT(L"There are more than 1 dot in the number")
+									token = nullptr;
+								return;
+							}
 							else if (decimal != 0) value = value + (*Move() - '0') * pow(0.1, decimal++);
 							else value = value * 10 + (*Move() - '0');
 						}
@@ -201,11 +209,13 @@ namespace lexer
 					}
 					if (*src == 'x' || *src == 'X') //hex
 					{
-						peek = *Move(true);
+						Move();
+						peek = *src;
 						while ((peek >= '0' && peek <= '9') || (peek >= 'a' && peek <= 'f') || (peek >= 'A' && peek <= 'F'))
 						{
 							value = value * 16 + (peek & 15) + (peek >= 'A' ? 9 : 0);
-							peek = *Move(true);
+							Move();
+							peek = *src;
 						}
 					}
 					else // oct
@@ -215,7 +225,7 @@ namespace lexer
 					}
 				}
 				number_val = value;
-				token = new Token(Num,type);
+				token = new Token(Num, type);
 				return;
 			}
 
@@ -230,8 +240,8 @@ namespace lexer
 					{
 						value = *Move();
 						// escape character
-						if (value == 'n')value = '\n'; 	
-						else if (value == 't')value = '\t'; 	
+						if (value == 'n')value = '\n';
+						else if (value == 't')value = '\t';
 						else if (value == '\\')value = '\\';
 						else if (value == 'a')value = '\a';
 						else if (value == 'b')value = '\b';
@@ -250,31 +260,38 @@ namespace lexer
 				token = new Token(Str);
 				return;
 			}
-				SPECIAL_OP
+			SPECIAL_OP
 				SINGEL_OP(SYMBOL)
 				ASSGIN_OP(U_SYMBOL)
 				ASSGIN_OR_REPEAT_OP(D_SYMBOL)
 				ASSGIN_AND_REPEAT_OP(T_SYMBOL)
+
+				ALERT("invaild token: \"" << peek << "\" ")
+				token = nullptr;
+				// Next();
+				return;
 		}
 	}
 
 	inline void Find(const wchar_t start, const wchar_t end)
 	{
+		printf("NNNNNNNNNNNNNNNNNNNNNNNN");
 		auto i = 1;
 		wchar_t t;
-		while ((t=*Move()))
+		while ((t = *Move()))
 		{
 			if (t == start)i++;
 			else if (t == end)
 				if (--i == 0) return;
 		}
 	}
-	
+
 	Token* Match(const int tk) {
 		if (token->type != tk) {
-			PrintError2();
-			std::wcout<<"expected \""<< Token::Name(tk) <<"\" but got \""<< Token::Name(token->type) <<"\" instead"<<std::endl;
-			PrintError(L"");
+			if (token->type == NewLine) { ALERT_LAST_LINE }
+				ALERT("expected \"" << Token::Name(tk) << "\" but got \"" << Token::Name(token->type) << "\" instead")
+				Next();
+			return nullptr;
 		}
 		const auto t = token;
 		Next();

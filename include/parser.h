@@ -11,11 +11,16 @@
 //Micro for overriding the functions for expression classes
 #define GEN	void print() override; Value* Gen(const int cmd=0) override;
 
+
+
 #include <iostream>
 #include "lexer.h"
 #include <utility>
 #include <vector>
 #include <llvm/IR/Value.h>
+
+#define  VERIFY {if(error_occurred)return nullptr;}
+
 
 using namespace lexer;
 using namespace llvm;
@@ -158,8 +163,8 @@ namespace parser
 		UNI(Expr) LHS;
 		UNI(Expr) RHS;
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
-#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();if(condition){auto op = token->type;Next();return MAKE(Binary)(left, func(), op);}return left;}
-#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();while(condition){auto op = token->type;Next();left= MAKE(Binary)(left, func(), op);}return left;}
+#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(CHECK NewLine) {ALERT_LAST_LINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY return MAKE(Binary)(left, func(), op);} return left;}
+#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(CHECK NewLine) {ALERT_LAST_LINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY left= MAKE(Binary)(left, func(), op);} return left;}
 		PARSE_LOOP(Sub1, Unary::Parse, CHECK '*' || CHECK '/' ||CHECK '%')
 		PARSE_LOOP(Sub2, Sub1, CHECK '+' || CHECK '-')
 		PARSE_LOOP(Sub3, Sub2, CHECK Shl || CHECK Shr)
@@ -285,39 +290,36 @@ namespace parser
 
 	inline Statement* Statements::Parse()
 	{
-	
-		while (CHECK NewLine)Next();
+		while (CHECK NewLine) { Next(); VERIFY }
 		if (CHECK '}') return nullptr;
-		const auto left = Statement::Parse();
-		const auto right = Statements::Parse();
-		if (right == nullptr)
-		{
-			return left;
-		}
+		const auto left = Statement::Parse(); VERIFY
+		const auto right = Statements::Parse(); VERIFY
+		if (right == nullptr)return left;
 		return MAKE(Statements)(left, right);
 	}
 	
 	inline FuncCall* FuncCall::Parse(std::vector <std::wstring> f)
 	{
 		auto func_call = MAKE(FuncCall)(f);
-		Next();
+		Next();												VERIFY
 		while (token->type != ')') {
-			func_call->args.push_back(Binary::Parse());
-			if (CHECK ',') Match(',');
+			func_call->args.push_back(Binary::Parse());		VERIFY
+			if (CHECK ',') Match(',');					VERIFY
 		}
-		Match(')');
+		Match(')');										VERIFY
 		return func_call;
 	}
 
 	inline Expr* Unary::ParsePostfix()
 	{
 		const auto factor = ParsePrefix();
-
+																VERIFY
 		switch (token->type)
 		{
+
 		case Inc:
 		case Dec:
-			Next();
+			Next();												VERIFY
 			return MAKE(Unary)(factor, token->type, false);
 		default:
 			return factor;
@@ -328,25 +330,31 @@ namespace parser
 	{
 		switch (token->type)
 		{
+		case NewLine:
+			ALERT_LAST_LINE ALERT("unexpected EndOfLine")
+			return nullptr;
 		case '-':
 		case '!':
 		case Inc:
-		case Dec:
-			Next();
-			return MAKE(Unary)(Parse(), token->type, true);
-		default:
-			return Factor::Parse();
+		case Dec: {
+			Next();											VERIFY
+				const auto parsed = Parse();						VERIFY
+				return MAKE(Unary)(parsed, token->type, true);
 		}
-	}
+		default:
+			return Factor::Parse();	
+		}
 
+	}
+	
 	inline Expr* Ternary::Parse()
 	{
-		const auto a = Binary::Sub7();
+		const auto a = Binary::Sub7();		VERIFY
 		if (token->type != '?')return a;
-		Next();
-		const auto b = Binary::Sub7();
-		Match(':');
-		const auto c = Binary::Sub7();
+		Next();								VERIFY
+		const auto b = Binary::Sub7();		VERIFY
+		Match(':');						VERIFY
+		const auto c = Binary::Sub7();		VERIFY
 		return MAKE(Ternary)(a, b, c);
 	}
 
@@ -356,47 +364,48 @@ namespace parser
 		switch (token->type)
 		{
 		case '(': {
-			const auto point = src;
-			auto is_lambda = false;
-			Find('(', ')');
 			Next();
-			printf("ahead token is :%s\n", Token::Name(token->type));
-			is_lambda = token->type == Arrow;
+			// const auto point = src;
+			// auto is_lambda = false;
+			// Find('(', ')');
+			// Next();												VERIFY
+			// printf("ahead token is :%s\n", Token::Name(token->type));
+			// is_lambda = token->type == Arrow;
+			// 	
+			// printf("isLambda:%d   ", is_lambda);
+			// src = point;
+			// Next();												VERIFY
+			// printf("current token is :%s\n", Token::Name(token->type));
+			// system("PAUSE");
+			// if (is_lambda)
+			// {
+			//
+			// }
+			// else {
 				
-			printf("isLambda:%d   ", is_lambda);
-			src = point;
-			Next();
-			printf("current token is :%s\n", Token::Name(token->type));
-			system("PAUSE");
-			if (is_lambda)
-			{
-
-			}
-			else {
-				
-				factor = Binary::Parse();
-				Match(')');
+				factor = Binary::Parse();								VERIFY
+				Match(')');											VERIFY
 				return factor;
-			}
+			// }
 		}
 		case Str:
 		{
 			auto str = MAKE(String)(string_val);
-			Next();
+			Next(); VERIFY
 			return str;
 		}
 
 		case Num:
 		{
 			const auto ty = token->value;
-			Next();
+			Next(); VERIFY
 			return MAKE(NumberConst)(number_val, ty);
 		}
 		case K_true:
-			Next();
+			Next(); VERIFY
 			return MAKE(Boolean)(true);
 		case K_false:
-			Next();
+			Next(); VERIFY
 			return MAKE(Boolean)(false);
 		case K_int: case K_short: case K_long: case K_float: case K_double:
 		case K_uint:case K_ushort:case K_ulong:case K_string:
@@ -404,37 +413,37 @@ namespace parser
 			// const auto id = string_val;
 			std::vector<std::wstring>names;
 			names.push_back(string_val);
-			Next();
+			Next(); VERIFY
 			const auto type = token->type;
 			while (token->type=='.')
 			{
-				Next();
+				Next(); VERIFY
 				names.push_back(string_val);
-				Match(Id);
+				Match(Id); VERIFY
 			}
 			if (CHECK '(')return FuncCall::Parse(names);
 			else if (CHECK '[')
 			{
-
+				VERIFY
 			}
 			else return MAKE(Field)(names);
 		}
 		factor = MAKE(Factor)(token);
-		Next();
+		Next(); VERIFY
 		return factor;
 	}
 
-
-	
 	inline Statement* Statement::Parse()
 	{
-		while (CHECK NewLine)Next();
+	
+		while (CHECK NewLine)Next(); VERIFY
 		switch (token->type)
 		{
 		case K_let:		return FieldDecl::Parse(true);
 		case K_var:		return FieldDecl::Parse(false); 
 		case K_return:	return Return::Parse();
-		default: return Empty::Parse();
+		default:
+			return Empty::Parse();
 		}
 	}
 	
@@ -447,13 +456,13 @@ namespace parser
 			{
 				std::wstring t; t += static_cast<wchar_t>(token->type);
 				param->types.push_back(t);
-				Next();
+				Next();				VERIFY
 			}
-			else if (token->type == '.')
+			else if (token->type == '.')		// Parse three dots '...' for variable argument.
 			{
-				Next();
-				Match('.');
-				Match('.');
+				Next();						VERIFY
+				Match('.');				VERIFY
+				Match('.');				VERIFY
 				param->size--;
 				param->isVarArg = true;
 				return param;
@@ -461,12 +470,12 @@ namespace parser
 			else
 			{
 				param->types.push_back(string_val);
-				Match(Id);
+				Match(Id);				VERIFY
 			}
 
 			param->names.push_back(string_val);
-			Match(Id);
-			if (CHECK ',') Match(',');
+			Match(Id);					VERIFY
+			if (CHECK ',') Match(',');	VERIFY
 		}
 		return param;
 	}
@@ -478,45 +487,48 @@ namespace parser
 		if (CHECK K_dfunc)function->differentiable = true;
 		else if (CHECK K_kernal)function->kernal = true;
 		Next();
+
+
+		VERIFY
 		if (CHECK Id)
 		{
 			function->name = string_val;
-			Match(Id);
+			Match(Id); VERIFY
 		}
-		Match('(');
+		Match('('); VERIFY
 		function->args = FuncParam::Parse();
-		Match(')');
+		Match(')'); VERIFY
 
 		function->return_type = '0';
 		if (CHECK ':')
 		{
-			Next();
+			Next(); VERIFY
 			if (CHECK_TYPE)
 			{
 				function->return_type = static_cast<wchar_t>(token->type);
-				Next();
+				Next(); VERIFY
 			}
 			else
 			{
 				function->return_type = string_val;
-				Match(Id);
+				Match(Id); VERIFY
 			}
 
 		}
 
-		if (CHECK NewLine)Next();
+		if (CHECK NewLine)Next(); VERIFY
 		if (ext)
 		{
 			printf("[Parsed] Extern function declaration\n");
 			return function;
 		}
 		printf("[Parsed] Function declaration\n");
-		Match('{');
+		Match('{'); VERIFY
 
 		function->statements = Statements::Parse();
-		while (CHECK NewLine)Next();
+		while (CHECK NewLine)Next(); VERIFY
 
-		Match('}');
+		Match('}'); VERIFY
 		printf("[Parsed] Function end\n");
 		return function;
 	}
@@ -525,59 +537,58 @@ namespace parser
 	{
 		auto let = MAKE(FieldDecl)();
 		let->constant = is_const;
-		Next();
+		Next(); VERIFY
 		let->name = string_val;
 		Match(Id);
 		if (CHECK ':')
 		{
-			Next();
+			Next(); VERIFY
 			if (CHECK_TYPE)
 			{
 				let->type = static_cast<wchar_t>(token->type);
-				Next();
+				Next(); VERIFY
 			}
 			else
 			{
 				let->type = string_val;
-				Match(Id);
+				Match(Id); VERIFY
 			}
 		}
-		Match('=');
-		let->value = Binary::Parse();
+		Match('='); VERIFY
+		let->value = Binary::Parse(); VERIFY
 
-		if (CHECK ';' || CHECK NewLine)Next();
+		if (CHECK ';' || CHECK NewLine)Next(); VERIFY
 
-		printf("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");
-		let->value->print();
-		printf("\n");
+		// printf("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->print();printf("\n");
 		return let;
 	}
 
 	inline StructDecl* StructDecl::Parse()
 	{
 		auto instance = MAKE(StructDecl);
-		Next();
+		Next(); VERIFY
 		instance->name = string_val;
-		Match(Id);
-		Match('{');
+		Match(Id); VERIFY
+		Match('{'); VERIFY
 		while (token->type != '}') {
 			if (CHECK_TYPE)
 			{
 				std::wstring t; t += static_cast<wchar_t>(token->type);
 				instance->types.push_back(t);
-				Next();
+				Next(); VERIFY
 			}
 			else
 			{
 				instance->types.push_back(string_val);
-				Match(Id);
+				Match(Id); VERIFY
 			}
 			instance->fields.push_back(string_val);
-			Match(Id);
-			if (CHECK ';') Match(';');
+			Match(Id); VERIFY
+			if (CHECK ';') Match(';'); 
 			else Match(NewLine);
+			VERIFY
 		}
-		Match('}');
+		Match('}'); VERIFY
 		return instance;
 	}
 	
@@ -607,8 +618,7 @@ namespace parser
 	{
 		auto instance = MAKE(Empty);
 		instance->value = Binary::Parse();
-		printf("[Parsed] Expression \n");
-		instance->value->print();
+		// printf("[Parsed] Expression \n");instance->value->print();
 		return instance;
 	}
 
@@ -663,13 +673,18 @@ namespace parser
 			case K_struct:	declarations.push_back(StructDecl::Parse()); break;
 			default: statements.push_back(Statement::Parse());
 			}
+			while (error_occurred)
+			{
+				error_occurred = false;
+				MoveLine();
+				Next();
+			}
 		}
 	public:
 		static UNI(Program) Parse()
 		{
 			auto program = MAKE(Program);
 			while (peek > 0 && token != nullptr) program->ParseSingle();
-			printf("\n-----------------\n");
 			return program;
 		}
 		void Gen();
@@ -679,8 +694,10 @@ namespace parser
 	{
 		Next();
 		return Program::Parse();	
-		while (peek > 0) {printf("[%s] ", Token::Name(token->type));	if (CHECK NewLine || CHECK ';')printf("\n");Next();}return nullptr;
+		while (peek > 0 && token!=nullptr) {printf("[%s] ", Token::Name(token->type));	if (CHECK NewLine || CHECK ';')printf("\n");Next();}return nullptr;
 	}
 };
+
+
 
 #endif

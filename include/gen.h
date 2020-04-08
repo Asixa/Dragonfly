@@ -557,7 +557,7 @@ namespace parser
 		const auto entry = CreateBb(main_func, "entry");
 		builder.SetInsertPoint(entry);
 		
-		for (auto& statement : statements)statement->Gen();
+		for (auto& statement : statements)if(statement!=nullptr)statement->Gen();
 		
 		builder.CreateRet(ConstantInt::get(Type::getInt32Ty(the_context), 0));
 		verifyFunction(*main_func);

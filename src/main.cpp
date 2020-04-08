@@ -22,17 +22,43 @@ int main(int argc, char** argv)
 
 	const auto start = clock();
 	LoadFile("F:/Codes/Projects/Academic/ComputerCompiler/Dragonfly/example/UTF8.df"); 
-	Parse()->Gen();
-	printf("\n-----------------\n");
-	the_module->dump();
+	auto program = Parse();
+
+	// uncomment this to stop llvm gen.
+	//error_existed = true;
 
 
-	std::error_code ec;
-	raw_fd_ostream os("a.ll", ec, llvm::sys::fs::F_None);
-	WriteBitcodeToFile(*the_module, os);
-	os.flush();
+	//*************** Print saved lines ***********************
+	// printf("-----------------\n");
+	// std::wcout << L"[line" << line << L"]" << L" [lines size" << lines.size() << L"]" << std::endl;
+	// for(int i=0;i<lines.size();i++)
+	// {
+	// 	auto pt = lines[i];
+	// 	std:std::wstring str;
+	// 	while (*pt != L'\n' && pt < lexer::end)str += *pt++;
+	// 	std::wcout <<L"["<<i<<L"]"<< str << std::endl;
+	// }
+	// printf("-----------------\n");
+	//*************** Print saved lines ***********************
+
+
 	
-	printf("\nfinished in %.0fms...\n", static_cast<double>(clock() - start));
+	if (!error_existed)
+	{
+		printf("-----------------\n");
+		program->Gen();
+		the_module->dump();
+		printf("-----------------\n");
+		std::error_code ec;
+		raw_fd_ostream os("a.ll", ec, llvm::sys::fs::F_None);
+		WriteBitcodeToFile(*the_module, os);
+		os.flush();
+
+		printf("Compiled successfully, took a total of %.0fms\n\n", static_cast<double>(clock() - start));
+	}
+	else printf("Compiler stopped due to errors occurred\n\n");
+	
+
 	system("pause");
 }
   

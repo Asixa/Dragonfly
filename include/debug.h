@@ -5,37 +5,63 @@
 #include <iostream>
 #include <vector>
 
+static bool error_existed;
+static bool error_occurred;
+
+#define ALERT_LAST_LINE chp=ch=--src-lines[--line]; lines.pop_back(); skipline=false;
+	
+#define ALERT(a)\
+	error_occurred = true;\
+	error_existed = true;\
+	log_color=Red;\
+	PrintErrorInfo(L"error");\
+	std::wcout << a << std::endl;\
+	PrintErrorPostfix();
+
+#define WARN(a)\
+	log_color=Yellow;\
+	PrintErrorInfo(L"warning");\
+	std::wcout << a << std::endl;\
+	PrintErrorPostfix();
+
 static int line, ch,chp;
+static bool skipline=true;
 static std::vector<wchar_t*>lines;
+static int log_color;
 enum Color { Darkblue = 1, Darkgreen, Darkteal, Darkred, Darkpink, Darkyellow, Gray, Darkgray, Blue, Green, Teal, Red, Pink, Yellow, White };
 inline void SetColor(const int c);
-
-namespace lexer { static void MoveLine(); }
-void PrintError2() {
-		std::cout << "[" << line << "," << chp << "]: ";
-		SetColor(Red);
-		std::cout << "error: ";
+namespace lexer { static wchar_t* end; static void MoveLine(); }
+static void PrintErrorInfo(const std::wstring type, const bool showPosition=true) {
+		if(showPosition)
+			std::cout << "[" << line+1 << "," << ch << "]: ";
+		SetColor(log_color);
+		std::wcout << type<<L": ";
 		SetColor(White);
 	}
+static void PrintErrorPostfix()
+{
+	
+	auto pt = lines[line];
+	std:std::wstring str;
+	while (*pt != L'\n'&&pt<lexer::end)str += *pt++;
 
-void PrintError(const std::wstring msg, bool show_code = true) {
-	// SetColor(level);
-	if (show_code) {
-		auto pt = lines[line];
-		std:std::wstring str;
-		while (*pt != L'\n')str += *pt++;
-		SetColor(Darkteal);
-		std::wcout << str << std::endl;
-		SetColor(Red);
-		std::cout << std::string(chp -1 , ' ')<<"↑" << std::string(ch - chp-1, '`')<< std::endl;
-		SetColor(White);
-	}
-	lexer::MoveLine();
-	// system("Pause");
-	// exit(-1);
+	
+	SetColor(Darkteal);
+	std::wcout << str << std::endl;
+	SetColor(log_color);
+	auto space = chp - 1;
+	auto error_token = ch - chp - 1;
+
+
+	space = space < 0 ?0: space;
+	error_token = error_token < 0 ? 0 : error_token;
+	std::cout << std::string(space, ' ') << "↑" << std::string(error_token, '`') << std::endl;
+	SetColor(White);
 }
 
 #endif
+
+
 #ifdef PARSER
 #ifndef OUTPUT
 #define OUTPUT
