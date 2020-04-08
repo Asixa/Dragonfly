@@ -86,8 +86,11 @@ namespace lexer
 	{
 		if (skipline) {
 			while (*src != 0 && *src != '\n')src++;
+			line++;
 			ch = chp = 0;
+			// printf("[%c]", *src);
 			src++;
+			lines.push_back(src);
 		}
 		skipline = true;
 	}
@@ -290,7 +293,7 @@ namespace lexer
 		if (token->type != tk) {
 			if (token->type == NewLine) { ALERT_LAST_LINE }
 				ALERT("expected \"" << Token::Name(tk) << "\" but got \"" << Token::Name(token->type) << "\" instead")
-				Next();
+					// if (token->type == NewLine)	Next();
 			return nullptr;
 		}
 		const auto t = token;

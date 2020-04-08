@@ -8,7 +8,7 @@
 static bool error_existed;
 static bool error_occurred;
 
-#define ALERT_LAST_LINE chp=ch=--src-lines[--line]; lines.pop_back(); skipline=false;
+#define ALERT_LAST_LINE chp=ch=--src-lines[--line]; lines.pop_back(); skipline=false; 
 	
 #define ALERT(a)\
 	error_occurred = true;\

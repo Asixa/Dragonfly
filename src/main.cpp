@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 	std::wcout.imbue(std::locale(""));
 
 	const auto start = clock();
-	LoadFile("F:/Codes/Projects/Academic/ComputerCompiler/Dragonfly/example/UTF8.df"); 
+	LoadFile("../example/UTF8.df"); 
 	auto program = Parse();
 
 	// uncomment this to stop llvm gen.

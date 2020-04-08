@@ -360,6 +360,7 @@ namespace parser
 
 	inline Expr* Factor::Parse()
 	{
+		
 		UNI(Expr) factor;
 		switch (token->type)
 		{
@@ -409,16 +410,16 @@ namespace parser
 			return MAKE(Boolean)(false);
 		case K_int: case K_short: case K_long: case K_float: case K_double:
 		case K_uint:case K_ushort:case K_ulong:case K_string:
-		case Id:
+		case Id: {
 			// const auto id = string_val;
 			std::vector<std::wstring>names;
 			names.push_back(string_val);
 			Next(); VERIFY
-			const auto type = token->type;
-			while (token->type=='.')
+				const auto type = token->type;
+			while (token->type == '.')
 			{
 				Next(); VERIFY
-				names.push_back(string_val);
+					names.push_back(string_val);
 				Match(Id); VERIFY
 			}
 			if (CHECK '(')return FuncCall::Parse(names);
@@ -427,6 +428,10 @@ namespace parser
 				VERIFY
 			}
 			else return MAKE(Field)(names);
+		}
+		default:
+			ALERT("unexpected \" "<<Token::Name(token->type)<<"\" ")
+			return nullptr;
 		}
 		factor = MAKE(Factor)(token);
 		Next(); VERIFY
@@ -616,8 +621,11 @@ namespace parser
 	
 	inline Empty* Empty::Parse()
 	{
+	
 		auto instance = MAKE(Empty);
-		instance->value = Binary::Parse();
+		instance->value = Binary::Parse(); VERIFY
+			printf(Token::Name(token->type));
+		printf("************%d ********", instance->value==nullptr);
 		// printf("[Parsed] Expression \n");instance->value->print();
 		return instance;
 	}
@@ -678,6 +686,7 @@ namespace parser
 				error_occurred = false;
 				MoveLine();
 				Next();
+				// std::wcout << "<" << *src << ">";
 			}
 		}
 	public:
