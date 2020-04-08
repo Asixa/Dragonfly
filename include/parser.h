@@ -571,11 +571,14 @@ namespace parser
 	inline StructDecl* StructDecl::Parse()
 	{
 		auto instance = MAKE(StructDecl);
-		Next(); VERIFY
+		Next();											VERIFY
 		instance->name = string_val;
-		Match(Id); VERIFY
-		Match('{'); VERIFY
-		while (token->type != '}') {
+		Match(Id);									VERIFY
+		if (CHECK NewLine)Next();						VERIFY
+		Match('{');									VERIFY
+		if (CHECK NewLine)Next();						VERIFY
+		while (token->type != '}') {			
+			if (CHECK NewLine)Next();					VERIFY
 			if (CHECK_TYPE)
 			{
 				std::wstring t; t += static_cast<wchar_t>(token->type);
