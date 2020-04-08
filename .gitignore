@@ -12,6 +12,5 @@ _deps
 .vs
 build
 out
-bin
 *.ilk
 *.pdb
