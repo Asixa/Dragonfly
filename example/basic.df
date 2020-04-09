@@ -1,5 +1,0 @@
-let s = 1 + 2
-
-let foo : (int,int)=>int = (a,b)=>2*a+b
-
-printf(foo(1,2))

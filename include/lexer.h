@@ -61,7 +61,22 @@ namespace lexer
 	static std::wstring string_val;
 	static double number_val;
 
+	static void CheckUtf8(const char* file)
+	{
+		auto i = 0;
+		const auto fp = fopen(file, "rb");
 
+		if (fp != nullptr)
+		{
+			while (i++ <= 3)
+			{
+				const auto c = fgetc(fp);
+				if (c == 239) printf("UTF8  file");
+				else printf("ANSI File");
+			}
+			fclose(fp);
+		}
+	}
 	static void LoadFile(const char* file)
 	{
 		std::wifstream wif(file);
@@ -280,7 +295,7 @@ namespace lexer
 
 	inline void Find(const wchar_t start, const wchar_t end)
 	{
-		printf("NNNNNNNNNNNNNNNNNNNNNNNN");
+
 		auto i = 1;
 		wchar_t t;
 		while ((t = *Move()))

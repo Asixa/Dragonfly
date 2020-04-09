@@ -2,6 +2,8 @@
 #ifndef SYNTEX
 #define SYNTEX
 
+
+
 #define KEYWORDS(F)\
 	F(string) F(number) F(bool)									\
 	F(int) F(short) F(long) F(float) F(byte)					\

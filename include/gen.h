@@ -20,16 +20,14 @@ using namespace parser;
 
 
 	static LLVMContext the_context;
-	static std::unique_ptr<Module> the_module = std::make_unique<Module>("Program", the_context);;
+	static std::unique_ptr<Module> the_module = std::make_unique<Module>("Program", the_context);
 	static IRBuilder<> builder(the_context);
 	static Function* the_function;
-	// static Function* main_func;
-	// static BasicBlock* main_block;
 	static std::map<std::string, Value*> named_values;
 	static std::map<std::string, ClassDecl*> named_types;
 	
 	Value* LogErrorV(const char* str) {
-		printf("%s", str);
+		PRINT<<str;
 		system("PAUSE");
 		exit(-1);
 	}
@@ -134,7 +132,7 @@ namespace parser
 		auto v = named_values[WstrToStr(names[0])];
 		if (!v) LogErrorV("Unknown variable name\n");
 		std::string debugname;
-		for (auto i = 0; i < names.size(); i++)debugname += "_"+WstrToStr(names[i]);
+		for (const auto& name : names)debugname += "_"+WstrToStr(name);
 		if(names.size()>1)
 		{
 			for (auto i=1;i<names.size();i++)
@@ -144,7 +142,7 @@ namespace parser
 				auto idx = -1;
 				for (int id=0,n= decl->fields.size(); id <n; id++)
 				{
-					// std::wcout << "cmp " << decl->fields[id] <<" - "<<n<<" - "<<id<< std::endl;
+
 					if (decl->fields[id] == name)
 					{
 						idx = id;
@@ -241,8 +239,7 @@ namespace parser
 				}
 			}
 		}
-		// else printf("Same %dtype %s\n",type,Token::Name(op));
-		// printf("OP %d %s %d \n", lhs->getType()->getTypeID(), Token::Name(op), rhs->getType()->getTypeID());
+
 
 		switch (op) {
 
@@ -369,7 +366,7 @@ namespace parser
 				arg.setName(WstrToStr(args->names[idx++]));
 			
 		}
-		else printf("function %s already defined",name);
+		else PRINT<<"function "<< name<<" already defined";
 	}
 
 	inline void FunctionDecl::Gen()
@@ -378,7 +375,7 @@ namespace parser
 		auto function = the_module->getFunction(WstrToStr(name));
 		if(!function)
 		{
-			printf("function head not found\n"); return;
+			PRINT<<"function head not found\n"; return;
 		}
 		const auto bb = BasicBlock::Create(the_context, WstrToStr(name)+"_entry", function);
 		builder.SetInsertPoint(bb);
@@ -391,17 +388,6 @@ namespace parser
 		if (statements != nullptr)statements->Gen();
 
 		verifyFunction(*function);
-		return;
-		// if (Value * RetVal = body->Gen()) {
-		// 	// Finish off the function.
-		// 	builder.CreateRet(RetVal);
-		// 	// Validate the generated code, checking for consistency.
-		// 	verifyFunction(*the_function);
-		// 	return;
-		// }
-
-		// Error reading body, remove function.
-		function->eraseFromParent();
 		return;
 	}
 
@@ -433,7 +419,7 @@ namespace parser
 	{
 		auto the_struct= the_module->getTypeByName(WstrToStr(name));
 		if (!the_struct) the_struct = StructType::create(the_context,  WstrToStr(name));
-		else std::wcout << "Type " << name << " already defined" << std::endl;
+		else PRINT<<"Type " << name << " already defined" << std::endl;
 	}
 
 	inline void ClassDecl::Gen()

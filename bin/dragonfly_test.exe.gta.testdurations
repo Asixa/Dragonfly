@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GtaTestDurations xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Executable>F:\Codes\Projects\Academic\ComputerCompiler\Dragonfly\bin\dragonfly_test.exe</Executable>
+  <TestDurations>
+    <TestDuration Test="myTestFixture1.testLog" Duration="2" />
+    <TestDuration Test="myTestFixture1.testIR" Duration="23" />
+    <TestDuration Test="Tester.a" Duration="27" />
+    <TestDuration Test="Tester.b" Duration="22" />
+  </TestDurations>
+</GtaTestDurations>

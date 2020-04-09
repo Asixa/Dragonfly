@@ -9,7 +9,7 @@
 //Micro for check if token is basic type
 #define CHECK_TYPE	 CHECK K_int || CHECK K_short || CHECK K_long || CHECK K_float || CHECK K_double ||CHECK K_bool || CHECK K_string || CHECK K_uint || CHECK K_ushort || CHECK K_short || CHECK K_byte
 //Micro for overriding the functions for expression classes
-#define GEN	void print() override; Value* Gen(const int cmd=0) override;
+#define GEN	void output() override; Value* Gen(const int cmd=0) override;
 
 
 
@@ -35,7 +35,7 @@ namespace parser
 	{
 	public:
 		virtual ~Expr() {}
-		virtual void print() = 0;
+		virtual void output() = 0;
 		virtual Value* Gen(int cmd = 0) = 0;
 	};
 	
@@ -378,13 +378,13 @@ namespace parser
 			// auto is_lambda = false;
 			// Find('(', ')');
 			// Next();												VERIFY
-			// printf("ahead token is :%s\n", Token::Name(token->type));
+			// PRINT("ahead token is :"<<Token::Name(token->type)<<"\n", );
 			// is_lambda = token->type == Arrow;
 			// 	
-			// printf("isLambda:%d   ", is_lambda);
+			// PRINT("isLambda:%d   ", is_lambda);
 			// src = point;
 			// Next();												VERIFY
-			// printf("current token is :%s\n", Token::Name(token->type));
+			// PRINT("current token is :"<<Token::Name(token->type)<<"\n");
 			// system("PAUSE");
 			// if (is_lambda)
 			// {
@@ -532,17 +532,17 @@ namespace parser
 		while (CHECK NewLine)Next(); VERIFY
 		if (ext)
 		{
-			printf("[Parsed] Extern function declaration\n");
+			PRINT<<"[Parsed] Extern function declaration\n";
 			return function;
 		}
-		printf("[Parsed] Function declaration\n");
+		PRINT<<"[Parsed] Function declaration\n";
 		Match('{'); VERIFY
 
 		function->statements = Statements::Parse();
 		while (CHECK NewLine)Next(); VERIFY
 
 		Match('}'); VERIFY
-		printf("[Parsed] Function end\n");
+		PRINT<<"[Parsed] Function end\n";
 		return function;
 	}
 	
@@ -573,7 +573,7 @@ namespace parser
 		if (CHECK ';') Next();
 		else Match(NewLine);
 		VERIFY
-		// printf("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->print();printf("\n");
+		// PRINT("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->output();PRINT("\n");
 		return let;
 	}
 
@@ -655,7 +655,7 @@ namespace parser
 		if (token->type == ';')Next();
 		else Match(NewLine);
 								VERIFY
-		// printf("[Parsed] Expression \n");instance->value->print();
+		// PRINT("[Parsed] Expression \n");instance->value->output();
 		return instance;
 	}
 
@@ -672,7 +672,7 @@ namespace parser
 		instance->value = Binary::Parse();
 		if (token->type == ';')Next();
 		else Match(NewLine);
-		printf("[Parsed] Return Statement\n");
+		PRINT<<"[Parsed] Return Statement\n";
 		return instance;
 	}
 
@@ -723,7 +723,6 @@ namespace parser
 				error_occurred = false;
 				MoveLine();
 				Next();
-				// std::wcout << "<" << *src << ">";
 			}
 		}
 	public:
@@ -739,8 +738,8 @@ namespace parser
 	static UNI(Program) Parse()
 	{
 		Next();
-		 return Program::Parse();	
-		while (peek > 0 && token!=nullptr) {printf("[%s] ", Token::Name(token->type));	if (CHECK NewLine || CHECK ';')printf("\n");Next();}return nullptr;
+		if (!only_tokenlize)return Program::Parse();
+		while (peek > 0 && token!=nullptr) {PRINT<<"["<< Token::Name(token->type)<<"] ";	if (CHECK NewLine || CHECK ';')PRINT<<"\n";Next();}return nullptr;
 	}
 };
 

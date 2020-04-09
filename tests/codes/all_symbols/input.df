@@ -1,0 +1,18 @@
+string number bool									
+int short long float byte					
+uint ushort ulong double						
+true false 											
+if else elif for while repeat 
+switch case default 
+let var func dfunc kernal					
+return continue break try catch throw		
+import typedef extension operator extern
+struct class enum interface						
+new get set init deinit								
+sizeof print											
+in from to 
+~;{}()[],?.:
+= == ! != * *= % %=^ ^=
++ ++ += - -- -= & && &= | || |=
+< << <<= <= > >> >>= >= => 
+

@@ -1,0 +1,27 @@
+﻿[1,23]: error: expected "=" but got "Identifier" instead
+var 人之初: int  性本善 = 0
+                ↑`````
+[2,23]: error: expected "=" but got "Identifier" instead
+var 性相近: int  习相远 = 0
+                ↑`````
+[4,23]: error: expected "=" but got "Identifier" instead
+var 苟不教: int  性乃迁 = 0
+                ↑`````
+[6,14]: error: unexpected "func" 
+let xxx = func abc(){}
+         ↑```
+[8,11]: error: unexpected EndOfLine
+var a = 2 +
+          ↑
+[12,12]: error: unexpected EndOfLine
+var a = (2 +
+           ↑
+[14,1]: error: invaild token: "$" 
+$ var s
+↑
+[16,14]: error: expected ")" but got "NewLine" instead
+var a = (2 + 3
+             ↑
+[18,16]: error: expected "NewLine" but got ")" instead
+var a = (2 + 3))
+              ↑

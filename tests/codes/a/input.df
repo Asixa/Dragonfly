@@ -1,0 +1,15 @@
+func aaa():int
+{
+	
+	var a  = 233
+	return a
+}
+
+class A{
+		a:int
+		b:int
+		func sum()
+		{
+			return// this.a + this.b
+		}
+}
