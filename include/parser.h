@@ -17,7 +17,7 @@
 #include "lexer.h"
 #include <utility>
 #include <vector>
-#include <llvm/IR/Value.h>
+#include <llvm/IR/DerivedTypes.h>
 
 #define  VERIFY {if(error_occurred)return nullptr;}
 
@@ -193,14 +193,21 @@ namespace parser
 
 	// class for matching function definition.
 	class FunctionDecl final :public Declaration {
+	public:
 		bool differentiable = false,
 			kernal = false,
 			is_extern = false;
 		std::wstring name;
+		StructType* self_type;
 		std::wstring return_type;
 		UNI(FuncParam) args;
 		UNI(Statement) statements;
-	public:
+
+		void SetInternal(const std::wstring structname,StructType* type)
+		{
+			name = structname + L"." + name;
+			self_type = type;
+		}
 		void Gen() override;
 		void GenHeader() override;
 		static UNI(FunctionDecl) Parse(bool ext = false);
@@ -218,13 +225,14 @@ namespace parser
 	};
 
 	// class for matching class declaration.
-	class StructDecl final :public Declaration
+	class ClassDecl final :public Declaration
 	{
 	public:
 		std::wstring name;
 		std::vector<std::wstring> fields;
 		std::vector<std::wstring> types;
-		static UNI(StructDecl) Parse();
+		std::vector<FunctionDecl*> functions;
+		static UNI(ClassDecl) Parse();
 		void Gen() override;
 		void GenHeader() override;
 	};
@@ -521,7 +529,7 @@ namespace parser
 
 		}
 
-		if (CHECK NewLine)Next(); VERIFY
+		while (CHECK NewLine)Next(); VERIFY
 		if (ext)
 		{
 			printf("[Parsed] Extern function declaration\n");
@@ -569,33 +577,49 @@ namespace parser
 		return let;
 	}
 
-	inline StructDecl* StructDecl::Parse()
+	inline ClassDecl* ClassDecl::Parse()
 	{
-		auto instance = MAKE(StructDecl);
-		Next();											VERIFY
+		auto instance = MAKE(ClassDecl);
+		Next();													VERIFY
 		instance->name = string_val;
-		Match(Id);									VERIFY
-		if (CHECK NewLine)Next();						VERIFY
-		Match('{');									VERIFY
-		if (CHECK NewLine)Next();						VERIFY
-		while (token->type != '}') {			
-			if (CHECK NewLine)Next();					VERIFY
-			if (CHECK_TYPE)
+		Match(Id);											VERIFY
+		while (CHECK NewLine)Next();							VERIFY
+		Match('{');											VERIFY
+		
+		
+		while (true) {
+			while (CHECK NewLine)Next();							VERIFY
+			if (token->type == '}')break;
+			switch (token->type)
 			{
-				std::wstring t; t += static_cast<wchar_t>(token->type);
-				instance->types.push_back(t);
-				Next(); VERIFY
-			}
-			else
-			{
-				instance->types.push_back(string_val);
+			case K_init:
+			case K_deinit:
+			case K_func:
+			case K_dfunc:
+			case K_kernal:
+				instance->functions.push_back(FunctionDecl::Parse()); VERIFY
+				break;
+			default:
+				instance->fields.push_back(string_val);
 				Match(Id); VERIFY
+				Match(':');
+
+				if (CHECK_TYPE)
+				{
+					std::wstring t; t += static_cast<wchar_t>(token->type);
+					instance->types.push_back(t);
+					Next(); VERIFY
+				}
+				else
+				{
+					instance->types.push_back(string_val);
+					Match(Id); VERIFY
+				}
+
+				if (CHECK ';') Match(';');
+				else Match(NewLine);
+				while (CHECK NewLine)Next();					VERIFY
 			}
-			instance->fields.push_back(string_val);
-			Match(Id); VERIFY
-			if (CHECK ';') Match(';'); 
-			else Match(NewLine);
-			VERIFY
 		}
 		Match('}'); VERIFY
 		return instance;
@@ -638,8 +662,16 @@ namespace parser
 	inline Return* Return::Parse()
 	{
 		Next();
-		auto instance = MAKE(Return);
+		auto instance = MAKE(Return); 
+		if (token->type == ';'||token->type ==NewLine)
+		{
+			instance->value = nullptr;
+			Next();
+			return instance;
+		}
 		instance->value = Binary::Parse();
+		if (token->type == ';')Next();
+		else Match(NewLine);
 		printf("[Parsed] Return Statement\n");
 		return instance;
 	}
@@ -683,7 +715,7 @@ namespace parser
 			case K_kernal:	declarations.push_back(FunctionDecl::Parse());break;
 			case K_extern:	declarations.push_back(FunctionDecl::Parse(true));break;
 			case K_import:	Import::Parse(); break;
-			case K_struct:	declarations.push_back(StructDecl::Parse()); break;
+			case K_class:	declarations.push_back(ClassDecl::Parse()); break;
 			default: statements.push_back(Statement::Parse());
 			}
 			while (error_occurred)
@@ -707,7 +739,7 @@ namespace parser
 	static UNI(Program) Parse()
 	{
 		Next();
-		return Program::Parse();	
+		 return Program::Parse();	
 		while (peek > 0 && token!=nullptr) {printf("[%s] ", Token::Name(token->type));	if (CHECK NewLine || CHECK ';')printf("\n");Next();}return nullptr;
 	}
 };

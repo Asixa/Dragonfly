@@ -24,7 +24,7 @@ static bool error_occurred;
 	std::wcout << a << std::endl;\
 	PrintErrorPostfix();
 
-static int line, ch,chp;
+static int line, ch,chp,tab;
 static bool skipline=true;
 static std::vector<wchar_t*>lines;
 static int log_color;
@@ -49,7 +49,7 @@ static void PrintErrorPostfix()
 	SetColor(Darkteal);
 	std::wcout << str << std::endl;
 	SetColor(log_color);
-	auto space = chp - 1;
+	auto space = chp - 1-tab;
 	auto error_token = ch - chp - 1;
 
 

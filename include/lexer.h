@@ -78,7 +78,9 @@ namespace lexer
 	 {
 		auto p = src;
 	 	ch++;
-		if (*src > 128)ch++;
+		if (*src == '\t') { ch += 7; tab = 1; }
+		else if (*src > 128)ch++;
+		
 		src++;
 	 	return p;
 	}
@@ -86,11 +88,11 @@ namespace lexer
 	{
 		if (skipline) {
 			while (*src != 0 && *src != '\n')src++;
-			line++;
-			ch = chp = 0;
+			// line++;
+			// ch = tab= chp = 0;
 			// printf("[%c]", *src);
-			src++;
-			lines.push_back(src);
+			// src++;
+			// lines.push_back(src);
 		}
 		skipline = true;
 	}
@@ -120,8 +122,8 @@ namespace lexer
 				peek = *src;
 				if (peek == '\n')
 				{
-					printf("lol(%d)", peek == '\n');
-					line++; chp = ch = 0;
+					line++;
+					ch = tab = chp = 0;
 					Move();
 					lines.push_back(src);
 					token = new Token(NewLine);

@@ -5,7 +5,6 @@
 #include "debug.h"
 #include <ctime>
 #include "llvm/Bitcode/BitcodeWriter.h"
-
 #include <windows.h>
 HANDLE handle;
 

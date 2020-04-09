@@ -22,10 +22,11 @@ using namespace parser;
 	static LLVMContext the_context;
 	static std::unique_ptr<Module> the_module = std::make_unique<Module>("Program", the_context);;
 	static IRBuilder<> builder(the_context);
-	static Function* main_func;
-	static BasicBlock* main_block;
+	static Function* the_function;
+	// static Function* main_func;
+	// static BasicBlock* main_block;
 	static std::map<std::string, Value*> named_values;
-	static std::map<std::string, StructDecl*> named_types;
+	static std::map<std::string, ClassDecl*> named_types;
 	
 	Value* LogErrorV(const char* str) {
 		printf("%s", str);
@@ -353,42 +354,43 @@ namespace parser
 		if (!the_function)
 		{
 			std::vector<Type*> types;
+			if (self_type != nullptr) {
+				types.push_back(self_type->getPointerTo());
+				args->names.insert(args->names.begin(), L"this");
+			}
 			for (auto i = 0; i < args->size; i++)
-			{
 				types.push_back(GetType(args->types[i]));
-			};
+			
 			const auto func_type = FunctionType::get(GetType(return_type), types, args->isVarArg);
 			the_function = Function::Create(func_type, Function::ExternalLinkage, WstrToStr(name), the_module.get());
+
 			unsigned idx = 0;
 			for (auto& arg : the_function->args())
-			{
 				arg.setName(WstrToStr(args->names[idx++]));
-			}
+			
 		}
-		else
-		{
-			printf("function %s already defined",name);
-		}
-
+		else printf("function %s already defined",name);
 	}
 
 	inline void FunctionDecl::Gen()
 	{
 		if(is_extern)return;
-		auto the_function = the_module->getFunction(WstrToStr(name));
-		if(!the_function)
+		auto function = the_module->getFunction(WstrToStr(name));
+		if(!function)
 		{
 			printf("function head not found\n"); return;
 		}
-		const auto bb = BasicBlock::Create(the_context, WstrToStr(name)+"_entry", the_function);
+		const auto bb = BasicBlock::Create(the_context, WstrToStr(name)+"_entry", function);
 		builder.SetInsertPoint(bb);
 		
+		
 		named_values.clear();
-		for (auto& arg : the_function->args())named_values[arg.getName()] = &arg;
-	
+		for (auto& arg : function->args())named_values[arg.getName()] = &arg;
+
+		the_function=function;
 		if (statements != nullptr)statements->Gen();
 
-		verifyFunction(*the_function);
+		verifyFunction(*function);
 		return;
 		// if (Value * RetVal = body->Gen()) {
 		// 	// Finish off the function.
@@ -399,7 +401,7 @@ namespace parser
 		// }
 
 		// Error reading body, remove function.
-		the_function->eraseFromParent();
+		function->eraseFromParent();
 		return;
 	}
 
@@ -418,7 +420,7 @@ namespace parser
 			named_values[_name] = v;
 		}
 		else {
-			const auto alloca = CreateEntryBlockAlloca(main_func, ty, _name);
+			const auto alloca = CreateEntryBlockAlloca(the_function, ty, _name);
 			alloca->setAlignment(MaybeAlign(8));
 
 			AlignStore(builder.CreateStore(val, alloca));
@@ -427,14 +429,14 @@ namespace parser
 		
 	}
 
-	inline void StructDecl::GenHeader()
+	inline void ClassDecl::GenHeader()
 	{
 		auto the_struct= the_module->getTypeByName(WstrToStr(name));
 		if (!the_struct) the_struct = StructType::create(the_context,  WstrToStr(name));
 		else std::wcout << "Type " << name << " already defined" << std::endl;
 	}
 
-	inline void StructDecl::Gen()
+	inline void ClassDecl::Gen()
 	{
 		auto the_struct = the_module->getTypeByName(WstrToStr(name));
 		std::vector<Type*> field_tys;
@@ -444,9 +446,9 @@ namespace parser
 
 		//Create a Constructor function
 		const auto func_type = FunctionType::get(the_struct->getPointerTo(), std::vector<Type*>(), false);
-		auto the_function = Function::Create(func_type, Function::ExternalLinkage, WstrToStr(name), the_module.get());
-		const auto bb = BasicBlock::Create(the_context, WstrToStr(name) + "_entry", the_function);
-		the_function->setCallingConv(llvm::CallingConv::C);
+		auto function = Function::Create(func_type, Function::ExternalLinkage, WstrToStr(name), the_module.get());
+		const auto bb = BasicBlock::Create(the_context, WstrToStr(name) + "_entry", function);
+		function->setCallingConv(llvm::CallingConv::C);
 		builder.SetInsertPoint(bb);
 		//Constructor Body
 		
@@ -460,9 +462,14 @@ namespace parser
 		builder.CreateRet(p);
 		// auto field1= builder.CreateStructGEP(the_struct, alloca, 1);
 		// builder.CreateStore(ConstantInt::get(Type::getInt32Ty(the_context), 233),field1);
+		verifyFunction(*function);
 
-		
-		verifyFunction(*the_function);
+		for (auto& function : functions)
+		{
+			function->SetInternal(name,the_struct);
+			function->GenHeader();
+			function->Gen();
+		}
 	}
 
 	inline void If::Gen()
@@ -527,6 +534,10 @@ namespace parser
 
 	inline void Return::Gen()
 	{
+		if (value == nullptr) {
+			builder.CreateRetVoid();
+			return;
+		}
 		const auto val = value->Gen();
 		if (!val) LogErrorV("Error in return");
 		else builder.CreateRet(val);
@@ -553,8 +564,9 @@ namespace parser
 		for (auto& declaration : declarations)declaration->GenHeader();
 		for (auto& declaration : declarations)declaration->Gen();
 		
-		main_func = CreateFunc(builder, "main");
+		auto main_func = CreateFunc(builder, "main");
 		const auto entry = CreateBb(main_func, "entry");
+		the_function = main_func;
 		builder.SetInsertPoint(entry);
 		
 		for (auto& statement : statements)if(statement!=nullptr)statement->Gen();

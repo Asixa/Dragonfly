@@ -19,6 +19,7 @@ llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter)
 
 
 include_directories(
+
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/src
 )
@@ -30,11 +31,12 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.c"
         )
 
-
-
-
+		 
 add_executable (${PROJECT_NAME} ${all_SRCS})
 target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 
-install(TARGETS "${PROJECT_NAME}" DESTINATION bin)
+#install(TARGETS "${PROJECT_NAME}" DESTINATION bin)
 include(CPack)
+
+enable_testing()
+add_subdirectory(tests)
