@@ -95,6 +95,8 @@ T(ParserTest,		a,					L"../tests/codes/a",			Normal)
 T(DebuggerTest,		BasicError,			L"../tests/codes/b",			TestCatchErrors)
 T(LexerTest,		all_symbols,		L"../tests/codes/all_symbols",	OnlyTokenize)
 
+T(ExpressionTest,   DivisionTest,       L"../tests/codes/ExpressionTest/DivisionTest", Normal)
+
 
 
 
