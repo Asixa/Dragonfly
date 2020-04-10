@@ -3,9 +3,26 @@
 #include <fstream>
 #include <codecvt>
 #include "gtest/gtest.h"
-
+#include <windows.h>
 namespace test {
-	
+// 	-------------------------------------------------------------------------------
+// 	888888ba                                               .8888b dP         
+// 	88    `8b                                              88   " 88         
+// 	88     88 88d888b. .d8888b. .d8888b. .d8888b. 88d888b. 88aaa  88 dP    dP
+// 	88     88 88'  `88 88'  `88 88'  `88 88'  `88 88'  `88 88     88 88    88
+// 	88    .8P 88       88.  .88 88.  .88 88.  .88 88    88 88     88 88.  .88
+// 	8888888P  dP       `88888P8 `8888P88 `88888P' dP    dP dP     dP `8888P88
+// 	                                 .88                                  .88
+// 	                             d8888P                               d8888P 
+//
+// 	    d888888P  88888888b .d88888b  d888888P  88888888b  888888ba 
+// 	       @8     88        88.    "'    88     88         88    `8b
+// 	       88     88aaaa    `Y88888b.    88     88aaaa     88aaaa8P'
+// 	       88     88              `8b    88     88         88   `8b.
+// 	       88     88        d8'   .8P    88     88         88     88
+// 	       dP     88888888P  Y88888P     dP     88888888P  dP     dP
+// 	-------------------------------------------------------------------------------
+
 #define T(t,n,a,b)														\
 TEST(t, n)																\
 {																		\
@@ -73,7 +90,7 @@ TEST(t, n)																\
 	}
 
 // ----------------------------------------------------------------------------------------------
-// Test suit name    test name          folder location                 test type   
+// Test suit name    test name          folder location               test type   
 T(ParserTest,		a,					L"../tests/codes/a",			Normal)
 T(DebuggerTest,		BasicError,			L"../tests/codes/b",			TestCatchErrors)
 T(LexerTest,		all_symbols,		L"../tests/codes/all_symbols",	OnlyTokenize)
@@ -91,52 +108,3 @@ T(LexerTest,		all_symbols,		L"../tests/codes/all_symbols",	OnlyTokenize)
 	
 }
 
-
-
-
-
-
-	
-
-}
-
-
-
-// GTEST_API_ int main(int argc, char** argv)
-// {
-// 	
-// 	::testing::InitGoogleTest(&argc, argv);
-// 	
-// 	return RUN_ALL_TESTS();
-// }
-
-// #include <windows.h>
-// HANDLE handle;
-// inline void SetColor(const int c) {
-// 	if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
-// 	SetConsoleTextAttribute(handle, c);
-// }
-// int main(int argc, char** argv) {
-// 	SetColor(Blue);
-// 	
-// 	std::cout << "-------------------------------------------------------------------------------\n";
-// 	std::cout << "888888ba                                               .8888b dP         " << std::endl;
-// 	std::cout << "88    `8b                                              88   \" 88         " << std::endl;
-// 	std::cout << "88     88 88d888b. .d8888b. .d8888b. .d8888b. 88d888b. 88aaa  88 dP    dP" << std::endl;
-// 	std::cout << "88     88 88'  `88 88'  `88 88'  `88 88'  `88 88'  `88 88     88 88    88" << std::endl;
-// 	std::cout << "88    .8P 88       88.  .88 88.  .88 88.  .88 88    88 88     88 88.  .88" << std::endl;
-// 	std::cout << "8888888P  dP       `88888P8 `8888P88 `88888P' dP    dP dP     dP `8888P88" << std::endl;
-// 	std::cout << "                                 .88                                  .88" << std::endl;
-// 	std::cout << "                             d8888P                               d8888P " << std::endl;
-// 	std::cout << "\n";
-// 	std::cout << "    d888888P  88888888b .d88888b  d888888P  88888888b  888888ba " << std::endl;
-// 	std::cout << "       @8     88        88.    \"'    88     88         88    `8b" << std::endl;
-// 	std::cout << "       88     88aaaa    `Y88888b.    88     88aaaa     88aaaa8P'" << std::endl;
-// 	std::cout << "       88     88              `8b    88     88         88   `8b." << std::endl;
-// 	std::cout << "       88     88        d8'   .8P    88     88         88     88" << std::endl;
-// 	std::cout << "       dP     88888888P  Y88888P     dP     88888888P  dP     dP" << std::endl;
-// 	std::cout << "-------------------------------------------------------------------------------\n";
-// 	SetColor(White);
-// 	system("PAUSE");
-// 	return 0;
-// }
