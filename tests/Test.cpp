@@ -1,14 +1,26 @@
-#define PRINT_TO_STREAM
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <codecvt>
 #include "gtest/gtest.h"
-#include <windows.h>
-inline void SetColor(const int c) {}
+
 namespace test {
 	
+#define T(t,n,a,b)														\
+TEST(t, n)																\
+{																		\
+	Init(a, b);															\
+	EXPECT_EQ(Compare("log.txt", "/log.txt"),0);						\
+	if(b==Normal)EXPECT_EQ(Compare("ir.txt", "/ir.txt"), 0);			\
+}
+	
+	enum { Normal, OnlyTokenize, TestCatchErrors };
+	// Normal:			the compiler will generate both log and ir, like it should be.
+	// OnlyTokenize:	the compiler will only do the tokenization, to test lexer.
+	// TestCatchErrors:	The given codes contain error, to check if debugger can catch that.
+	
 	std::string folder;
+	// this function compare if two files are exactly same..
 	int Compare(std::string file1, std::string file2)
 	{
 		std::wifstream stream1(file1);
@@ -34,8 +46,8 @@ namespace test {
 		}
 		return 0;
 	}
-	enum { Normal, OnlyTokenize, TestCatchErrors };
-	void Set(const wchar_t* path, int type)
+	// this function execute a compiler process, generate the ir.txt and log.txt.
+	void Init(const wchar_t* path, int type)
 	{
 		folder = reinterpret_cast<const char*>(path);
 		STARTUPINFO info = { sizeof(info) };
@@ -60,22 +72,24 @@ namespace test {
 		<<ret;
 	}
 
-
-#define T(t,n,a,b)														\
-TEST(t, n)																\
-{																		\
-	Set(a, b);															\
-	EXPECT_EQ(Compare("log.txt", "/log.txt"),0);						\
-	if(b==Normal)EXPECT_EQ(Compare("ir.txt", "/ir.txt"), 0);			\
-}														
-
-
+// ----------------------------------------------------------------------------------------------
+// Test suit name    test name          folder location                 test type   
 T(ParserTest,		a,					L"../tests/codes/a",			Normal)
 T(DebuggerTest,		BasicError,			L"../tests/codes/b",			TestCatchErrors)
 T(LexerTest,		all_symbols,		L"../tests/codes/all_symbols",	OnlyTokenize)
 
 
 
+
+
+
+
+
+
+
+
+	
+}
 
 
 
