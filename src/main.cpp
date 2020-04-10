@@ -5,7 +5,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "gen.h"
-#include "debug.h"
+#include "debug.h" // yes we need include it twice
 #include <ctime>
 #include <windows.h>
 HANDLE handle;
@@ -67,8 +67,9 @@ int main(int argc, char** argv)
 	{
 		filename = argv[1];
 	}
-	only_tokenlize = argc>2;
-	error_existed = only_tokenlize;
+	only_tokenize = argc>2;
+	error_existed = only_tokenize;
+	
 	std::wcout.imbue(std::locale(""));
 	const auto start = clock();
 	LoadFile(filename.c_str());

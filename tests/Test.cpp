@@ -34,12 +34,12 @@ namespace test {
 		}
 		return 0;
 	}
-
-	void Set(const wchar_t* path, bool token)
+	enum { Normal, OnlyTokenize, TestCatchErrors };
+	void Set(const wchar_t* path, int type)
 	{
 		folder = reinterpret_cast<const char*>(path);
 		STARTUPINFO info = { sizeof(info) };
-		std::wstring cmd = L"dragonfly.exe "+std::wstring(path) + L"/input.df"+(token?L" token":L"");
+		std::wstring cmd = L"dragonfly.exe "+std::wstring(path) + L"/input.df"+(type == OnlyTokenize ?L" token":L"");
 		int ret = 0;
 		PROCESS_INFORMATION process_info;
 		if (CreateProcess(L"dragonfly.exe", const_cast<wchar_t*>(cmd.c_str()),
@@ -60,17 +60,19 @@ namespace test {
 		<<ret;
 	}
 
-#define T(t,n,a,b,c)													\
+
+#define T(t,n,a,b)														\
 TEST(t, n)																\
 {																		\
 	Set(a, b);															\
 	EXPECT_EQ(Compare("log.txt", "/log.txt"),0);						\
-	if(c)EXPECT_EQ(Compare("ir.txt", "/ir.txt"), 0);					\
+	if(b==Normal)EXPECT_EQ(Compare("ir.txt", "/ir.txt"), 0);			\
 }														
 
-T(ParserTest,		a,					L"../tests/codes/a",			false, true)
-T(DebuggerTest,		BasicError,			L"../tests/codes/b",			false,false)
-T(LexerTest,		all_symbols,		L"../tests/codes/all_symbols",	true, false)
+
+T(ParserTest,		a,					L"../tests/codes/a",			Normal)
+T(DebuggerTest,		BasicError,			L"../tests/codes/b",			TestCatchErrors)
+T(LexerTest,		all_symbols,		L"../tests/codes/all_symbols",	OnlyTokenize)
 
 
 

@@ -9,19 +9,13 @@
 //Micro for check if token is basic type
 #define CHECK_TYPE	 CHECK K_int || CHECK K_short || CHECK K_long || CHECK K_float || CHECK K_double ||CHECK K_bool || CHECK K_string || CHECK K_uint || CHECK K_ushort || CHECK K_short || CHECK K_byte
 //Micro for overriding the functions for expression classes
-#define GEN	void output() override; Value* Gen(const int cmd=0) override;
-
-
+#define GEN	void ToString() override; Value* Gen(const int cmd=0) override;
 
 #include <iostream>
 #include "lexer.h"
 #include <utility>
 #include <vector>
 #include <llvm/IR/DerivedTypes.h>
-
-#define  VERIFY {if(error_occurred)return nullptr;}
-
-
 using namespace lexer;
 using namespace llvm;
 namespace parser
@@ -35,7 +29,7 @@ namespace parser
 	{
 	public:
 		virtual ~Expr() {}
-		virtual void output() = 0;
+		virtual void ToString() = 0;
 		virtual Value* Gen(int cmd = 0) = 0;
 	};
 	
@@ -163,8 +157,8 @@ namespace parser
 		UNI(Expr) LHS;
 		UNI(Expr) RHS;
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
-#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(CHECK NewLine) {ALERT_LAST_LINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY return MAKE(Binary)(left, func(), op);} return left;}
-#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(CHECK NewLine) {ALERT_LAST_LINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY left= MAKE(Binary)(left, func(), op);} return left;}
+#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(CHECK NewLine) {ALERT_NEWLINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY return MAKE(Binary)(left, func(), op);} return left;}
+#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(CHECK NewLine) {ALERT_NEWLINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY left= MAKE(Binary)(left, func(), op);} return left;}
 		PARSE_LOOP(Sub1, Unary::Parse, CHECK '*' || CHECK '/' ||CHECK '%')
 		PARSE_LOOP(Sub2, Sub1, CHECK '+' || CHECK '-')
 		PARSE_LOOP(Sub3, Sub2, CHECK Shl || CHECK Shr)
@@ -339,7 +333,7 @@ namespace parser
 		switch (token->type)
 		{
 		case NewLine:
-			ALERT_LAST_LINE ALERT("unexpected EndOfLine")
+			ALERT_NEWLINE ALERT("unexpected EndOfLine")
 			return nullptr;
 		case '-':
 		case '!':
@@ -573,7 +567,7 @@ namespace parser
 		if (CHECK ';') Next();
 		else Match(NewLine);
 		VERIFY
-		// PRINT("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->output();PRINT("\n");
+		// PRINT("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->ToString();PRINT("\n");
 		return let;
 	}
 
@@ -655,7 +649,7 @@ namespace parser
 		if (token->type == ';')Next();
 		else Match(NewLine);
 								VERIFY
-		// PRINT("[Parsed] Expression \n");instance->value->output();
+		// PRINT("[Parsed] Expression \n");instance->value->ToString();
 		return instance;
 	}
 
@@ -738,7 +732,7 @@ namespace parser
 	static UNI(Program) Parse()
 	{
 		Next();
-		if (!only_tokenlize)return Program::Parse();
+		if (!only_tokenize)return Program::Parse();
 		while (peek > 0 && token!=nullptr) {PRINT<<"["<< Token::Name(token->type)<<"] ";	if (CHECK NewLine || CHECK ';')PRINT<<"\n";Next();}return nullptr;
 	}
 };

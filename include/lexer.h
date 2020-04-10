@@ -57,7 +57,6 @@ namespace lexer
 	static wchar_t peek;
 	static long size;
 	static Token* token;
-
 	static std::wstring string_val;
 	static double number_val;
 
@@ -280,7 +279,7 @@ namespace lexer
 				token = new Token(Str);
 				return;
 			}
-			SPECIAL_OP
+				SPECIAL_OP
 				SINGEL_OP(SYMBOL)
 				ASSGIN_OP(U_SYMBOL)
 				ASSGIN_OR_REPEAT_OP(D_SYMBOL)
@@ -288,14 +287,12 @@ namespace lexer
 
 				ALERT("invaild token: \"" << peek << "\" ")
 				token = nullptr;
-				// Next();
 				return;
 		}
 	}
 
 	inline void Find(const wchar_t start, const wchar_t end)
 	{
-
 		auto i = 1;
 		wchar_t t;
 		while ((t = *Move()))
@@ -306,11 +303,10 @@ namespace lexer
 		}
 	}
 
-	Token* Match(const int tk) {
+	inline Token* Match(const int tk) {
 		if (token->type != tk) {
-			if (token->type == NewLine) { ALERT_LAST_LINE }
+			if (token->type == NewLine) { ALERT_NEWLINE }
 				ALERT("expected \"" << Token::Name(tk) << "\" but got \"" << Token::Name(token->type) << "\" instead")
-					// if (token->type == NewLine)	Next();
 			return nullptr;
 		}
 		const auto t = token;
