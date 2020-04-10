@@ -249,12 +249,22 @@ namespace parser
 			if (type == Type::IntegerTyID)\
 				return builder.Create##c(lhs, rhs, #c"_tmp");\
 			return LogErrorV(" "#a" operation cannot apply on Non-number operands\n"); }
+			
 		BASIC('+', FAdd, Add)
 		BASIC('-', FSub, Sub)
 		BASIC('*', FMul, Mul)
-		BASIC('/', FDiv, FDiv)
+		
 		BASIC('%', FRem, SRem)
-
+		case '/':
+		{
+			if (type == Type::FloatTyID || type == Type::DoubleTyID) return builder.CreateFDiv(lhs, rhs, "FDiv""_tmp");
+			if (type == Type::IntegerTyID) 
+				return builder.CreateFDiv(
+					builder.CreateCast(Instruction::UIToFP,lhs,Type::getFloatTy(the_context)), 
+					builder.CreateCast(Instruction::UIToFP, rhs, Type::getFloatTy(the_context)), 
+					"FDiv""_tmp");
+			return LogErrorV(" ""'/'"" operation cannot apply on Non-number operands\n");
+		}
 		case And:
 		case '&': {
 			if (type == Type::IntegerTyID)return builder.CreateAnd(lhs, rhs, "and_tmp");
@@ -329,10 +339,24 @@ namespace parser
 		BASIC_ASSGIN(AddAgn,FAdd,Add,+=)
 		BASIC_ASSGIN(SubAgn,FSub,Sub,-=)
 		BASIC_ASSGIN(MulAgn,FMul,Mul,*=)
-		BASIC_ASSGIN(DivAgn,FDiv,FDiv,/=)
 		BASIC_ASSGIN(ModAgn,FRem,SRem,%=)
 
-		
+		case DivAgn:
+		{
+			auto rhv = rhs->getType()->getTypeID() == Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;
+			if (type == Type::PointerTyID) {
+				type = lhs->getType()->getPointerElementType()->getTypeID();
+				const auto lhsv = AlignLoad(builder.CreateLoad(lhs)); if (type == Type::FloatTyID || type == Type::DoubleTyID)
+					return AlignStore(builder.CreateStore(builder.CreateFDiv(lhsv, rhv, "FDiv""_tmp"), lhs));
+				if (type == Type::IntegerTyID) return AlignStore(
+					builder.CreateStore(
+						builder.CreateCast(Instruction::FPToUI,
+							builder.CreateFDiv(
+								builder.CreateCast(Instruction::UIToFP,lhsv,Type::getFloatTy(the_context)), 
+								builder.CreateCast(Instruction::UIToFP, rhv, Type::getFloatTy(the_context)), "FDiv""_tmp"),Type::getInt32Ty(the_context)), lhs));
+				return LogErrorV(" ""/="" operation cannot apply on Non-number variables\n");
+			} return LogErrorV(" cannot reassign a constant\n");
+		}
 		default:
 			return LogErrorV("invalid binary operator");
 

@@ -1,4 +1,4 @@
-let a = 123;
-let b = 345;
-let c = a / b;
-let b = c / a;
+var a = 123;
+var b = 345;
+var c = a / b;
+var b = c / a;

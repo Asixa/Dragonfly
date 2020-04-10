@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 	std::string filename;
 	if(argc==1)
 	{
-		filename = "../tests/codes/all_symbols.df";
+		filename = "../tests/codes/ExpressionTest/DivisionTest/input.df";
 	}
 	else if(argc>1)
 	{
