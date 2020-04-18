@@ -25,7 +25,10 @@ using namespace parser;
 	static Function* the_function;
 	static std::map<std::string, Value*> named_values;
 	static std::map<std::string, ClassDecl*> named_types;
-	
+
+	static Value* True = ConstantInt::get(IntegerType::get(the_context, 1),1);
+	static Value* False = ConstantInt::get(IntegerType::get(the_context, 1),0);
+
 	Value* LogErrorV(const char* str) {
 		PRINT<<str;
 		system("PAUSE");
@@ -82,7 +85,7 @@ using namespace parser;
 	static StoreInst* AlignStore(StoreInst* a)
 	{
 		// a->setAlignment(MaybeAlign(8));
-		return a;
+  	return a;
 	}
 	static LoadInst* AlignLoad(LoadInst* a)
 	{
@@ -117,8 +120,9 @@ namespace parser
 
 	inline Value* Boolean::Gen(int cmd)
 	{
-		const auto bool_type=IntegerType::get(the_context, 1);
-		return ConstantInt::get(bool_type, value);
+		return value ? True : False;
+		// const auto bool_type=IntegerType::get(the_context, 1);
+		// return ConstantInt::get(bool_type, value);
 	}
 		
 	inline Value* String::Gen(int cmd)
@@ -206,7 +210,6 @@ namespace parser
 		auto rhs = RHS->Gen(load_ptr);
 		if (!lhs || !rhs)return LogErrorV("  operands is NULL \n");;
 
-		
 
 		auto type = lhs->getType()->getTypeID();
 		const auto ltype = lhs->getType()->getTypeID();
@@ -260,8 +263,8 @@ namespace parser
 			if (type == Type::FloatTyID || type == Type::DoubleTyID) return builder.CreateFDiv(lhs, rhs, "FDiv""_tmp");
 			if (type == Type::IntegerTyID) 
 				return builder.CreateFDiv(
-					builder.CreateCast(Instruction::UIToFP,lhs,Type::getFloatTy(the_context)), 
-					builder.CreateCast(Instruction::UIToFP, rhs, Type::getFloatTy(the_context)), 
+					builder.CreateCast(Instruction::SIToFP,lhs,Type::getDoubleTy(the_context)), 
+					builder.CreateCast(Instruction::SIToFP, rhs, Type::getDoubleTy(the_context)),
 					"FDiv""_tmp");
 			return LogErrorV(" ""'/'"" operation cannot apply on Non-number operands\n");
 		}
@@ -279,7 +282,17 @@ namespace parser
 			if (type == Type::IntegerTyID)return builder.CreateOr(lhs, rhs, "or_tmp");
 			return LogErrorV(" '|' operation cannot apply on Integer operands\n");
 		}
+		case BAndAgn:
+			{
+				
+			}
+		case BXORAgn:
+		{
 
+		}case BORAgn:
+		{
+
+		}
 		case Shr:
 		{
 			if (type == Type::IntegerTyID)return builder.CreateAShr(lhs, rhs, "shr_tmp");
@@ -346,14 +359,22 @@ namespace parser
 			auto rhv = rhs->getType()->getTypeID() == Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;
 			if (type == Type::PointerTyID) {
 				type = lhs->getType()->getPointerElementType()->getTypeID();
-				const auto lhsv = AlignLoad(builder.CreateLoad(lhs)); if (type == Type::FloatTyID || type == Type::DoubleTyID)
+				const auto lhsv = AlignLoad(builder.CreateLoad(lhs));
+				if (type == Type::FloatTyID || type == Type::DoubleTyID)
 					return AlignStore(builder.CreateStore(builder.CreateFDiv(lhsv, rhv, "FDiv""_tmp"), lhs));
-				if (type == Type::IntegerTyID) return AlignStore(
-					builder.CreateStore(
-						builder.CreateCast(Instruction::FPToUI,
-							builder.CreateFDiv(
-								builder.CreateCast(Instruction::UIToFP,lhsv,Type::getFloatTy(the_context)), 
-								builder.CreateCast(Instruction::UIToFP, rhv, Type::getFloatTy(the_context)), "FDiv""_tmp"),Type::getInt32Ty(the_context)), lhs));
+				if (type == Type::IntegerTyID)
+				{
+					const auto lhv_d = builder.CreateCast(Instruction::SIToFP, lhsv, Type::getDoubleTy(the_context));
+					const auto rhv_d = builder.CreateCast(Instruction::SIToFP, rhv, Type::getDoubleTy(the_context));
+					const auto div=builder.CreateFDiv(lhv_d, rhv_d, "div_tmp");
+					const auto div_i = builder.CreateCast(Instruction::FPToUI, div, Type::getInt32Ty(the_context));
+					return AlignStore(builder.CreateStore(div_i, lhs));
+				}
+					
+					
+					
+					
+					
 				return LogErrorV(" ""/="" operation cannot apply on Non-number variables\n");
 			} return LogErrorV(" cannot reassign a constant\n");
 		}
@@ -465,7 +486,7 @@ namespace parser
 		// const auto alloca = CreateEntryBlockAlloca(the_function, the_struct, "struct");
 		// alloca->setAlignment(MaybeAlign(8));
 
-		auto ptr=builder.CreateCall(the_module->getFunction("malloc"), 
+    const auto ptr=builder.CreateCall(the_module->getFunction("malloc"), 
 			ConstantInt::get(Type::getInt32Ty(the_context), 32));
 		auto p=builder.CreateCast(Instruction::BitCast, ptr, the_struct->getPointerTo());
 
@@ -484,51 +505,46 @@ namespace parser
 
 	inline void If::Gen()
 	{
-		// auto cond_v = condition->Gen();
-		// if (!cond_v)return nullptr;
-		//
-		// cond_v = Builder.CreateFCmpONE(cond_v, ConstantFP::get(TheContext, APFloat(0.0)), "ifcond");
-		//
-		// auto TheFunction = Builder.GetInsertBlock()->getParent();
-		//
-		// auto ThenBB = BasicBlock::Create(TheContext, "then", TheFunction);
-		// auto ElseBB = BasicBlock::Create(TheContext, "else");
-		// auto MergeBB = BasicBlock::Create(TheContext, "ifcont");
-		//
-		// Builder.CreateCondBr(cond_v, ThenBB, ElseBB);
-		//
-		// Builder.SetInsertPoint(ThenBB);
-		//
-		//
-		// Value* ThenV = Then->codegen();
-		// if (!ThenV)
-		// 	return nullptr;
-		//
-		// Builder.CreateBr(MergeBB);
-		// // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
-		// ThenBB = Builder.GetInsertBlock();
-		//
-		// // Emit else block.
-		// TheFunction->getBasicBlockList().push_back(ElseBB);
-		// Builder.SetInsertPoint(ElseBB);
-		//
-		// Value* ElseV = Else->codegen();
-		// if (!ElseV)
-		// 	return nullptr;
-		//
-		// Builder.CreateBr(MergeBB);
-		// // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-		// ElseBB = Builder.GetInsertBlock();
-		//
-		// // Emit merge block.
-		// TheFunction->getBasicBlockList().push_back(MergeBB);
-		// Builder.SetInsertPoint(MergeBB);
-		// PHINode* PN = Builder.CreatePHI(Type::getDoubleTy(TheContext), 2, "iftmp");
-		//
+		auto cond_v = condition->Gen();
+		if (!cond_v){ALERT_NOBREAK("Error in condititon")return;}
+		
+		cond_v = builder.CreateICmpEQ(cond_v, True, "ifcond");
+		auto function = builder.GetInsertBlock()->getParent();
+		
+		auto ThenBB = BasicBlock::Create(the_context, "then",function);
+		auto ElseBB = BasicBlock::Create(the_context, "else");
+		auto MergeBB = BasicBlock::Create(the_context, "ifcont");
+		printf("what\n");
+		builder.CreateCondBr(cond_v, ThenBB, ElseBB);
+		
+		builder.SetInsertPoint(ThenBB);
+		
+		
+		stmts->Gen();
+
+		
+		builder.CreateBr(MergeBB);
+		// Codegen of 'Then' can change the current block, update ThenBB for the PHI.
+		ThenBB = builder.GetInsertBlock();
+		
+		// Emit else block.
+		function->getBasicBlockList().push_back(ElseBB);
+		builder.SetInsertPoint(ElseBB);
+		
+		else_stmts->Gen();
+
+		
+		builder.CreateBr(MergeBB);
+		// Codegen of 'Else' can change the current block, update ElseBB for the PHI.
+		ElseBB = builder.GetInsertBlock();
+		
+		// Emit merge block.
+		function->getBasicBlockList().push_back(MergeBB);
+		builder.SetInsertPoint(MergeBB);
+		
+		// PHINode* PN = builder.CreatePHI(Type::getDoubleTy(the_context), 2, "iftmp");
 		// PN->addIncoming(ThenV, ThenBB);
 		// PN->addIncoming(ElseV, ElseBB);
-		// return PN;
-		//
 		return;
 		
 	}
@@ -559,12 +575,26 @@ namespace parser
 
 	inline void Continue::Gen()
 	{
+		
 	}
 
 	inline void Import::Gen()
 	{
 	}
 
+	inline void While::Gen()
+	{
+		
+	}
+	inline void Do::Gen()
+	{
+		
+	}
+	inline void For::Gen()
+	{
+
+	}
+		
 	inline void Program::Gen()
 	{
 		BuildInFunc("malloc", Type::getInt8PtrTy(the_context), std::vector<Type*>{ Type::getInt32Ty(the_context) });

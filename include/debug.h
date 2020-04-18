@@ -69,19 +69,24 @@ static void WriteBitCodeIR(llvm::Module* module, const char* file)
 #define ALERT_NEWLINE chp=ch=--src-lines[--line]; lines.pop_back(); skipline=false;
 
 // micro for throw a error.
-#define ALERT(a)\
-	error_occurred = true;\
-	error_existed = true;\
-	log_color=Red;\
-	PrintErrorInfo(L"error");\
-	PRINT<<a << std::endl;\
+#define ALERT(a)							\
+	error_occurred = true;					\
+	error_existed = true;					\
+	log_color=Red;							\
+	PrintErrorInfo(L"error");				\
+	PRINT<<a << std::endl;					\
 	PrintErrorPostfix();
-
+#define ALERT_NOBREAK(a)\
+	error_existed = true;					\
+	log_color=Red;							\
+	PrintErrorInfo(L"error");				\
+	PRINT<<a << std::endl;					\
+	PrintErrorPostfix();
 // micro for throw a warning.
-#define WARN(a)\
-	log_color=Yellow;\
-	PrintErrorInfo(L"warning");\
-	PRINT<<std::wcout << a << std::endl;\
+#define WARN(a)								\
+	log_color=Yellow;						\
+	PrintErrorInfo(L"warning");				\
+	PRINT<<std::wcout << a << std::endl;	\
 	PrintErrorPostfix();
 
 // enum of console color.

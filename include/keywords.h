@@ -7,7 +7,7 @@
 	F(int) F(short) F(long) F(float) F(byte)					\
 	F(uint) F(ushort) F(ulong) F(double)						\
 	F(true) F(false) 											\
-	F(if) F(else) F(elif) F(for) F(while)  F(repeat)			\
+	F(if) F(else) F(elif) F(for) F(while)  F(do)			\
 	F(switch) F(case) F(default)								\
 	F(let) F(var) F(func) F(dfunc) F(kernal)					\
 	F(return) F(continue) F(break) F(try) F(catch) F(throw)		\

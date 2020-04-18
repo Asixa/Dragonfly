@@ -232,10 +232,11 @@ namespace parser
 	};
 	
 	// class for if statement.
-	class If :Statement
+	class If :public Statement
 	{
 		UNI(Expr) condition;
 		UNI(Statement) stmts;
+		UNI(Statement) else_stmts;
 	public:
 		static UNI(If) Parse();
 		void Gen() override;
@@ -285,7 +286,33 @@ namespace parser
 		static UNI(Import) Parse();
 		void Gen() override;
 	};
-	
+
+	class While final :public Statement
+	{
+	public:
+		UNI(Expr) condition;
+		UNI(Statement) stmts;
+		static UNI(While) Parse();
+		void Gen() override;
+	};
+
+	class Do final :public Statement
+	{
+	public:
+		UNI(Expr) condition;
+		UNI(Statement) stmts;
+		static UNI(Do) Parse();
+		void Gen() override;
+	};
+
+	class For final :public Statement
+	{
+	public:
+		UNI(Expr) condition;
+		UNI(Statement) stmts;
+		static UNI(For) Parse();
+		void Gen() override;
+	};
 	//********************************************************************************************************
 	//*							Parser
 	//********************************************************************************************************
@@ -440,19 +467,7 @@ namespace parser
 		return factor;
 	}
 
-	inline Statement* Statement::Parse()
-	{
-	
-		while (CHECK NewLine)Next(); VERIFY
-		switch (token->type)
-		{
-		case K_let:		return FieldDecl::Parse(true);
-		case K_var:		return FieldDecl::Parse(false); 
-		case K_return:	return Return::Parse();
-		default:
-			return Empty::Parse();
-		}
-	}
+
 	
 	inline FuncParam* FuncParam::Parse()
 	{
@@ -621,18 +636,88 @@ namespace parser
 	
 	inline If* If::Parse()
 	{
-		auto instance = new If();
-		// Next();
-		// instance->condition = Binary::Parse();
-		// const auto brackets = CHECK '{';
-		// if (brackets)Next();
-		// instance->stmts = Statements::Parse();
-		// if (brackets)Match('}');
-		// if (CHECK K_else || CHECK K_elif)
-		// 	instance->else_stmt = nullptr;// Else::Parse();
+		const auto instance = new If();
+		Next();
+		Match('(');
+		instance->condition = Binary::Parse();
+		Match(')');
+		if(CHECK '{')
+		{
+			Next();
+			instance->stmts = Statements::Parse();
+			Match('}');
+		}
+		else instance->stmts = Statement::Parse();
+		
+
+		if (CHECK K_else)
+		{
+			Next();
+			if (CHECK '{')
+			{
+				Next();
+				instance->else_stmts = Statements::Parse();
+				Match('}');
+			}
+			else instance->else_stmts = Statement::Parse();
+		}
+		else if (CHECK K_elif)instance->else_stmts = Parse();
+	
+		return instance;
+	}
+
+	inline While* While::Parse()
+	{
+		const auto instance = new While();
+		Next();
+		Match('(');
+		instance->condition = Binary::Parse();
+		Match(')');
+		if (CHECK '{')
+		{
+			Next();
+			instance->stmts = Statements::Parse();
+			Match('}');
+		}
+		else instance->stmts = Statement::Parse();
+		return instance;
+	}
+
+	inline For* For::Parse()
+	{
+		const auto instance = new For();
+		Next();
+		Match('(');
+		instance->condition = Binary::Parse();
+		Match(')');
+		if (CHECK '{')
+		{
+			Next();
+			instance->stmts = Statements::Parse();
+			Match('}');
+		}
+		else instance->stmts = Statement::Parse();
 		return instance;
 	}
 	
+	inline Do* Do::Parse()
+	{
+		const auto instance = new Do();
+		Next();
+		if (CHECK '{')
+		{
+			Next();
+			instance->stmts = Statements::Parse();
+			Match('}');
+		}
+		else instance->stmts = Statement::Parse();
+
+		Match(K_do);
+		Match('(');
+		instance->condition = Binary::Parse();
+		Match(')');
+		return instance;
+	}
 	inline Throw* Throw::Parse()
 	{
 		Next();
@@ -691,7 +776,22 @@ namespace parser
 		return instance;
 	}
 
-
+	inline Statement* Statement::Parse()
+	{
+		while (CHECK NewLine)Next(); VERIFY
+			switch (token->type)
+			{
+			case K_let:		return FieldDecl::Parse(true);
+			case K_var:		return FieldDecl::Parse(false);
+			case K_if:		return If::Parse();
+			case K_return:	return Return::Parse();
+			case K_do:		return For::Parse();
+			case K_while:	return While::Parse();
+			case K_for:		return For::Parse();
+			default:
+				return Empty::Parse();
+			}
+	}
 
 	//***************** Driver ***************
 	// Program is a class that will match and store all the codes, it is the root of AST
@@ -703,7 +803,6 @@ namespace parser
 			switch (token->type)
 			{
 			case NewLine:Next(); break;
-
 			case K_func:
 			case K_dfunc:
 			case K_kernal:	declarations.push_back(FunctionDecl::Parse());break;

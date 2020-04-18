@@ -1,0 +1,8 @@
+
+
+if (false)
+printf("hello\n")
+else {
+printf("oh,")
+printf("Hi\n")
+}

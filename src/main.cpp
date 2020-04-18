@@ -61,13 +61,14 @@ int main(int argc, char** argv)
 	std::string filename;
 	if(argc==1)
 	{
-		filename = "../tests/codes/ExpressionTest/DivisionTest/input.df";
+		filename = "../tests/codes/basicIf/input.df";
 	}
 	else if(argc>1)
 	{
 		filename = argv[1];
 	}
 	only_tokenize = argc>2;
+	// only_tokenize = true;
 	error_existed = only_tokenize;
 	
 	std::wcout.imbue(std::locale(""));

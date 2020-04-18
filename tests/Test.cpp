@@ -27,8 +27,8 @@ namespace test {
 TEST(t, n)																\
 {																		\
 	Init(a, b);															\
-	EXPECT_EQ(Compare("log.txt", "/log.txt"),0);						\
-	if(b==Normal)EXPECT_EQ(Compare("ir.txt", "/ir.txt"), 0);			\
+	EXPECT_EQ(Compare(L"log.txt", L"/log.txt"),0);						\
+	if(b==Normal)EXPECT_EQ(Compare(L"ir.txt", L"/ir.txt"), 0);			\
 }
 	
 	enum { Normal, OnlyTokenize, TestCatchErrors };
@@ -36,9 +36,9 @@ TEST(t, n)																\
 	// OnlyTokenize:	the compiler will only do the tokenization, to test lexer.
 	// TestCatchErrors:	The given codes contain error, to check if debugger can catch that.
 	
-	std::string folder;
+	std::wstring folder;
 	// this function compare if two files are exactly same..
-	int Compare(std::string file1, std::string file2)
+	int Compare(std::wstring file1, std::wstring file2)
 	{
 		std::wifstream stream1(file1);
 		EXPECT_EQ(stream1.fail(), 0) << "No such file or directory";
@@ -66,7 +66,7 @@ TEST(t, n)																\
 	// this function execute a compiler process, generate the ir.txt and log.txt.
 	void Init(const wchar_t* path, int type)
 	{
-		folder = reinterpret_cast<const char*>(path);
+		folder = std::wstring(path);
 		STARTUPINFO info = { sizeof(info) };
 		std::wstring cmd = L"dragonfly.exe "+std::wstring(path) + L"/input.df"+(type == OnlyTokenize ?L" token":L"");
 		int ret = 0;
@@ -94,7 +94,6 @@ TEST(t, n)																\
 T(ParserTest,		a,					L"../tests/codes/a",			Normal)
 T(DebuggerTest,		BasicError,			L"../tests/codes/b",			TestCatchErrors)
 T(LexerTest,		all_symbols,		L"../tests/codes/all_symbols",	OnlyTokenize)
-
 T(ExpressionTest,   DivisionTest,       L"../tests/codes/ExpressionTest/DivisionTest", Normal)
 
 

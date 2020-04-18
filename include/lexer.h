@@ -8,27 +8,7 @@
 #include "debug.h"
 
 #include <vector>
-#define SYMBOL(a) else if (peek == a){token = new Token(a);return;}
-#define U_SYMBOL(c,t)\
-		else if (peek == c){														\
-				if (*src == '='){Move();token = new Token(t);}						\
-				else{token = new Token(c);}											\
-				return;}
 
-#define D_SYMBOL(c,t,ta)\
-		else if (peek == c){														\
-				if (*src == c){Move();token = new Token(t);}							\
-				else if (*src == '=') {Move(); token = new Token(ta);}				\
-				else{token = new Token(c);}return;}
-
-#define T_SYMBOL(c,ta,tt,tta)\
-			else if (peek == c) {													\
-					if (*src == '=') { Move(); token = new Token(ta); }				\
-					else if (*src == c) { Move();									\
-						if (*src == '=') {Move(); token = new Token(tta);}			\
-						else token = new Token(tt); }								\
-					else token = new Token(c);										\
-					return; }
 
 #define CR(c,a,b) c >= a && c <=b
 enum
@@ -150,7 +130,12 @@ namespace lexer
 			else if (peek == '/')						// skip comments
 			{
 				if (*src == '/') { MoveLine(); Next(); return; }
-				U_SYMBOL('/', '=', DivAgn)
+				if (*src == '=')
+				{
+					Move(); token = new Token(DivAgn);
+				}
+				else token = new Token('/');
+				return;
 			}
 			else if (CR(peek, 'a', 'z') || CR(peek, 'A', 'Z') || (peek == '_') || CHINESE(peek))
 			{
@@ -279,6 +264,29 @@ namespace lexer
 				token = new Token(Str);
 				return;
 			}
+
+#define SYMBOL(a) else if (peek == a){token = new Token(a);return;}
+#define U_SYMBOL(c,t)\
+		else if (peek == c){														\
+				if (*src == '='){Move();token = new Token(t);}						\
+				else{token = new Token(c);}											\
+				return;}
+
+#define D_SYMBOL(c,t,ta)\
+		else if (peek == c){														\
+				if (*src == c){Move();token = new Token(t);}						\
+				else if (*src == '=') {Move(); token = new Token(ta);}				\
+				else{token = new Token(c);}return;}
+
+#define T_SYMBOL(c,ta,tt,tta)\
+			else if (peek == c) {													\
+					if (*src == '=') { Move(); token = new Token(ta); }				\
+					else if (*src == c) { Move();									\
+						if (*src == '=') {Move(); token = new Token(tta);}			\
+						else token = new Token(tt); }								\
+					else token = new Token(c);										\
+					return; }
+			
 				SPECIAL_OP
 				SINGEL_OP(SYMBOL)
 				ASSGIN_OP(U_SYMBOL)
@@ -303,15 +311,14 @@ namespace lexer
 		}
 	}
 
-	inline Token* Match(const int tk) {
+	inline void Match(const int tk) {
+
 		if (token->type != tk) {
 			if (token->type == NewLine) { ALERT_NEWLINE }
 				ALERT("expected \"" << Token::Name(tk) << "\" but got \"" << Token::Name(token->type) << "\" instead")
-			return nullptr;
+			return;
 		}
-		const auto t = token;
 		Next();
-		return t;
 	}
 };
 
