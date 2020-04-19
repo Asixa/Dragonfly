@@ -1,5 +1,5 @@
-#ifndef LEXER
-#define LEXER
+#ifndef LEXER_H
+#define LEXER_H
 #include <iostream>
 #include <sstream>
 #include <fstream>

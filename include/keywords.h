@@ -1,6 +1,6 @@
 
-#ifndef SYNTEX
-#define SYNTEX
+#ifndef KEYWORDS_H
+#define KEYWORDS_H
 
 #define KEYWORDS(F)\
 	F(string) F(number) F(bool)									\

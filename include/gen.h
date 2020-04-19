@@ -1,5 +1,5 @@
-#ifndef CODEGEN
-#define CODEGEN
+#ifndef GEN_H
+#define GEN_H
 #include "llvm/ADT/APFloat.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
