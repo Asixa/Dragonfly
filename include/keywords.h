@@ -79,7 +79,4 @@ return;}
 
 #define OTHER_KEYWORDS Num = 128,Str, Id, NewLine,
 
-#define CHINESE(a) CR(a,L'\u2E80',L'\u2FD5')|| CR(a,L'\u3190', L'\u319f')|| CR(a,L'\u3400', L'\u4DBF')||CR(a,L'\u4E00',L'\u9FCC')||CR(a,L'\uF900',L'\uFAAD')
-
-
 #endif

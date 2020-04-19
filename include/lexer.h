@@ -96,6 +96,15 @@ namespace lexer
 		}
 		debugger::skip_line = true;
 	}
+
+    static bool isCJK(wchar_t t) {
+		return t >= L'\u2E80' && t <=L'\u2FD5'
+	    || t >= L'\u3190' && t <=L'\u319f'
+	    || t >= L'\u3400' && t <=L'\u4DBF'
+	    || t >= L'\u4E00' && t <=L'\u9FCC'
+	    || t >= L'\uF900' && t <=L'\uFAAD';
+	}
+
 	static void Next()
 	{
 		debugger::chp = debugger::ch;
@@ -143,13 +152,13 @@ namespace lexer
 				else token = new Token('/');
 				return;
 			}
-			else if (CR(peek, 'a', 'z') || CR(peek, 'A', 'Z') || (peek == '_') || CHINESE(peek))
+			else if (CR(peek, 'a', 'z') || CR(peek, 'A', 'Z') || (peek == '_') || isCJK(peek))
 			{
 				last_pos = src - 1;
 				hash = peek;
 				string_val = L"";
 				string_val += peek;
-				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_') || CHINESE(*src))
+				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_') || isCJK(*src))
 				{
 					hash = hash * 147 + *src;
 					string_val += *src;

@@ -160,24 +160,38 @@ namespace parser {
     // Expression node for all binary expressions
     class Binary final : public Expr {
     public:
-        void ToString() override;
-        llvm::Value* Gen(const int cmd = 0) override;
         int op;
-        std::shared_ptr<Expr> LHS;
-        std::shared_ptr<Expr> RHS;
+        std::shared_ptr<Expr> LHS,RHS;
         Binary(std::shared_ptr<Expr> lhs, std::shared_ptr<Expr> rhs, int op): op(op), LHS(lhs), RHS(rhs) {}
-#define PARSE_ONCE(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY if(condition){auto op = lexer::token->type;lexer::Next();  if(lexer::Check( NewLine)) {debugger::AlertNewline(); debugger::Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY return std::make_shared<Binary>(left, func(), op);} return left;}
-#define PARSE_LOOP(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY  while(condition){auto op = lexer::token->type;lexer::Next(); if(lexer::Check(NewLine)) {debugger::AlertNewline(); debugger::Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY left= std::make_shared<Binary>(left, func(), op);} return left;}
-        PARSE_LOOP(Sub1, Unary::Parse, lexer::Check('*') || lexer::Check( '/') || lexer::Check( '%'))
-        PARSE_LOOP(Sub2, Sub1, lexer::Check( '+') || lexer::Check( '-'))
-        PARSE_LOOP(Sub3, Sub2, lexer::Check( Shl) || lexer::Check( Shr))
-        PARSE_ONCE(Sub4, Sub3, lexer::Check( '>') || lexer::Check( '<') || lexer::Check( Ge) || lexer::Check( Le))
-        PARSE_LOOP(Sub5, Sub4, lexer::Check( Eq) || lexer::Check( Ne))
-        PARSE_LOOP(Sub6, Sub5, lexer::Check( '|') || lexer::Check( '^') || lexer::Check( '&'))
-        PARSE_LOOP(Sub7, Sub6, lexer::Check( Or) || lexer::Check( And))
-        PARSE_LOOP(Parse, Ternary::Parse,
-                   lexer::Check( '=') || lexer::Check({ AddAgn,SubAgn ,SubAgn,DivAgn,MulAgn,ModAgn,ShlAgn,ShrAgn,BAndAgn
-                       ,BXORAgn,BORAgn }))
+		void ToString() override;
+		llvm::Value* Gen(const int cmd = 0) override;
+
+ // This part might be hard to understand.
+ // PARSE is a Macro to generate functions.
+ // When parsing binary Expressions, This start from top to bottom.
+ // The order of operators is important. shown below as Sub1 ~ Sub7.
+#define PARSE(name,func,condition,check)                            \
+        static std::shared_ptr<Expr> name() {                       \
+            auto left = func();VERIFY                               \
+            check(condition) {                                      \
+                auto op = lexer::token->type;lexer::Next();         \
+                if(lexer::Check(NewLine)) {                         \
+                    debugger::AlertNewline();                       \
+                    debugger::Alert(L"unexpected EndOfLine");       \
+                    return nullptr;                                 \
+                }   VERIFY                                          \
+                left= std::make_shared<Binary>(left, func(), op);   \
+            } return left;}
+        PARSE(Sub1, Unary::Parse, lexer::Check('*') || lexer::Check( '/') || lexer::Check( '%'),while)
+        PARSE(Sub2, Sub1, lexer::Check( '+') || lexer::Check( '-'), while)
+        PARSE(Sub3, Sub2, lexer::Check( Shl) || lexer::Check( Shr), while)
+        PARSE(Sub4, Sub3, lexer::Check( '>') || lexer::Check( '<') || lexer::Check( Ge) || lexer::Check( Le), if)
+        PARSE(Sub5, Sub4, lexer::Check( Eq) || lexer::Check( Ne), while)
+        PARSE(Sub6, Sub5, lexer::Check( '|') || lexer::Check( '^') || lexer::Check( '&'), while)
+        PARSE(Sub7, Sub6, lexer::Check( Or) || lexer::Check( And), while)
+        PARSE(Parse, Ternary::Parse,
+			lexer::Check({ '=',AddAgn,SubAgn ,SubAgn,DivAgn,MulAgn,ModAgn,ShlAgn,ShrAgn,BAndAgn,BXORAgn,BORAgn }),while)
+#undef  PARSE
     };
 
     //**********   End of Expressions ****************

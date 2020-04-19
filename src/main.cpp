@@ -18,7 +18,7 @@
 #include "gen.h"
 
 int main(int argc, char** argv) {
-
+    
     std::string filename;
     if (argc == 1) {
         filename = "../tests/codes/basicIf/input.df";
