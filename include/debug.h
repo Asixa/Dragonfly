@@ -101,13 +101,13 @@ namespace debugger {
         kYellow,
         kWhite
     };
-	
 
-	inline void SetColor(const int c) {
-		static HANDLE handle;
-		if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
-		SetConsoleTextAttribute(handle, c);
-	}
+
+    inline void SetColor(const int c) {
+        static HANDLE handle;
+        if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
+        SetConsoleTextAttribute(handle, c);
+    }
 
 
     // this function is implemented in main.cpp,
@@ -164,7 +164,7 @@ namespace debugger {
         PrintErrorPostfix();
     }
 
-// this micro should be called each time AST parsed a node, to stop immediately if there are error.
+    // this micro should be called each time AST parsed a node, to stop immediately if there are error.
 #define VERIFY {if(debugger::error_occurred)return nullptr;}
 
 
