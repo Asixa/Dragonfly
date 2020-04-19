@@ -20,7 +20,7 @@ enum
 	OPERATORS(ENUM)
 #undef ENUM
 };
-
+using namespace debugger;
 namespace lexer
 {
 	class Token
@@ -31,14 +31,6 @@ namespace lexer
 		static const char* Name(int type);
 		const char* Name();
 	};
-
-	static wchar_t* src;
-	static wchar_t* root;
-	static wchar_t peek;
-	static long size;
-	static Token* token;
-	static std::wstring string_val;
-	static double number_val;
 
 	static void CheckUtf8(const char* file)
 	{
@@ -80,7 +72,7 @@ namespace lexer
 	}
 	static void MoveLine()
 	{
-		if (skipline) {
+		if (skip_line) {
 			while (*src != 0 && *src != '\n')src++;
 			// line++;
 			// ch = tab= chp = 0;
@@ -88,7 +80,7 @@ namespace lexer
 			// src++;
 			// lines.push_back(src);
 		}
-		skipline = true;
+		skip_line = true;
 	}
 	static void Next()
 	{
@@ -173,7 +165,7 @@ namespace lexer
 						{
 							type = K_double;
 							if (decimal != 0) {
-								ALERT(L"There are more than 1 dot in the number")
+								Alert(L"There are more than 1 dot in the number");
 									token = nullptr;
 								return;
 							}
@@ -198,7 +190,7 @@ namespace lexer
 						Move();
 						while ((*src >= '0' && *src <= '9') || *src == '.') {
 							if (*src == '.') {
-								ALERT(L"There are more than 1 dot in the number")
+								Alert(L"There are more than 1 dot in the number");
 									token = nullptr;
 								return;
 							}
@@ -287,13 +279,13 @@ namespace lexer
 					else token = new Token(c);										\
 					return; }
 			
-				SPECIAL_OP
+			SPECIAL_OP
 				SINGEL_OP(SYMBOL)
 				ASSGIN_OP(U_SYMBOL)
 				ASSGIN_OR_REPEAT_OP(D_SYMBOL)
 				ASSGIN_AND_REPEAT_OP(T_SYMBOL)
 
-				ALERT("invaild token: \"" << peek << "\" ")
+				Alert((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
 				token = nullptr;
 				return;
 		}
@@ -314,8 +306,8 @@ namespace lexer
 	inline void Match(const int tk) {
 
 		if (token->type != tk) {
-			if (token->type == NewLine) { ALERT_NEWLINE }
-				ALERT("expected \"" << Token::Name(tk) << "\" but got \"" << Token::Name(token->type) << "\" instead")
+			if (token->type == NewLine) { AlertNewline(); }
+			Alert((std::wstringstream() << L"expected \"" << Token::Name(tk) << L"\" but got \"" << Token::Name(token->type) << L"\" instead").str());
 			return;
 		}
 		Next();

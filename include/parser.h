@@ -18,6 +18,7 @@
 #include <llvm/IR/DerivedTypes.h>
 using namespace lexer;
 using namespace llvm;
+using namespace debugger;
 namespace parser
 {
 	//********************************************************************************************************
@@ -157,8 +158,8 @@ namespace parser
 		UNI(Expr) LHS;
 		UNI(Expr) RHS;
 		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
-#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(CHECK NewLine) {ALERT_NEWLINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY return MAKE(Binary)(left, func(), op);} return left;}
-#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(CHECK NewLine) {ALERT_NEWLINE ALERT("unexpected EndOfLine") return nullptr;}   VERIFY left= MAKE(Binary)(left, func(), op);} return left;}
+#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(CHECK NewLine) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY return MAKE(Binary)(left, func(), op);} return left;}
+#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(CHECK NewLine) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY left= MAKE(Binary)(left, func(), op);} return left;}
 		PARSE_LOOP(Sub1, Unary::Parse, CHECK '*' || CHECK '/' ||CHECK '%')
 		PARSE_LOOP(Sub2, Sub1, CHECK '+' || CHECK '-')
 		PARSE_LOOP(Sub3, Sub2, CHECK Shl || CHECK Shr)
@@ -360,7 +361,8 @@ namespace parser
 		switch (token->type)
 		{
 		case NewLine:
-			ALERT_NEWLINE ALERT("unexpected EndOfLine")
+			AlertNewline();
+		    Alert(L"unexpected EndOfLine");
 			return nullptr;
 		case '-':
 		case '!':
@@ -459,7 +461,7 @@ namespace parser
 			else return MAKE(Field)(names);
 		}
 		default:
-			ALERT("unexpected \""<<Token::Name(token->type)<<"\" ")
+			Alert((std::wstringstream()<<"unexpected \"" << Token::Name(token->type) << "\" ").str());
 			return nullptr;
 		}
 		factor = MAKE(Factor)(token);
@@ -541,17 +543,17 @@ namespace parser
 		while (CHECK NewLine)Next(); VERIFY
 		if (ext)
 		{
-			PRINT<<"[Parsed] Extern function declaration\n";
+			*out<<"[Parsed] Extern function declaration\n";
 			return function;
 		}
-		PRINT<<"[Parsed] Function declaration\n";
+		*out <<"[Parsed] Function declaration\n";
 		Match('{'); VERIFY
 
 		function->statements = Statements::Parse();
 		while (CHECK NewLine)Next(); VERIFY
 
 		Match('}'); VERIFY
-		PRINT<<"[Parsed] Function end\n";
+		*out<<"[Parsed] Function end\n";
 		return function;
 	}
 	
@@ -751,7 +753,7 @@ namespace parser
 		instance->value = Binary::Parse();
 		if (token->type == ';')Next();
 		else Match(NewLine);
-		PRINT<<"[Parsed] Return Statement\n";
+		*out <<"[Parsed] Return Statement\n";
 		return instance;
 	}
 
@@ -832,7 +834,7 @@ namespace parser
 	{
 		Next();
 		if (!only_tokenize)return Program::Parse();
-		while (peek > 0 && token!=nullptr) {PRINT<<"["<< Token::Name(token->type)<<"] ";	if (CHECK NewLine || CHECK ';')PRINT<<"\n";Next();}return nullptr;
+		while (peek > 0 && token!=nullptr) { *out <<"["<< Token::Name(token->type)<<"] ";	if (CHECK NewLine || CHECK ';')* out <<"\n";Next();}return nullptr;
 	}
 };
 

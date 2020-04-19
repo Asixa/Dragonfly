@@ -30,7 +30,7 @@ using namespace parser;
 	static Value* False = ConstantInt::get(IntegerType::get(the_context, 1),0);
 
 	Value* LogErrorV(const char* str) {
-		PRINT<<str;
+		*debugger::out<<str;
 		system("PAUSE");
 		exit(-1);
 	}
@@ -411,7 +411,7 @@ namespace parser
 				arg.setName(WstrToStr(args->names[idx++]));
 			
 		}
-		else PRINT<<"function "<< name<<" already defined";
+		else *debugger::out<<"function "<< name<<" already defined";
 	}
 
 	inline void FunctionDecl::Gen()
@@ -420,7 +420,7 @@ namespace parser
 		auto function = the_module->getFunction(WstrToStr(name));
 		if(!function)
 		{
-			PRINT<<"function head not found\n"; return;
+			*debugger::out<<"function head not found\n"; return;
 		}
 		const auto bb = BasicBlock::Create(the_context, WstrToStr(name)+"_entry", function);
 		builder.SetInsertPoint(bb);
@@ -464,7 +464,7 @@ namespace parser
 	{
 		auto the_struct= the_module->getTypeByName(WstrToStr(name));
 		if (!the_struct) the_struct = StructType::create(the_context,  WstrToStr(name));
-		else PRINT<<"Type " << name << " already defined" << std::endl;
+		else *debugger::out<<"Type " << name << " already defined" << std::endl;
 	}
 
 	inline void ClassDecl::Gen()
@@ -506,7 +506,7 @@ namespace parser
 	inline void If::Gen()
 	{
 		auto cond_v = condition->Gen();
-		if (!cond_v){ALERT_NOBREAK("Error in condititon")return;}
+		if (!cond_v) { debugger::AlertNonBreak(L"Error in condititon"); return; }
 		
 		cond_v = builder.CreateICmpEQ(cond_v, True, "ifcond");
 		auto function = builder.GetInsertBlock()->getParent();
