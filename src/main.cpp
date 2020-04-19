@@ -43,8 +43,8 @@ int main(int argc, char** argv)
 	if (!debugger::error_existed)
 	{
 		program->Gen();
-		debugger::WriteReadableIr(the_module.get(),"ir.txt",true);
-		debugger::WriteBitCodeIr(the_module.get(),"a.ll");
+		debugger::WriteReadableIr(gen::the_module.get(),"ir.txt",true);
+		debugger::WriteBitCodeIr(gen::the_module.get(),"a.ll");
 		std::cout <<"Compiled successfully, took a total of "<<static_cast<double>(clock() - start)<<"ms\n\n";
 	}
 	else std::cout<<"Compiler stopped due to errors occurred\n\n";
