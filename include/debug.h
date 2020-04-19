@@ -12,6 +12,8 @@
 #include <llvm/IR/Module.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 
+#include <windows.h>
+
 namespace lexer {
     class Token;
     static wchar_t* src;
@@ -99,8 +101,16 @@ namespace debugger {
         kYellow,
         kWhite
     };
+	
 
-    inline void SetColor(const int c);	// this function is implemented in main.cpp,
+	inline void SetColor(const int c) {
+		static HANDLE handle;
+		if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleTextAttribute(handle, c);
+	}
+
+
+    // this function is implemented in main.cpp,
     // because there are some issues with include<windows.h> before other headers.
     static void PrintErrorInfo(const std::wstring type, const bool show_location = true) {
         if (show_location)
@@ -153,7 +163,8 @@ namespace debugger {
         *out << info << std::endl;
         PrintErrorPostfix();
     }
-    // this micro should be called each time AST parsed a node, to stop immediately if there are error.
+
+// this micro should be called each time AST parsed a node, to stop immediately if there are error.
 #define VERIFY {if(debugger::error_occurred)return nullptr;}
 
 

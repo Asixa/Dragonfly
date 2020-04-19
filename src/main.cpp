@@ -3,16 +3,6 @@
 #include "lexer.h"
 #include "parser.h"
 #include "gen.h"
-#include <ctime>
-#include <windows.h>
-
-namespace debugger {
-	HANDLE handle;
-	inline void SetColor(const int c) {
-		if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
-		SetConsoleTextAttribute(handle, c);
-	}
-}
 
 int main(int argc, char** argv)
 {
@@ -55,17 +45,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-
-//*************** Print saved lines ***********************
-// printf("-----------------\n");
-// std::wcout << L"[line" << line << L"]" << L" [lines size" << lines.size() << L"]" << std::endl;
-// for(int i=0;i<lines.size();i++)
-// {
-// 	auto pt = lines[i];
-// 	std:std::wstring str;
-// 	while (*pt != L'\n' && pt < lexer::end)str += *pt++;
-// 	std::wcout <<L"["<<i<<L"]"<< str << std::endl;
-// }
-// printf("-----------------\n");
-//*************** Print saved lines ***********************
