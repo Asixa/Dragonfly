@@ -1,5 +1,19 @@
-#ifndef LEXER
-#define LEXER
+// Copyright 2019 The Dragonfly Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef LEXER_H
+#define LEXER_H
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -10,7 +24,7 @@
 #include <vector>
 
 
-#define CR(c,a,b) c >= a && c <=b
+
 enum
 {
 	OTHER_KEYWORDS
@@ -32,14 +46,6 @@ namespace lexer
 		const char* Name();
 	};
 
-	static wchar_t* src;
-	static wchar_t* root;
-	static wchar_t peek;
-	static long size;
-	static Token* token;
-	static std::wstring string_val;
-	static double number_val;
-
 	static void CheckUtf8(const char* file)
 	{
 		auto i = 0;
@@ -59,28 +65,28 @@ namespace lexer
 	static void LoadFile(const char* file)
 	{
 		std::wifstream wif(file);
-		if (wif.fail()) PrintErrorInfo(L"No such file or directory", false);
+		if (wif.fail()) debugger::PrintErrorInfo(L"No such file or directory", false);
 		wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
 		std::wstringstream wss;
 		wss << wif.rdbuf();
 		size = std::size(wss.str()) + 1;
 		root = src = _wcsdup((wss.str() + L"\n").c_str());
-		lines.push_back(src);
-		end = root + size;
+        debugger::lines.push_back(src);
+		debugger::end = root + size;
 	}
 	 static wchar_t* Move()
 	 {
 		auto p = src;
-	 	ch++;
-		if (*src == '\t') { ch += 7; tab = 1; }
-		else if (*src > 128)ch++;
+		debugger::ch++;
+		if (*src == '\t') { debugger::ch += 7;  debugger::tab = 1; }
+		else if (*src > 128) debugger::ch++;
 		
 		src++;
 	 	return p;
 	}
 	static void MoveLine()
 	{
-		if (skipline) {
+		if (debugger::skip_line) {
 			while (*src != 0 && *src != '\n')src++;
 			// line++;
 			// ch = tab= chp = 0;
@@ -88,11 +94,24 @@ namespace lexer
 			// src++;
 			// lines.push_back(src);
 		}
-		skipline = true;
+		debugger::skip_line = true;
 	}
+
+    static bool IsCjk(const wchar_t t) {
+		return t >= L'\u2E80' && t <=L'\u2FD5'
+	    || t >= L'\u3190' && t <=L'\u319f'
+	    || t >= L'\u3400' && t <=L'\u4DBF'
+	    || t >= L'\u4E00' && t <=L'\u9FCC'
+	    || t >= L'\uF900' && t <=L'\uFAAD';
+	}
+
+	static bool IsChar() {
+		return peek >= 'a' && peek <= 'z' || peek >= 'A' && peek <= 'Z';
+	}
+
 	static void Next()
 	{
-		chp = ch;
+		debugger::chp = debugger::ch;
 		wchar_t* last_pos;
 		int hash;
 		while ((peek = *src))
@@ -105,21 +124,21 @@ namespace lexer
 			}
 			if (peek == '\n')
 			{
-				line++; chp = ch = 0;
-				lines.push_back(src);
+				debugger::line++;  debugger::chp = debugger::ch = 0;
+				debugger::lines.push_back(src);
 				token = new Token(NewLine);
 				return;
 			}
 			while (peek == ' ' || peek == '\t' || peek == '\n')
 			{
-				chp = ch;
+				debugger::chp = debugger::ch;
 				peek = *src;
 				if (peek == '\n')
 				{
-					line++;
-					ch = tab = chp = 0;
+					debugger::line++;
+					debugger::ch = debugger::tab = debugger::chp = 0;
 					Move();
-					lines.push_back(src);
+					debugger::lines.push_back(src);
 					token = new Token(NewLine);
 					return;
 				}
@@ -137,13 +156,13 @@ namespace lexer
 				else token = new Token('/');
 				return;
 			}
-			else if (CR(peek, 'a', 'z') || CR(peek, 'A', 'Z') || (peek == '_') || CHINESE(peek))
+			else if (IsChar() || (peek == '_') || IsCjk(peek))
 			{
 				last_pos = src - 1;
 				hash = peek;
 				string_val = L"";
 				string_val += peek;
-				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_') || CHINESE(*src))
+				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_') || IsCjk(*src))
 				{
 					hash = hash * 147 + *src;
 					string_val += *src;
@@ -154,7 +173,7 @@ namespace lexer
 #define MATCH(a)else if(!wmemcmp(L#a,last_pos,src-last_pos)&&wcslen(L#a)==src-last_pos){token = new Token(K_##a);return;}
 				KEYWORDS(MATCH)
 #undef MATCH
-					token = new Token(Id);
+				token = new Token(Id);
 				return;
 			}
 
@@ -173,7 +192,7 @@ namespace lexer
 						{
 							type = K_double;
 							if (decimal != 0) {
-								ALERT(L"There are more than 1 dot in the number")
+								debugger::Alert(L"There are more than 1 dot in the number");
 									token = nullptr;
 								return;
 							}
@@ -198,7 +217,7 @@ namespace lexer
 						Move();
 						while ((*src >= '0' && *src <= '9') || *src == '.') {
 							if (*src == '.') {
-								ALERT(L"There are more than 1 dot in the number")
+								debugger::Alert(L"There are more than 1 dot in the number");
 									token = nullptr;
 								return;
 							}
@@ -287,13 +306,13 @@ namespace lexer
 					else token = new Token(c);										\
 					return; }
 			
-				SPECIAL_OP
+			    SPECIAL_OP
 				SINGEL_OP(SYMBOL)
 				ASSGIN_OP(U_SYMBOL)
 				ASSGIN_OR_REPEAT_OP(D_SYMBOL)
 				ASSGIN_AND_REPEAT_OP(T_SYMBOL)
 
-				ALERT("invaild token: \"" << peek << "\" ")
+				debugger::Alert((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
 				token = nullptr;
 				return;
 		}
@@ -314,11 +333,39 @@ namespace lexer
 	inline void Match(const int tk) {
 
 		if (token->type != tk) {
-			if (token->type == NewLine) { ALERT_NEWLINE }
-				ALERT("expected \"" << Token::Name(tk) << "\" but got \"" << Token::Name(token->type) << "\" instead")
+			if (token->type == NewLine) { debugger::AlertNewline(); }
+			debugger::Alert((std::wstringstream() << L"expected \"" << Token::Name(tk) << L"\" but got \"" << Token::Name(token->type) << L"\" instead").str());
 			return;
 		}
 		Next();
+	}
+
+	inline bool Check(const int t) {
+		return token->type == t;
+	}
+
+	inline bool Check(const std::vector<int> t) {
+		return std::find(t.begin(), t.end(), token->type) != t.end();
+	}
+
+	inline bool CheckType() {
+		return lexer::token->type >= K_int && lexer::token->type <= K_double;
+	}
+
+	inline const char* Token::Name(const int type)
+	{
+		if (type == Id)return "Identifier";
+		if (type == NewLine) return "NewLine";
+		if (type == Num) return "Num";
+		if (type == Str) return "Str";
+		if (type == 0) return "ERROR";
+		// This part using micro to automaticly write converter for Operator and Keywords, see "keywords.h"
+#define TOKEN(a)if(type==K_##a)return #a;
+		KEYWORDS(TOKEN)
+#define TOKEN(a,b)if(type==a)return b;
+			OPERATORS(TOKEN)
+#undef TOKEN						
+			return (new std::string(1, static_cast<char>(type)))->c_str();	// some type is just a chat, like ';' then we just return itself in a string.
 	}
 };
 

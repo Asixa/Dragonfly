@@ -1,6 +1,19 @@
+// Copyright 2019 The Dragonfly Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#ifndef SYNTEX
-#define SYNTEX
+#ifndef KEYWORDS_H
+#define KEYWORDS_H
 
 #define KEYWORDS(F)\
 	F(string) F(number) F(bool)									\
@@ -65,8 +78,5 @@ return;}
 		F('>', Ge, Shr, ShrAgn)
 
 #define OTHER_KEYWORDS Num = 128,Str, Id, NewLine,
-
-#define CHINESE(a) CR(a,L'\u2E80',L'\u2FD5')|| CR(a,L'\u3190', L'\u319f')|| CR(a,L'\u3400', L'\u4DBF')||CR(a,L'\u4E00',L'\u9FCC')||CR(a,L'\uF900',L'\uFAAD')
-
 
 #endif

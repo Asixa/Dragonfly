@@ -1,108 +1,54 @@
-﻿
-#define PRINT_TO_STREAM
+﻿// Copyright 2019 The Dragonfly Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "debug.h"
 #include "lexer.h"
 #include "parser.h"
 #include "gen.h"
-#include "debug.h" // yes we need include it twice
-#include <ctime>
-#include <windows.h>
-HANDLE handle;
 
+int main(int argc, char** argv) {
+    
+    std::string filename;
+    if (argc == 1) {
+        filename = "../tests/codes/basicIf/input.df";
+    }
+    else if (argc > 1) {
+        filename = argv[1];
+    }
 
-inline void SetColor(const int c) {
-	if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(handle, c);
+    debugger::SetStream(argc == 1);
+
+    debugger::only_tokenize = argc > 2;
+    // only_tokenize = true;
+    debugger::error_existed = debugger::only_tokenize;
+
+    std::wcout.imbue(std::locale(""));
+    const auto start = clock();
+    lexer::LoadFile(filename.c_str());
+
+    auto program = parser::Parse();
+    if (!debugger::is_std_out)
+        std::wcout << dynamic_cast<std::wstringstream*>(debugger::out)->str();
+    if (!debugger::error_existed) {
+        program->Gen();
+        debugger::WriteReadableIr(gen::the_module.get(), "ir.txt", true);
+        debugger::WriteBitCodeIr(gen::the_module.get(), "a.ll");
+        std::cout << "Compiled successfully, took a total of " << static_cast<double>(clock() - start) << "ms\n\n";
+    }
+    else std::cout << "Compiler stopped due to errors occurred\n\n";
+    debugger::WriteOutput("log.txt");
+    if (argc == 1)system("pause");
+
+    return 0;
 }
-enum CHARACTER_ENCODING
-{
-	ANSI,
-	Unicode,
-	Unicode_big_endian,
-	UTF8_with_BOM,
-	UTF8_without_BOM
-};
-CHARACTER_ENCODING get_text_file_encoding(const wchar_t* filename)
-{
-	CHARACTER_ENCODING encoding;
-
-	unsigned char uniTxt[] = { 0xFF, 0xFE };// Unicode file header
-	unsigned char endianTxt[] = { 0xFE, 0xFF };// Unicode big endian file header
-	unsigned char utf8Txt[] = { 0xEF, 0xBB };// UTF_8 file header
-
-	DWORD dwBytesRead = 0;
-	HANDLE hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		hFile = nullptr;
-		CloseHandle(hFile);
-		printf("cannot open file");
-	}
-	const auto lp_header = new BYTE[2];
-	ReadFile(hFile, lp_header, 2, &dwBytesRead, nullptr);
-	CloseHandle(hFile);
-
-	if (lp_header[0] == uniTxt[0] && lp_header[1] == uniTxt[1])// Unicode file
-		encoding = CHARACTER_ENCODING::Unicode;
-	else if (lp_header[0] == endianTxt[0] && lp_header[1] == endianTxt[1])//  Unicode big endian file
-		encoding = CHARACTER_ENCODING::Unicode_big_endian;
-	else if (lp_header[0] == utf8Txt[0] && lp_header[1] == utf8Txt[1])// UTF-8 file
-		encoding = CHARACTER_ENCODING::UTF8_with_BOM;
-	else
-		encoding = CHARACTER_ENCODING::ANSI;   //Ascii
-
-	delete[]lp_header;
-	return encoding;
-}
-int main(int argc, char** argv)
-{
-	
-	std::string filename;
-	if(argc==1)
-	{
-		filename = "../tests/codes/basicIf/input.df";
-	}
-	else if(argc>1)
-	{
-		filename = argv[1];
-	}
-	only_tokenize = argc>2;
-	// only_tokenize = true;
-	error_existed = only_tokenize;
-	
-	std::wcout.imbue(std::locale(""));
-	const auto start = clock();
-	LoadFile(filename.c_str());
-
-	auto program = Parse();
-	std::wcout << outstream.str();
-	if (!error_existed)
-	{
-		program->Gen();
-		WriteReadableIR(the_module.get(),"ir.txt",true);
-		WriteBitCodeIR(the_module.get(),"a.ll");
-		std::cout <<"Compiled successfully, took a total of "<<static_cast<double>(clock() - start)<<"ms\n\n";
-	}
-	else std::cout<<"Compiler stopped due to errors occurred\n\n";
-	
-	WriteOutput("log.txt");
-
-	if(argc==1)system("pause");
-
-	return 0;
-}
-
-
-//*************** Print saved lines ***********************
-// printf("-----------------\n");
-// std::wcout << L"[line" << line << L"]" << L" [lines size" << lines.size() << L"]" << std::endl;
-// for(int i=0;i<lines.size();i++)
-// {
-// 	auto pt = lines[i];
-// 	std:std::wstring str;
-// 	while (*pt != L'\n' && pt < lexer::end)str += *pt++;
-// 	std::wcout <<L"["<<i<<L"]"<< str << std::endl;
-// }
-// printf("-----------------\n");
-//*************** Print saved lines ***********************
