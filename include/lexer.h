@@ -312,6 +312,18 @@ namespace lexer
 		}
 		Next();
 	}
+
+	inline bool Check(const int t) {
+		return token->type == t;
+	}
+
+	inline bool Check(const std::vector<int> t) {
+		return std::find(t.begin(), t.end(), token->type) != t.end();
+	}
+
+	inline bool CheckType() {
+		return lexer::token->type >= K_int && lexer::token->type <= K_double;
+	}
 };
 
 #endif
