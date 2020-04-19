@@ -493,7 +493,7 @@ namespace parser {
         auto ThenBB = llvm::BasicBlock::Create(gen::the_context, "then", function);
         auto ElseBB = llvm::BasicBlock::Create(gen::the_context, "else");
         auto MergeBB = llvm::BasicBlock::Create(gen::the_context, "ifcont");
-        printf("what\n");
+
         gen::builder.CreateCondBr(cond_v, ThenBB, ElseBB);
 
         gen::builder.SetInsertPoint(ThenBB);

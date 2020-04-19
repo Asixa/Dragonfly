@@ -47,9 +47,7 @@ int main(int argc, char** argv) {
         std::cout << "Compiled successfully, took a total of " << static_cast<double>(clock() - start) << "ms\n\n";
     }
     else std::cout << "Compiler stopped due to errors occurred\n\n";
-
     debugger::WriteOutput("log.txt");
-
     if (argc == 1)system("pause");
 
     return 0;

@@ -24,7 +24,7 @@
 #include <vector>
 
 
-#define CR(c,a,b) c >= a && c <=b
+
 enum
 {
 	OTHER_KEYWORDS
@@ -97,12 +97,16 @@ namespace lexer
 		debugger::skip_line = true;
 	}
 
-    static bool isCJK(wchar_t t) {
+    static bool IsCjk(const wchar_t t) {
 		return t >= L'\u2E80' && t <=L'\u2FD5'
 	    || t >= L'\u3190' && t <=L'\u319f'
 	    || t >= L'\u3400' && t <=L'\u4DBF'
 	    || t >= L'\u4E00' && t <=L'\u9FCC'
 	    || t >= L'\uF900' && t <=L'\uFAAD';
+	}
+
+	static bool IsChar() {
+		return peek >= 'a' && peek <= 'z' || peek >= 'A' && peek <= 'Z';
 	}
 
 	static void Next()
@@ -152,13 +156,13 @@ namespace lexer
 				else token = new Token('/');
 				return;
 			}
-			else if (CR(peek, 'a', 'z') || CR(peek, 'A', 'Z') || (peek == '_') || isCJK(peek))
+			else if (IsChar() || (peek == '_') || IsCjk(peek))
 			{
 				last_pos = src - 1;
 				hash = peek;
 				string_val = L"";
 				string_val += peek;
-				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_') || isCJK(*src))
+				while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src == '_') || IsCjk(*src))
 				{
 					hash = hash * 147 + *src;
 					string_val += *src;
@@ -169,7 +173,7 @@ namespace lexer
 #define MATCH(a)else if(!wmemcmp(L#a,last_pos,src-last_pos)&&wcslen(L#a)==src-last_pos){token = new Token(K_##a);return;}
 				KEYWORDS(MATCH)
 #undef MATCH
-					token = new Token(Id);
+				token = new Token(Id);
 				return;
 			}
 
@@ -302,7 +306,7 @@ namespace lexer
 					else token = new Token(c);										\
 					return; }
 			
-			SPECIAL_OP
+			    SPECIAL_OP
 				SINGEL_OP(SYMBOL)
 				ASSGIN_OP(U_SYMBOL)
 				ASSGIN_OR_REPEAT_OP(D_SYMBOL)
