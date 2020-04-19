@@ -1,8 +1,8 @@
 #ifndef PARSER
 #define PARSER
 
-#define UNI(a)a*
-#define MAKE(a)new a
+// #define UNI(a)std::shared_ptr<a>
+// #define MAKE(a)std::make_shared<a>
 
 //Micro for check token's type
 // #define CHECK token->type==		
@@ -40,7 +40,7 @@ namespace parser
 	public:
 		virtual ~Statement() = default;
 		virtual void Gen() = 0;
-		static UNI(Statement) Parse();
+		static std::shared_ptr<Statement> Parse();
 	};
 	
 	// Base Class for Declaration, which will generate codes before Statments
@@ -51,13 +51,13 @@ namespace parser
 	};
 	
 	// 'Statements' Class will match all statements in a binary-tree structure
-	class Statements final :Statement
+	class Statements final :public Statement
 	{
-		UNI(Statement) stmt1;
-		UNI(Statement) stmt2;
+		std::shared_ptr<Statement> stmt1;
+		std::shared_ptr<Statement> stmt2;
 	public:
-		Statements(UNI(Statement) a, UNI(Statement) b):stmt1(a),stmt2(b){}
-		static UNI(Statement) Parse();
+		Statements(std::shared_ptr<Statement> a, std::shared_ptr<Statement> b):stmt1(a),stmt2(b){}
+		static std::shared_ptr<Statement> Parse();
 		void Gen() override;
 	};
 
@@ -100,7 +100,7 @@ namespace parser
 		public:
 	    void ToString() override;
 	    Value* Gen(const int cmd=0) override;
-		static UNI(Lambda) Parse(){return nullptr;}
+		static std::shared_ptr<Lambda> Parse(){return nullptr;}
 	};
 	
 	// Expression node for variable or fields.
@@ -120,9 +120,9 @@ namespace parser
 	    void ToString() override;
 	    Value* Gen(const int cmd=0) override;
 		std::vector <std::wstring> names;
-		std::vector<UNI(Expr)> args;
+		std::vector<std::shared_ptr<Expr>> args;
 		explicit FuncCall(std::vector <std::wstring> d) : names(d) {}
-		static UNI(FuncCall) Parse(std::vector <std::wstring> f);
+		static std::shared_ptr<FuncCall> Parse(std::vector <std::wstring> f);
 	};
 	
 	// Expression node for All general factors (including all expression nodes above)
@@ -133,7 +133,7 @@ namespace parser
 	    Value* Gen(const int cmd=0) override;
 		Token* tok;
 		explicit Factor(Token* t):tok(t){}
-		static UNI(Expr) Parse();
+		static std::shared_ptr<Expr> Parse();
 	};
 	
 	// Expression node for factors with prefix or postfix)
@@ -144,11 +144,11 @@ namespace parser
 	    Value* Gen(const int cmd=0) override;
 		int op;
 		bool prefix;
-		UNI(Expr) expr;
-		Unary(UNI(Expr) expr, const int op,bool pre):op(op),expr(std::move(expr)),prefix(pre){}
-		static UNI(Expr) ParsePrefix();
-		static UNI(Expr) ParsePostfix();
-		static UNI(Expr) Parse()
+		std::shared_ptr<Expr> expr;
+		Unary(std::shared_ptr<Expr> expr, const int op,bool pre):op(op),expr(std::move(expr)),prefix(pre){}
+		static std::shared_ptr<Expr> ParsePrefix();
+		static std::shared_ptr<Expr> ParsePostfix();
+		static std::shared_ptr<Expr> Parse()
 		{
 			return ParsePostfix();
 		}
@@ -157,14 +157,14 @@ namespace parser
 	// Expression node for Ternary expression like a?b:c
 	class Ternary final :public Expr
 	{
-		UNI(Expr) a;
-		UNI(Expr) b;
-		UNI(Expr) c;
+		std::shared_ptr<Expr> a;
+		std::shared_ptr<Expr> b;
+		std::shared_ptr<Expr> c;
 	public:
 	    void ToString() override;
 	    Value* Gen(const int cmd=0) override;
-		Ternary(UNI(Expr) x, UNI(Expr) y, UNI(Expr) z) :a(x), b(y), c(z) {}
-		static UNI(Expr) Parse();
+		Ternary(std::shared_ptr<Expr> x, std::shared_ptr<Expr> y, std::shared_ptr<Expr> z) :a(x), b(y), c(z) {}
+		static std::shared_ptr<Expr> Parse();
 	};
 	
 	// Expression node for all binary expressions
@@ -174,11 +174,11 @@ namespace parser
 	    void ToString() override;
 	    Value* Gen(const int cmd=0) override;
 		int op;
-		UNI(Expr) LHS;
-		UNI(Expr) RHS;
-		Binary(UNI(Expr)lhs, UNI(Expr) rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
-#define PARSE_ONCE(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(lexer::Check( NewLine)) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY return MAKE(Binary)(left, func(), op);} return left;}
-#define PARSE_LOOP(name,func,condition)static UNI(Expr) name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(lexer::Check(NewLine)) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY left= MAKE(Binary)(left, func(), op);} return left;}
+		std::shared_ptr<Expr> LHS;
+		std::shared_ptr<Expr> RHS;
+		Binary(std::shared_ptr<Expr>lhs, std::shared_ptr<Expr> rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
+#define PARSE_ONCE(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(lexer::Check( NewLine)) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY return std::make_shared<Binary>(left, func(), op);} return left;}
+#define PARSE_LOOP(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(lexer::Check(NewLine)) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY left= std::make_shared<Binary>(left, func(), op);} return left;}
 		PARSE_LOOP(Sub1, Unary::Parse, Check('*') || Check( '/') ||Check( '%'))
 		PARSE_LOOP(Sub2, Sub1, Check( '+') || Check( '-'))
 		PARSE_LOOP(Sub3, Sub2, Check( Shl) || Check( Shr))
@@ -200,7 +200,7 @@ namespace parser
 		int size;
 		bool isVarArg = false;
 		std::vector<std::wstring> names,types;
-		static UNI(FuncParam) Parse();
+		static std::shared_ptr<FuncParam> Parse();
 	};
 
 	// class for matching function definition.
@@ -212,8 +212,8 @@ namespace parser
 		std::wstring name;
 		StructType* self_type;
 		std::wstring return_type;
-		UNI(FuncParam) args;
-		UNI(Statement) statements;
+		std::shared_ptr<FuncParam> args;
+		std::shared_ptr<Statement> statements;
 
 		void SetInternal(const std::wstring structname,StructType* type)
 		{
@@ -222,7 +222,7 @@ namespace parser
 		}
 		void Gen() override;
 		void GenHeader() override;
-		static UNI(FunctionDecl) Parse(bool ext = false);
+		static std::shared_ptr<FunctionDecl> Parse(bool ext = false);
 	};
 
 	// class for matching variable declaration.
@@ -230,10 +230,10 @@ namespace parser
 	{
 		bool constant;
 		std::wstring name, type;
-		Expr* value;
+		std::shared_ptr<Expr> value;
 	public:
 		void Gen() override;
-		static UNI(FieldDecl) Parse(bool is_const);
+		static std::shared_ptr<FieldDecl> Parse(bool is_const);
 	};
 
 	// class for matching class declaration.
@@ -243,8 +243,8 @@ namespace parser
 		std::wstring name;
 		std::vector<std::wstring> fields;
 		std::vector<std::wstring> types;
-		std::vector<FunctionDecl*> functions;
-		static UNI(ClassDecl) Parse();
+		std::vector<std::shared_ptr<FunctionDecl>> functions;
+		static std::shared_ptr<ClassDecl> Parse();
 		void Gen() override;
 		void GenHeader() override;
 	};
@@ -252,102 +252,102 @@ namespace parser
 	// class for if statement.
 	class If :public Statement
 	{
-		UNI(Expr) condition;
-		UNI(Statement) stmts;
-		UNI(Statement) else_stmts;
+		std::shared_ptr<Expr> condition;
+		std::shared_ptr<Statement> stmts;
+		std::shared_ptr<Statement> else_stmts;
 	public:
-		static UNI(If) Parse();
+		static std::shared_ptr<If> Parse();
 		void Gen() override;
 	};
 
 	class Empty :public Statement
 	{
-		UNI(Expr) value;
+		std::shared_ptr<Expr> value;
 	public:
-		static UNI(Empty) Parse();
+		static std::shared_ptr<Empty> Parse();
 		void Gen() override;
 	};
 
 	class Throw :Statement
 	{
-		UNI(Expr) value;
+		std::shared_ptr<Expr> value;
 	public:
-		static UNI(Throw) Parse();
+		static std::shared_ptr<Throw> Parse();
 		void Gen() override;
 	};
 
 	class Return :public Statement
 	{
-		UNI(Expr) value;
+		std::shared_ptr<Expr> value;
 	public:
-		static UNI(Return) Parse();
+		static std::shared_ptr<Return> Parse();
 		void Gen() override;
 	};
 
 	class Break final :Statement
 	{
 	public:
-		static UNI(Break) Parse();
+		static std::shared_ptr<Break> Parse();
 		void Gen() override;
 	};
 
 	class Continue final :Statement
 	{
 	public:
-		static UNI(Continue) Parse();
+		static std::shared_ptr<Continue> Parse();
 		void Gen() override;
 	};
 
 	class Import final :Statement
 	{
 	public:
-		static UNI(Import) Parse();
+		static std::shared_ptr<Import> Parse();
 		void Gen() override;
 	};
 
 	class While final :public Statement
 	{
 	public:
-		UNI(Expr) condition;
-		UNI(Statement) stmts;
-		static UNI(While) Parse();
+		std::shared_ptr<Expr> condition;
+		std::shared_ptr<Statement> stmts;
+		static std::shared_ptr<While> Parse();
 		void Gen() override;
 	};
 
 	class Do final :public Statement
 	{
 	public:
-		UNI(Expr) condition;
-		UNI(Statement) stmts;
-		static UNI(Do) Parse();
+		std::shared_ptr<Expr> condition;
+		std::shared_ptr<Statement> stmts;
+		static std::shared_ptr<Do> Parse();
 		void Gen() override;
 	};
 
 	class For final :public Statement
 	{
 	public:
-		UNI(Expr) condition;
-		UNI(Statement) stmts;
-		static UNI(For) Parse();
+		std::shared_ptr<Expr> condition;
+		std::shared_ptr<Statement> stmts;
+		static std::shared_ptr<For> Parse();
 		void Gen() override;
 	};
 	//********************************************************************************************************
 	//*							Parser
 	//********************************************************************************************************
 
-	inline Statement* Statements::Parse()
+	inline std::shared_ptr<Statement> Statements::Parse()
 	{
 		while (Check( NewLine)) { Next(); VERIFY }
 		if (Check( '}')) return nullptr;
 		const auto left = Statement::Parse(); VERIFY
 		const auto right = Statements::Parse(); VERIFY
 		if (right == nullptr)return left;
-		return MAKE(Statements)(left, right);
+		return std::make_shared<Statements>(left, right);
 	}
 	
-	inline FuncCall* FuncCall::Parse(std::vector <std::wstring> f)
+	inline std::shared_ptr<FuncCall> FuncCall::Parse(std::vector <std::wstring> f)
 	{
-		auto func_call = MAKE(FuncCall)(f);
+		auto func_call = std::make_shared<FuncCall>(f);
 		Next();												VERIFY
 		while (token->type != ')') {
 			func_call->args.push_back(Binary::Parse());		VERIFY
@@ -357,7 +357,7 @@ namespace parser
 		return func_call;
 	}
 
-	inline Expr* Unary::ParsePostfix()
+	inline std::shared_ptr<Expr> Unary::ParsePostfix()
 	{
 		const auto factor = ParsePrefix();
 																VERIFY
@@ -367,13 +367,13 @@ namespace parser
 		case Inc:
 		case Dec:
 			Next();												VERIFY
-			return MAKE(Unary)(factor, token->type, false);
+			return std::make_shared<Unary>(factor, token->type, false);
 		default:
 			return factor;
 		}
 	}
 
-	inline Expr* Unary::ParsePrefix()
+	inline std::shared_ptr<Expr> Unary::ParsePrefix()
 	{
 		switch (token->type)
 		{
@@ -387,7 +387,7 @@ namespace parser
 		case Dec: {
 			Next();											VERIFY
 				const auto parsed = Parse();						VERIFY
-				return MAKE(Unary)(parsed, token->type, true);
+				return std::make_shared<Unary>(parsed, token->type, true);
 		}
 		default:
 			return Factor::Parse();	
@@ -395,7 +395,7 @@ namespace parser
 
 	}
 	
-	inline Expr* Ternary::Parse()
+	inline std::shared_ptr<Expr> Ternary::Parse()
 	{
 		const auto a = Binary::Sub7();		VERIFY
 		if (token->type != '?')return a;
@@ -403,13 +403,13 @@ namespace parser
 		const auto b = Binary::Sub7();		VERIFY
 		Match(':');						VERIFY
 		const auto c = Binary::Sub7();		VERIFY
-		return MAKE(Ternary)(a, b, c);
+		return std::make_shared<Ternary>(a, b, c);
 	}
 
-	inline Expr* Factor::Parse()
+	inline std::shared_ptr<Expr> Factor::Parse()
 	{
 		
-		UNI(Expr) factor;
+		std::shared_ptr<Expr> factor;
 		switch (token->type)
 		{
 		case '(': {
@@ -439,7 +439,7 @@ namespace parser
 		}
 		case Str:
 		{
-			auto str = MAKE(String)(string_val);
+			auto str = std::make_shared<String>(string_val);
 			Next(); VERIFY
 			return str;
 		}
@@ -448,14 +448,14 @@ namespace parser
 		{
 			const auto ty = token->value;
 			Next(); VERIFY
-			return MAKE(NumberConst)(number_val, ty);
+			return std::make_shared<NumberConst>(number_val, ty);
 		}
 		case K_true:
 			Next(); VERIFY
-			return MAKE(Boolean)(true);
+			return std::make_shared<Boolean>(true);
 		case K_false:
 			Next(); VERIFY
-			return MAKE(Boolean)(false);
+			return std::make_shared<Boolean>(false);
 		case K_int: case K_short: case K_long: case K_float: case K_double:
 		case K_uint:case K_ushort:case K_ulong:case K_string:
 		case Id: {
@@ -475,22 +475,19 @@ namespace parser
 			{
 				VERIFY
 			}
-			else return MAKE(Field)(names);
+			else return std::make_shared<Field>(names);
 		}
 		default:
 			Alert((std::wstringstream()<<"unexpected \"" << Token::Name(token->type) << "\" ").str());
 			return nullptr;
 		}
-		factor = MAKE(Factor)(token);
-		Next(); VERIFY
-		return factor;
-	}
+    }
 
 
 	
-	inline FuncParam* FuncParam::Parse()
+	inline std::shared_ptr<FuncParam> FuncParam::Parse()
 	{
-		auto param = MAKE(FuncParam)();
+		auto param = std::make_shared<FuncParam>();
 		while (token->type != ')') {
 			param->size++;
 			if (CheckType())
@@ -521,9 +518,9 @@ namespace parser
 		return param;
 	}
 	
-	inline FunctionDecl* FunctionDecl::Parse(const bool ext)
+	inline std::shared_ptr<FunctionDecl> FunctionDecl::Parse(const bool ext)
 	{
-		auto function = MAKE(FunctionDecl)();
+		auto function = std::make_shared<FunctionDecl>();
 		function->is_extern = ext;
 		if (Check(K_dfunc))function->differentiable = true;
 		else if (Check(K_kernal))function->kernal = true;
@@ -574,9 +571,9 @@ namespace parser
 		return function;
 	}
 	
-	inline FieldDecl* FieldDecl::Parse(const bool is_const)
+	inline std::shared_ptr<FieldDecl> FieldDecl::Parse(const bool is_const)
 	{
-		auto let = MAKE(FieldDecl)();
+		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;
 		Next(); VERIFY
 		let->name = string_val;
@@ -605,9 +602,9 @@ namespace parser
 		return let;
 	}
 
-	inline ClassDecl* ClassDecl::Parse()
+	inline std::shared_ptr<ClassDecl> ClassDecl::Parse()
 	{
-		auto instance = MAKE(ClassDecl);
+		auto instance = std::make_shared<ClassDecl>();
 		Next();													VERIFY
 		instance->name = string_val;
 		Match(Id);											VERIFY
@@ -653,9 +650,9 @@ namespace parser
 		return instance;
 	}
 	
-	inline If* If::Parse()
+	inline std::shared_ptr<If> If::Parse()
 	{
-		const auto instance = new If();
+		const auto instance = std::make_shared<If>();
 		Next();
 		Match('(');
 		instance->condition = Binary::Parse();
@@ -685,9 +682,9 @@ namespace parser
 		return instance;
 	}
 
-	inline While* While::Parse()
+	inline std::shared_ptr<While> While::Parse()
 	{
-		const auto instance = new While();
+		const auto instance = std::make_shared<While>();
 		Next();
 		Match('(');
 		instance->condition = Binary::Parse();
@@ -701,10 +698,10 @@ namespace parser
 		else instance->stmts = Statement::Parse();
 		return instance;
 	}
-
-	inline For* For::Parse()
+ 
+	inline std::shared_ptr<For> For::Parse()
 	{
-		const auto instance = new For();
+		const auto instance = std::make_shared<For>();
 		Next();
 		Match('(');
 		instance->condition = Binary::Parse();
@@ -719,9 +716,9 @@ namespace parser
 		return instance;
 	}
 	
-	inline Do* Do::Parse()
+	inline std::shared_ptr<Do> Do::Parse()
 	{
-		const auto instance = new Do();
+		const auto instance = std::make_shared<Do>();
 		Next();
 		if (Check('{'))
 		{
@@ -737,18 +734,18 @@ namespace parser
 		Match(')');
 		return instance;
 	}
-	inline Throw* Throw::Parse()
+	inline std::shared_ptr<Throw> Throw::Parse()
 	{
 		Next();
-		auto instance = MAKE(Throw);
+		auto instance = std::make_shared<Throw>();
 		instance->value = Factor::Parse();
 		return instance;
 	}
 	
-	inline Empty* Empty::Parse()
+	inline std::shared_ptr<Empty> Empty::Parse()
 	{
 	
-		auto instance = MAKE(Empty);
+		auto instance = std::make_shared<Empty>();
 		instance->value = Binary::Parse(); VERIFY
 		if (token->type == ';')Next();
 		else Match(NewLine);
@@ -757,10 +754,10 @@ namespace parser
 		return instance;
 	}
 
-	inline Return* Return::Parse()
+	inline std::shared_ptr<Return> Return::Parse()
 	{
 		Next();
-		auto instance = MAKE(Return); 
+		auto instance = std::make_shared<Return>(); 
 		if (token->type == ';'||token->type ==NewLine)
 		{
 			instance->value = nullptr;
@@ -774,28 +771,28 @@ namespace parser
 		return instance;
 	}
 
-	inline Import* Import::Parse()
+	inline std::shared_ptr<Import> Import::Parse()
 	{
 		Next();
-		auto instance = MAKE(Import);
+		auto instance = std::make_shared<Import>();
 		return instance;
 	}
 	
-	inline Break* Break::Parse()
+	inline std::shared_ptr<Break> Break::Parse()
 	{
 		Next();
-		auto instance = MAKE(Break);
+		auto instance = std::make_shared<Break>();
 		return instance;
 	}
 	
-	inline Continue* Continue::Parse()
+	inline std::shared_ptr<Continue> Continue::Parse()
 	{
 		Next();
-		auto instance = MAKE(Continue);
+		auto instance = std::make_shared<Continue>();
 		return instance;
 	}
 
-	inline Statement* Statement::Parse()
+	inline std::shared_ptr<Statement> Statement::Parse()
 	{
 		while (Check(NewLine))Next(); VERIFY
 			switch (token->type)
@@ -816,8 +813,8 @@ namespace parser
 	// Program is a class that will match and store all the codes, it is the root of AST
 	class Program
 	{
-		std::vector<Statement*> statements;
-		std::vector<Declaration*> declarations;
+		std::vector<std::shared_ptr<Statement>> statements;
+		std::vector<std::shared_ptr<Declaration>> declarations;
 		void ParseSingle() {
 			switch (token->type)
 			{
@@ -838,16 +835,16 @@ namespace parser
 			}
 		}
 	public:
-		static UNI(Program) Parse()
+		static std::shared_ptr<Program> Parse()
 		{
-			auto program = MAKE(Program);
+			auto program = std::make_shared<Program>();
 			while (peek > 0 && token != nullptr) program->ParseSingle();
 			return program;
 		}
 		void Gen();
 	};
 
-	static UNI(Program) Parse()
+	static std::shared_ptr<Program> Parse()
 	{
 		Next();
 		if (!only_tokenize)return Program::Parse();
