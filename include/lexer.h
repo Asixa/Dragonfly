@@ -324,6 +324,22 @@ namespace lexer
 	inline bool CheckType() {
 		return lexer::token->type >= K_int && lexer::token->type <= K_double;
 	}
+
+	inline const char* Token::Name(const int type)
+	{
+		if (type == Id)return "Identifier";
+		if (type == NewLine) return "NewLine";
+		if (type == Num) return "Num";
+		if (type == Str) return "Str";
+		if (type == 0) return "ERROR";
+		// This part using micro to automaticly write converter for Operator and Keywords, see "keywords.h"
+#define TOKEN(a)if(type==K_##a)return #a;
+		KEYWORDS(TOKEN)
+#define TOKEN(a,b)if(type==a)return b;
+			OPERATORS(TOKEN)
+#undef TOKEN						
+			return (new std::string(1, static_cast<char>(type)))->c_str();	// some type is just a chat, like ';' then we just return itself in a string.
+	}
 };
 
 #endif

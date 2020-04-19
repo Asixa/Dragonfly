@@ -3,7 +3,6 @@
 #include "lexer.h"
 #include "parser.h"
 #include "gen.h"
-#include "debug.h" // yes we need include it twice
 #include <ctime>
 #include <windows.h>
 

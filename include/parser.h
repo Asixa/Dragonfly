@@ -1,15 +1,6 @@
 #ifndef PARSER
 #define PARSER
 
-// #define UNI(a)std::shared_ptr<a>
-// #define MAKE(a)std::make_shared<a>
-
-//Micro for check token's type
-// #define CHECK token->type==		
-// //Micro for check if token is basic type
-// #define CHECK_TYPE	 CHECK K_int || CHECK K_short || CHECK K_long || CHECK K_float || CHECK K_double ||CHECK K_bool || CHECK K_string || CHECK K_uint || CHECK K_ushort || CHECK K_short || CHECK K_byte
-//Micro for overriding the functions for expression classes
-// #define GEN	void ToString() override; Value* Gen(const int cmd=0) override;
 
 #include <iostream>
 #include "lexer.h"
@@ -331,6 +322,54 @@ namespace parser
 		static std::shared_ptr<For> Parse();
 		void Gen() override;
 	};
+
+//********************************************************************************************************
+//*							ToString
+//********************************************************************************************************
+
+
+	// implement all the ToString function for Expression nodes below.
+	inline void Factor::ToString() { *debugger::out << "[Factor]"; }
+	inline void NumberConst::ToString()
+	{
+
+		switch (type)
+		{
+		case K_int:*debugger::out << "[" << static_cast<int>(value) << "]"; return;
+		case K_float:*debugger::out << "[" << value << "]", value; return;
+		case K_double:*debugger::out << "[" << value << "]"; return;
+		default:*debugger::out << "[" << Token::Name(type) << "]"; return;
+		}
+	}
+	inline void String::ToString() { *debugger::out << "[\"" << value << "\"]"; }
+	inline void Boolean::ToString() { *debugger::out << "[" << (value ? "true" : "false") << "]"; }
+	inline void Field::ToString() { *debugger::out << "[" << names[0] << "]"; }
+	inline void FuncCall::ToString()
+	{
+		*debugger::out << "[CALL " << names[0] << " ( ";
+		for (auto& arg : args)
+		{
+			arg->ToString();
+			*debugger::out << ",";
+		}
+		*debugger::out << " )]\n";
+	}
+	inline void Unary::ToString() { *debugger::out << "<" << Token::Name(op) << ">"; expr->ToString(); }
+	inline void Binary::ToString() { *debugger::out << "("; LHS->ToString(); *debugger::out << " " << Token::Name(op) << " "; RHS->ToString(); *debugger::out << ")"; }
+	inline void Ternary::ToString()
+	{
+		*debugger::out << "[";
+		a->ToString();
+		*debugger::out << "?";
+		b->ToString();
+		*debugger::out << ":";
+		c->ToString();
+		*debugger::out << "]";
+	}
+
+
+
+
 	//********************************************************************************************************
 	//*							Parser
 	//********************************************************************************************************
