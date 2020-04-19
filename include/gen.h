@@ -14,47 +14,47 @@
 #include "llvm/IR/Verifier.h"
 #include "parser.h"
 
-using namespace lexer;
-using namespace llvm;
-using namespace parser;
 
 
-	static LLVMContext the_context;
-	static std::unique_ptr<Module> the_module = std::make_unique<Module>("Program", the_context);
-	static IRBuilder<> builder(the_context);
-	static Function* the_function;
-	static std::map<std::string, Value*> named_values;
-	static std::map<std::string, ClassDecl*> named_types;
 
-	static Value* True = ConstantInt::get(IntegerType::get(the_context, 1),1);
-	static Value* False = ConstantInt::get(IntegerType::get(the_context, 1),0);
 
-	Value* LogErrorV(const char* str) {
+
+	static llvm::LLVMContext the_context;
+	static std::unique_ptr<llvm::Module> the_module = std::make_unique<llvm::Module>("Program", the_context);
+	static llvm::IRBuilder<> builder(the_context);
+	static llvm::Function* the_function;
+	static std::map<std::string, llvm::Value*> named_values;
+	static std::map<std::string, parser::ClassDecl*> named_types;
+
+	static llvm::Value* True = llvm::ConstantInt::get(llvm::IntegerType::get(the_context, 1),1);
+	static llvm::Value* False = llvm::ConstantInt::get(llvm::IntegerType::get(the_context, 1),0);
+
+	llvm::Value* LogErrorV(const char* str) {
 		*debugger::out<<str;
 		system("PAUSE");
 		exit(-1);
 	}
 
-	inline GlobalVariable* CreateGlob(IRBuilder<>& builder, const std::string name,Type* ty) {
+	inline llvm::GlobalVariable* CreateGlob(llvm::IRBuilder<>& builder, const std::string name, llvm::Type* ty) {
 		the_module->getOrInsertGlobal(name,ty);
 		auto g_var = the_module->getNamedGlobal(name);
-		g_var->setLinkage(GlobalValue::CommonLinkage);
+		g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
 		g_var->setAlignment(4);
 		return g_var;
 	}
 
-	inline Function* CreateFunc(IRBuilder<>& builder, const std::string name) {
-		const auto func_type = FunctionType::get(builder.getInt32Ty(),false);
-		const auto foo_func = Function::Create(func_type, GlobalValue::ExternalLinkage, name,the_module.get());
+	inline llvm::Function* CreateFunc(llvm::IRBuilder<>& builder, const std::string name) {
+		const auto func_type = llvm::FunctionType::get(builder.getInt32Ty(),false);
+		const auto foo_func = llvm::Function::Create(func_type, llvm::GlobalValue::ExternalLinkage, name,the_module.get());
 		return foo_func;
 	}
 
-	inline BasicBlock* CreateBb(Function* func, const std::string name) {
-		return BasicBlock::Create(the_context, name, func);
+	inline llvm::BasicBlock* CreateBb(llvm::Function* func, const std::string name) {
+		return llvm::BasicBlock::Create(the_context, name, func);
 	}
 
-	static AllocaInst* CreateEntryBlockAlloca(Function* the_function, Type* type,const std::string& var_name) {
-		IRBuilder<> tmp_b(&the_function->getEntryBlock(),the_function->getEntryBlock().begin());
+	static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* the_function, llvm::Type* type,const std::string& var_name) {
+        llvm::IRBuilder<> tmp_b(&the_function->getEntryBlock(),the_function->getEntryBlock().begin());
 		return tmp_b.CreateAlloca(type, 0, var_name);
 	}
 
@@ -65,37 +65,37 @@ using namespace parser;
 		return converter.to_bytes(str);
 	}
 
-	static Type* GetType(std::wstring type_name)
+	static llvm::Type* GetType(std::wstring type_name)
 	{
 		auto type = 0;
 		if (type_name.size() == 1)type = type_name[0];
 		switch (type)
 		{
-		case '0':		return Type::getVoidTy(the_context);
+		case '0':		return llvm::Type::getVoidTy(the_context);
 		case Id:		return nullptr;
-		case K_int:		return Type::getInt32Ty(the_context);
-		case K_float:	return Type::getFloatTy(the_context);
-		case K_double:	return Type::getDoubleTy(the_context);
-		case K_bool:	return Type::getInt1Ty(the_context);
-		case K_string:	return Type::getInt8PtrTy(the_context);
+		case K_int:		return llvm::Type::getInt32Ty(the_context);
+		case K_float:	return llvm::Type::getFloatTy(the_context);
+		case K_double:	return llvm::Type::getDoubleTy(the_context);
+		case K_bool:	return llvm::Type::getInt1Ty(the_context);
+		case K_string:	return llvm::Type::getInt8PtrTy(the_context);
 		default: return the_module->getTypeByName(WstrToStr(type_name))->getPointerTo();
 		}
 	}
 
-	static StoreInst* AlignStore(StoreInst* a)
+	static llvm::StoreInst* AlignStore(llvm::StoreInst* a)
 	{
 		// a->setAlignment(MaybeAlign(8));
   	return a;
 	}
-	static LoadInst* AlignLoad(LoadInst* a)
+	static llvm::LoadInst* AlignLoad(llvm::LoadInst* a)
 	{
 		// a->setAlignment(MaybeAlign(8));
 		return a;
 	}
 
-	static void BuildInFunc(const char* name,Type* ret, std::vector<Type*> types,bool isVarArg=false)
+	static void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types,bool isVarArg=false)
 	{
-		Function::Create(FunctionType::get(ret, types, isVarArg), Function::ExternalLinkage, name, the_module.get());
+		llvm::Function::Create(llvm::FunctionType::get(ret, types, isVarArg), llvm::Function::ExternalLinkage, name, the_module.get());
 	}
 
 namespace parser
@@ -107,31 +107,31 @@ namespace parser
 		stmt2->Gen();
 	}
 
-	inline Value* NumberConst::Gen(int cmd)
+	inline llvm::Value* NumberConst::Gen(int cmd)
 	{
 		switch (type)
 		{
-		case K_float:return ConstantFP::get(the_context, APFloat(static_cast<float>(value)));
-		case K_double:return ConstantFP::get(the_context, APFloat(value));
-		case K_int:return ConstantInt::get(Type::getInt32Ty(the_context), static_cast<int>(value));
+		case K_float:return llvm::ConstantFP::get(the_context, llvm::APFloat(static_cast<float>(value)));
+		case K_double:return llvm::ConstantFP::get(the_context, llvm::APFloat(value));
+		case K_int:return llvm::ConstantInt::get(llvm::Type::getInt32Ty(the_context), static_cast<int>(value));
 		default: return LogErrorV("Unknown number type");
 		}
 	}
 
-	inline Value* Boolean::Gen(int cmd)
+	inline llvm::Value* Boolean::Gen(int cmd)
 	{
 		return value ? True : False;
-		// const auto bool_type=IntegerType::get(the_context, 1);
-		// return ConstantInt::get(bool_type, value);
+		// const auto bool_type=llvm::IntegerType::get(the_context, 1);
+		// return llvm::ConstantInt::get(bool_type, value);
 	}
 		
-	inline Value* String::Gen(int cmd)
+	inline llvm::Value* String::Gen(int cmd)
 	{
-		return builder.CreateGlobalStringPtr(StringRef(WstrToStr(value)));
+		return builder.CreateGlobalStringPtr(llvm::StringRef(WstrToStr(value)));
 		// return ConstantDataArray::getString(the_context, WstrToStr(value), true);
 	}
 		
-	inline Value* Field::Gen(int cmd)
+	inline llvm::Value* Field::Gen(int cmd)
 	{
 		auto v = named_values[WstrToStr(names[0])];
 		if (!v) LogErrorV("Unknown variable name\n");
@@ -159,35 +159,35 @@ namespace parser
 			}
 		}
 		
-		if (v->getType()->getTypeID()== Type::PointerTyID&& cmd == 0)
+		if (v->getType()->getTypeID()== llvm::Type::PointerTyID&& cmd == 0)
 			return AlignLoad(builder.CreateLoad(v, debugname));
 		return v;
 	}
 		
-	inline Value* FuncCall::Gen(int cmd)
+	inline llvm::Value* FuncCall::Gen(int cmd)
 	{
 		const auto callee = the_module->getFunction(WstrToStr(names[0]));
 		if (!callee) return LogErrorV("Unknown function referenced");
 		if (callee->arg_size() != args.size()&&!callee->isVarArg())
 			return LogErrorV("Incorrect # arguments passed");
-		std::vector<Value*> args_v;
+		std::vector<llvm::Value*> args_v;
 
 ;
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
 			args_v.push_back(args[i]->Gen());
 			if (!args_v.back())return LogErrorV("Incorrect # arguments passed with error");
 		}
-		if (callee->getReturnType()->getTypeID() == Type::VoidTyID)
+		if (callee->getReturnType()->getTypeID() == llvm::Type::VoidTyID)
 			return builder.CreateCall(callee, args_v);
 		return builder.CreateCall(callee, args_v, "calltmp");
 	}
 
-	inline Value* Factor::Gen(int cmd)
+	inline llvm::Value* Factor::Gen(int cmd)
 	{
 		return nullptr;
 	}
 
-	inline Value* Unary::Gen(int cmd)
+	inline llvm::Value* Unary::Gen(int cmd)
 	{
 		const auto v= expr->Gen();
 		if(!v)return nullptr;
@@ -203,7 +203,7 @@ namespace parser
 		}
 	}
 
-	inline Value* Binary::Gen(int cmd)
+	inline llvm::Value* Binary::Gen(int cmd)
 	{
 		const auto load_ptr = op == '=' || op >= AddAgn;
 		auto lhs = LHS->Gen(load_ptr);
@@ -217,28 +217,28 @@ namespace parser
 
 		if (ltype != rtype)
 		{
-			if (ltype == Type::IntegerTyID) {
-				if (rtype == Type::FloatTyID)
+			if (ltype == llvm::Type::IntegerTyID) {
+				if (rtype == llvm::Type::FloatTyID)
 				{
-					type = Type::FloatTyID;
-					lhs = builder.CreateUIToFP(lhs, Type::getFloatTy(the_context));
+					type = llvm::Type::FloatTyID;
+					lhs = builder.CreateUIToFP(lhs, llvm::Type::getFloatTy(the_context));
 				}
-				else if (rtype == Type::DoubleTyID)
+				else if (rtype == llvm::Type::DoubleTyID)
 				{
-					type = Type::DoubleTyID;
-					lhs = builder.CreateUIToFP(lhs, Type::getDoubleTy(the_context));
+					type = llvm::Type::DoubleTyID;
+					lhs = builder.CreateUIToFP(lhs, llvm::Type::getDoubleTy(the_context));
 				}
 			}
-			if (rtype == Type::IntegerTyID) {
-				if (ltype == Type::FloatTyID)
+			if (rtype == llvm::Type::IntegerTyID) {
+				if (ltype == llvm::Type::FloatTyID)
 				{
-					type = Type::FloatTyID;
-					rhs = builder.CreateUIToFP(lhs, Type::getFloatTy(the_context));
+					type = llvm::Type::FloatTyID;
+					rhs = builder.CreateUIToFP(lhs, llvm::Type::getFloatTy(the_context));
 				}
-				else if (ltype == Type::DoubleTyID)
+				else if (ltype == llvm::Type::DoubleTyID)
 				{
-					type = Type::DoubleTyID;
-					rhs = builder.CreateUIToFP(lhs, Type::getDoubleTy(the_context));
+					type = llvm::Type::DoubleTyID;
+					rhs = builder.CreateUIToFP(lhs, llvm::Type::getDoubleTy(the_context));
 				}
 			}
 		}
@@ -247,9 +247,9 @@ namespace parser
 		switch (op) {
 
 #define BASIC(a,b,c)case a:{\
-			if (type == Type::FloatTyID || type == Type::DoubleTyID)\
+			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)\
 				return builder.Create##b(lhs, rhs, #b"_tmp");\
-			if (type == Type::IntegerTyID)\
+			if (type == llvm::Type::IntegerTyID)\
 				return builder.Create##c(lhs, rhs, #c"_tmp");\
 			return LogErrorV(" "#a" operation cannot apply on Non-number operands\n"); }
 			
@@ -260,26 +260,26 @@ namespace parser
 		BASIC('%', FRem, SRem)
 		case '/':
 		{
-			if (type == Type::FloatTyID || type == Type::DoubleTyID) return builder.CreateFDiv(lhs, rhs, "FDiv""_tmp");
-			if (type == Type::IntegerTyID) 
+			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID) return builder.CreateFDiv(lhs, rhs, "FDiv""_tmp");
+			if (type == llvm::Type::IntegerTyID)
 				return builder.CreateFDiv(
-					builder.CreateCast(Instruction::SIToFP,lhs,Type::getDoubleTy(the_context)), 
-					builder.CreateCast(Instruction::SIToFP, rhs, Type::getDoubleTy(the_context)),
+					builder.CreateCast(llvm::Instruction::SIToFP,lhs, llvm::Type::getDoubleTy(the_context)),
+					builder.CreateCast(llvm::Instruction::SIToFP, rhs, llvm::Type::getDoubleTy(the_context)),
 					"FDiv""_tmp");
 			return LogErrorV(" ""'/'"" operation cannot apply on Non-number operands\n");
 		}
 		case And:
 		case '&': {
-			if (type == Type::IntegerTyID)return builder.CreateAnd(lhs, rhs, "and_tmp");
+			if (type == llvm::Type::IntegerTyID)return builder.CreateAnd(lhs, rhs, "and_tmp");
 			return LogErrorV(" '&' operation cannot apply on Integer operands\n");
 		}
 		case '^': {
-			if (type == Type::IntegerTyID)return builder.CreateXor(lhs, rhs, "xor_tmp");
+			if (type == llvm::Type::IntegerTyID)return builder.CreateXor(lhs, rhs, "xor_tmp");
 			return LogErrorV(" '^' operation cannot apply on Integer operands\n");
 		}
 		case Or:
 		case '|': {
-			if (type == Type::IntegerTyID)return builder.CreateOr(lhs, rhs, "or_tmp");
+			if (type == llvm::Type::IntegerTyID)return builder.CreateOr(lhs, rhs, "or_tmp");
 			return LogErrorV(" '|' operation cannot apply on Integer operands\n");
 		}
 		case BAndAgn:
@@ -295,20 +295,20 @@ namespace parser
 		}
 		case Shr:
 		{
-			if (type == Type::IntegerTyID)return builder.CreateAShr(lhs, rhs, "shr_tmp");
+			if (type == llvm::Type::IntegerTyID)return builder.CreateAShr(lhs, rhs, "shr_tmp");
 			return LogErrorV(" '<<' operation cannot apply on Integer operands\n");
 		}
 		case Shl:
 		{
-			if (type == Type::IntegerTyID)return builder.CreateShl(lhs, rhs, "shl_tmp");
+			if (type == llvm::Type::IntegerTyID)return builder.CreateShl(lhs, rhs, "shl_tmp");
 			return LogErrorV(" '>>' operation cannot apply on Integer operands\n");
 		}
 
 #define CMP(a,b,c)case a:\
 		{\
-			if (type == Type::FloatTyID || type == Type::DoubleTyID)\
+			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)\
 				return builder.CreateFCmp##b(lhs, rhs, #b"_tmp");\
-			if (type == Type::IntegerTyID)\
+			if (type == llvm::Type::IntegerTyID)\
 				return builder.CreateICmp##c(lhs, rhs, #b"_tmp");\
 			return LogErrorV(" "#a" operation cannot apply on Non-number operands\n");\
 		}
@@ -320,23 +320,23 @@ namespace parser
 		CMP(Ne, UNE, NE)
 
 		case '=': {
-			if(lhs->getType()->getTypeID()!=Type::PointerTyID)return LogErrorV("cannot reassign a constant\n");
+			if(lhs->getType()->getTypeID()!= llvm::Type::PointerTyID)return LogErrorV("cannot reassign a constant\n");
 			auto rhv = rhs;
 			if(rhs->getType()->getTypeID() != lhs->getType()->getPointerElementType()->getTypeID())
-				rhv = rhs->getType()->getTypeID() == Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;
+				rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;
 			AlignStore(builder.CreateStore(rhv, lhs));
 			return lhs;
 		}
 #define BASIC_ASSGIN(a,b,c,d)case a:																					\
 			{																											\
-				auto rhv = rhs->getType()->getTypeID() == Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;			\
-				if (type == Type::PointerTyID)																			\
+				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;			\
+				if (type == llvm::Type::PointerTyID)																			\
 				{																										\
 					type = lhs->getType()->getPointerElementType()->getTypeID();										\
 					const auto lhsv = AlignLoad(builder.CreateLoad(lhs));															\
-					if (type == Type::FloatTyID || type == Type::DoubleTyID)											\
+					if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)											\
 						return AlignStore(builder.CreateStore(builder.Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
-					if (type == Type::IntegerTyID)																		\
+					if (type == llvm::Type::IntegerTyID)																		\
 						return AlignStore(builder.CreateStore(builder.Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
 					return LogErrorV(" "#d" operation cannot apply on Non-number variables\n");							\
 				}																										\
@@ -356,18 +356,18 @@ namespace parser
 
 		case DivAgn:
 		{
-			auto rhv = rhs->getType()->getTypeID() == Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;
-			if (type == Type::PointerTyID) {
+			auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? AlignLoad(builder.CreateLoad(rhs)) : rhs;
+			if (type == llvm::Type::PointerTyID) {
 				type = lhs->getType()->getPointerElementType()->getTypeID();
 				const auto lhsv = AlignLoad(builder.CreateLoad(lhs));
-				if (type == Type::FloatTyID || type == Type::DoubleTyID)
+				if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)
 					return AlignStore(builder.CreateStore(builder.CreateFDiv(lhsv, rhv, "FDiv""_tmp"), lhs));
-				if (type == Type::IntegerTyID)
+				if (type == llvm::Type::IntegerTyID)
 				{
-					const auto lhv_d = builder.CreateCast(Instruction::SIToFP, lhsv, Type::getDoubleTy(the_context));
-					const auto rhv_d = builder.CreateCast(Instruction::SIToFP, rhv, Type::getDoubleTy(the_context));
+					const auto lhv_d = builder.CreateCast(llvm::Instruction::SIToFP, lhsv, llvm::Type::getDoubleTy(the_context));
+					const auto rhv_d = builder.CreateCast(llvm::Instruction::SIToFP, rhv, llvm::Type::getDoubleTy(the_context));
 					const auto div=builder.CreateFDiv(lhv_d, rhv_d, "div_tmp");
-					const auto div_i = builder.CreateCast(Instruction::FPToUI, div, Type::getInt32Ty(the_context));
+					const auto div_i = builder.CreateCast(llvm::Instruction::FPToUI, div, llvm::Type::getInt32Ty(the_context));
 					return AlignStore(builder.CreateStore(div_i, lhs));
 				}
 					
@@ -384,7 +384,7 @@ namespace parser
 		}
 	}
 
-	inline Value* Ternary::Gen(int cmd)
+	inline llvm::Value* Ternary::Gen(int cmd)
 	{
 		return nullptr;
 	}
@@ -395,7 +395,7 @@ namespace parser
 
 		if (!the_function)
 		{
-			std::vector<Type*> types;
+			std::vector<llvm::Type*> types;
 			if (self_type != nullptr) {
 				types.push_back(self_type->getPointerTo());
 				args->names.insert(args->names.begin(), L"this");
@@ -403,8 +403,8 @@ namespace parser
 			for (auto i = 0; i < args->size; i++)
 				types.push_back(GetType(args->types[i]));
 			
-			const auto func_type = FunctionType::get(GetType(return_type), types, args->isVarArg);
-			the_function = Function::Create(func_type, Function::ExternalLinkage, WstrToStr(name), the_module.get());
+			const auto func_type = llvm::FunctionType::get(GetType(return_type), types, args->isVarArg);
+			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, WstrToStr(name), the_module.get());
 
 			unsigned idx = 0;
 			for (auto& arg : the_function->args())
@@ -422,7 +422,7 @@ namespace parser
 		{
 			*debugger::out<<"function head not found\n"; return;
 		}
-		const auto bb = BasicBlock::Create(the_context, WstrToStr(name)+"_entry", function);
+		const auto bb = llvm::BasicBlock::Create(the_context, WstrToStr(name)+"_entry", function);
 		builder.SetInsertPoint(bb);
 		
 		
@@ -445,14 +445,14 @@ namespace parser
 		if (!val) return;
 
 		if (constant) {
-			const auto const_v = static_cast<ConstantFP*>(val);
+			const auto const_v = static_cast<llvm::ConstantFP*>(val);
 			const auto v = CreateGlob(builder, _name, builder.getDoubleTy());
 			v->setInitializer(const_v);
 			named_values[_name] = v;
 		}
 		else {
 			const auto alloca = CreateEntryBlockAlloca(the_function, ty, _name);
-			alloca->setAlignment(MaybeAlign(8));
+			alloca->setAlignment(llvm::MaybeAlign(8));
 
 			AlignStore(builder.CreateStore(val, alloca));
 			named_values[_name] = alloca;
@@ -463,22 +463,22 @@ namespace parser
 	inline void ClassDecl::GenHeader()
 	{
 		auto the_struct= the_module->getTypeByName(WstrToStr(name));
-		if (!the_struct) the_struct = StructType::create(the_context,  WstrToStr(name));
+		if (!the_struct) the_struct = llvm::StructType::create(the_context,  WstrToStr(name));
 		else *debugger::out<<"Type " << name << " already defined" << std::endl;
 	}
 
 	inline void ClassDecl::Gen()
 	{
 		auto the_struct = the_module->getTypeByName(WstrToStr(name));
-		std::vector<Type*> field_tys;
+		std::vector<llvm::Type*> field_tys;
 		for (const auto& type : types)field_tys.push_back(GetType(type));
 		the_struct->setBody(field_tys);
 		named_types[the_struct->getName().str()] = this;
 
 		//Create a Constructor function
-		const auto func_type = FunctionType::get(the_struct->getPointerTo(), std::vector<Type*>(), false);
-		auto function = Function::Create(func_type, Function::ExternalLinkage, WstrToStr(name), the_module.get());
-		const auto bb = BasicBlock::Create(the_context, WstrToStr(name) + "_entry", function);
+		const auto func_type = llvm::FunctionType::get(the_struct->getPointerTo(), std::vector<llvm::Type*>(), false);
+		auto function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, WstrToStr(name), the_module.get());
+		const auto bb = llvm::BasicBlock::Create(the_context, WstrToStr(name) + "_entry", function);
 		function->setCallingConv(llvm::CallingConv::C);
 		builder.SetInsertPoint(bb);
 		//Constructor Body
@@ -487,12 +487,12 @@ namespace parser
 		// alloca->setAlignment(MaybeAlign(8));
 
     const auto ptr=builder.CreateCall(the_module->getFunction("malloc"), 
-			ConstantInt::get(Type::getInt32Ty(the_context), 32));
-		auto p=builder.CreateCast(Instruction::BitCast, ptr, the_struct->getPointerTo());
+			llvm::ConstantInt::get(llvm::Type::getInt32Ty(the_context), 32));
+		auto p=builder.CreateCast(llvm::Instruction::BitCast, ptr, the_struct->getPointerTo());
 
 		builder.CreateRet(p);
 		// auto field1= builder.CreateStructGEP(the_struct, alloca, 1);
-		// builder.CreateStore(ConstantInt::get(Type::getInt32Ty(the_context), 233),field1);
+		// builder.CreateStore(llvm::ConstantInt::get(Type::getInt32Ty(the_context), 233),field1);
 		verifyFunction(*function);
 
 		for (auto& function : functions)
@@ -511,9 +511,9 @@ namespace parser
 		cond_v = builder.CreateICmpEQ(cond_v, True, "ifcond");
 		auto function = builder.GetInsertBlock()->getParent();
 		
-		auto ThenBB = BasicBlock::Create(the_context, "then",function);
-		auto ElseBB = BasicBlock::Create(the_context, "else");
-		auto MergeBB = BasicBlock::Create(the_context, "ifcont");
+		auto ThenBB = llvm::BasicBlock::Create(the_context, "then",function);
+		auto ElseBB = llvm::BasicBlock::Create(the_context, "else");
+		auto MergeBB = llvm::BasicBlock::Create(the_context, "ifcont");
 		printf("what\n");
 		builder.CreateCondBr(cond_v, ThenBB, ElseBB);
 		
@@ -597,9 +597,9 @@ namespace parser
 		
 	inline void Program::Gen()
 	{
-		BuildInFunc("malloc", Type::getInt8PtrTy(the_context), std::vector<Type*>{ Type::getInt32Ty(the_context) });
-		BuildInFunc("free", Type::getVoidTy(the_context), std::vector<Type*>{ Type::getInt8PtrTy(the_context) });
-		BuildInFunc("printf", Type::getVoidTy(the_context), std::vector<Type*>{ Type::getInt8PtrTy(the_context) },true);
+		BuildInFunc("malloc", llvm::Type::getInt8PtrTy(the_context), std::vector<llvm::Type*>{ llvm::Type::getInt32Ty(the_context) });
+		BuildInFunc("free", llvm::Type::getVoidTy(the_context), std::vector<llvm::Type*>{ llvm::Type::getInt8PtrTy(the_context) });
+		BuildInFunc("printf", llvm::Type::getVoidTy(the_context), std::vector<llvm::Type*>{ llvm::Type::getInt8PtrTy(the_context) },true);
 
 		for (auto& declaration : declarations)declaration->GenHeader();
 		for (auto& declaration : declarations)declaration->Gen();
@@ -611,7 +611,7 @@ namespace parser
 		
 		for (auto& statement : statements)if(statement!=nullptr)statement->Gen();
 		
-		builder.CreateRet(ConstantInt::get(Type::getInt32Ty(the_context), 0));
+		builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(the_context), 0));
 		verifyFunction(*main_func);
 	}
 }

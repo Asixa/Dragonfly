@@ -20,7 +20,7 @@ enum
 	OPERATORS(ENUM)
 #undef ENUM
 };
-using namespace debugger;
+
 namespace lexer
 {
 	class Token
@@ -51,28 +51,28 @@ namespace lexer
 	static void LoadFile(const char* file)
 	{
 		std::wifstream wif(file);
-		if (wif.fail()) PrintErrorInfo(L"No such file or directory", false);
+		if (wif.fail()) debugger::PrintErrorInfo(L"No such file or directory", false);
 		wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
 		std::wstringstream wss;
 		wss << wif.rdbuf();
 		size = std::size(wss.str()) + 1;
 		root = src = _wcsdup((wss.str() + L"\n").c_str());
-		lines.push_back(src);
-		end = root + size;
+        debugger::lines.push_back(src);
+		debugger::end = root + size;
 	}
 	 static wchar_t* Move()
 	 {
 		auto p = src;
-	 	ch++;
-		if (*src == '\t') { ch += 7; tab = 1; }
-		else if (*src > 128)ch++;
+		debugger::ch++;
+		if (*src == '\t') { debugger::ch += 7;  debugger::tab = 1; }
+		else if (*src > 128) debugger::ch++;
 		
 		src++;
 	 	return p;
 	}
 	static void MoveLine()
 	{
-		if (skip_line) {
+		if (debugger::skip_line) {
 			while (*src != 0 && *src != '\n')src++;
 			// line++;
 			// ch = tab= chp = 0;
@@ -80,11 +80,11 @@ namespace lexer
 			// src++;
 			// lines.push_back(src);
 		}
-		skip_line = true;
+		debugger::skip_line = true;
 	}
 	static void Next()
 	{
-		chp = ch;
+		debugger::chp = debugger::ch;
 		wchar_t* last_pos;
 		int hash;
 		while ((peek = *src))
@@ -97,21 +97,21 @@ namespace lexer
 			}
 			if (peek == '\n')
 			{
-				line++; chp = ch = 0;
-				lines.push_back(src);
+				debugger::line++;  debugger::chp = debugger::ch = 0;
+				debugger::lines.push_back(src);
 				token = new Token(NewLine);
 				return;
 			}
 			while (peek == ' ' || peek == '\t' || peek == '\n')
 			{
-				chp = ch;
+				debugger::chp = debugger::ch;
 				peek = *src;
 				if (peek == '\n')
 				{
-					line++;
-					ch = tab = chp = 0;
+					debugger::line++;
+					debugger::ch = debugger::tab = debugger::chp = 0;
 					Move();
-					lines.push_back(src);
+					debugger::lines.push_back(src);
 					token = new Token(NewLine);
 					return;
 				}
@@ -165,7 +165,7 @@ namespace lexer
 						{
 							type = K_double;
 							if (decimal != 0) {
-								Alert(L"There are more than 1 dot in the number");
+								debugger::Alert(L"There are more than 1 dot in the number");
 									token = nullptr;
 								return;
 							}
@@ -190,7 +190,7 @@ namespace lexer
 						Move();
 						while ((*src >= '0' && *src <= '9') || *src == '.') {
 							if (*src == '.') {
-								Alert(L"There are more than 1 dot in the number");
+								debugger::Alert(L"There are more than 1 dot in the number");
 									token = nullptr;
 								return;
 							}
@@ -285,7 +285,7 @@ namespace lexer
 				ASSGIN_OR_REPEAT_OP(D_SYMBOL)
 				ASSGIN_AND_REPEAT_OP(T_SYMBOL)
 
-				Alert((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
+				debugger::Alert((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
 				token = nullptr;
 				return;
 		}
@@ -306,8 +306,8 @@ namespace lexer
 	inline void Match(const int tk) {
 
 		if (token->type != tk) {
-			if (token->type == NewLine) { AlertNewline(); }
-			Alert((std::wstringstream() << L"expected \"" << Token::Name(tk) << L"\" but got \"" << Token::Name(token->type) << L"\" instead").str());
+			if (token->type == NewLine) { debugger::AlertNewline(); }
+			debugger::Alert((std::wstringstream() << L"expected \"" << Token::Name(tk) << L"\" but got \"" << Token::Name(token->type) << L"\" instead").str());
 			return;
 		}
 		Next();

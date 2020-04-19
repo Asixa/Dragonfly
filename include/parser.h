@@ -7,9 +7,8 @@
 #include <utility>
 #include <vector>
 #include <llvm/IR/DerivedTypes.h>
-using namespace lexer;
-using namespace llvm;
-using namespace debugger;
+
+
 namespace parser
 {
 	//********************************************************************************************************
@@ -22,7 +21,7 @@ namespace parser
 	public:
 		virtual ~Expr() {}
 		virtual void ToString() = 0;
-		virtual Value* Gen(int cmd = 0) = 0;
+		virtual llvm::Value* Gen(int cmd = 0) = 0;
 	};
 	
 	// Base Class for Statements
@@ -62,7 +61,7 @@ namespace parser
 		double value;
 		explicit NumberConst(const double d, const int t) :value(d) { type = t; }
 		void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 	};
 	
 	// Expression node for literal booleans.
@@ -70,7 +69,7 @@ namespace parser
 	{
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		bool value;
 		explicit Boolean(const bool d) :value(d) {}
 	};
@@ -80,7 +79,7 @@ namespace parser
 	{
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		std::wstring value;
 		String(std::wstring d) :value(std::move(d)) {}
 	};
@@ -90,7 +89,7 @@ namespace parser
 	{
 		public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		static std::shared_ptr<Lambda> Parse(){return nullptr;}
 	};
 	
@@ -99,7 +98,7 @@ namespace parser
 	{
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		std::vector<std::wstring> names;
 		explicit Field(std::vector<std::wstring> d) :names(d) {}
 	};
@@ -109,7 +108,7 @@ namespace parser
 	{
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		std::vector <std::wstring> names;
 		std::vector<std::shared_ptr<Expr>> args;
 		explicit FuncCall(std::vector <std::wstring> d) : names(d) {}
@@ -121,9 +120,9 @@ namespace parser
 	{
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
-		Token* tok;
-		explicit Factor(Token* t):tok(t){}
+	    llvm::Value* Gen(const int cmd=0) override;
+        lexer::Token* tok;
+		explicit Factor(lexer::Token* t):tok(t){}
 		static std::shared_ptr<Expr> Parse();
 	};
 	
@@ -132,7 +131,7 @@ namespace parser
 	{
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		int op;
 		bool prefix;
 		std::shared_ptr<Expr> expr;
@@ -153,7 +152,7 @@ namespace parser
 		std::shared_ptr<Expr> c;
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		Ternary(std::shared_ptr<Expr> x, std::shared_ptr<Expr> y, std::shared_ptr<Expr> z) :a(x), b(y), c(z) {}
 		static std::shared_ptr<Expr> Parse();
 	};
@@ -163,21 +162,21 @@ namespace parser
 	{
 	public:
 	    void ToString() override;
-	    Value* Gen(const int cmd=0) override;
+	    llvm::Value* Gen(const int cmd=0) override;
 		int op;
 		std::shared_ptr<Expr> LHS;
 		std::shared_ptr<Expr> RHS;
 		Binary(std::shared_ptr<Expr>lhs, std::shared_ptr<Expr> rhs,int op):op(op), LHS(lhs),RHS(rhs) {}
-#define PARSE_ONCE(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY if(condition){auto op = token->type;Next();  if(lexer::Check( NewLine)) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY return std::make_shared<Binary>(left, func(), op);} return left;}
-#define PARSE_LOOP(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY  while(condition){auto op = token->type;Next(); if(lexer::Check(NewLine)) {AlertNewline(); Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY left= std::make_shared<Binary>(left, func(), op);} return left;}
-		PARSE_LOOP(Sub1, Unary::Parse, Check('*') || Check( '/') ||Check( '%'))
-		PARSE_LOOP(Sub2, Sub1, Check( '+') || Check( '-'))
-		PARSE_LOOP(Sub3, Sub2, Check( Shl) || Check( Shr))
-		PARSE_ONCE(Sub4, Sub3, Check( '>') || Check( '<') || Check( Ge) || Check( Le))
-		PARSE_LOOP(Sub5, Sub4, Check( Eq) || Check( Ne))
-		PARSE_LOOP(Sub6, Sub5, Check( '|') || Check( '^') || Check( '&'))
-		PARSE_LOOP(Sub7,Sub6, Check( Or) || Check( And))
-		PARSE_LOOP(Parse, Ternary::Parse, Check( '=') || lexer::Check({ AddAgn,SubAgn ,SubAgn,DivAgn,MulAgn,ModAgn,ShlAgn,ShrAgn,BAndAgn,BXORAgn,BORAgn }))
+#define PARSE_ONCE(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY if(condition){auto op = lexer::token->type;lexer::Next();  if(lexer::Check( NewLine)) {debugger::AlertNewline(); debugger::Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY return std::make_shared<Binary>(left, func(), op);} return left;}
+#define PARSE_LOOP(name,func,condition)static std::shared_ptr<Expr> name(){auto left = func();VERIFY  while(condition){auto op = lexer::token->type;lexer::Next(); if(lexer::Check(NewLine)) {debugger::AlertNewline(); debugger::Alert(L"unexpected EndOfLine"); return nullptr;}   VERIFY left= std::make_shared<Binary>(left, func(), op);} return left;}
+		PARSE_LOOP(Sub1, Unary::Parse, lexer::Check('*') || lexer::Check( '/') || lexer::Check( '%'))
+		PARSE_LOOP(Sub2, Sub1, lexer::Check( '+') || lexer::Check( '-'))
+		PARSE_LOOP(Sub3, Sub2, lexer::Check( Shl) || lexer::Check( Shr))
+		PARSE_ONCE(Sub4, Sub3, lexer::Check( '>') || lexer::Check( '<') || lexer::Check( Ge) || lexer::Check( Le))
+		PARSE_LOOP(Sub5, Sub4, lexer::Check( Eq) || lexer::Check( Ne))
+		PARSE_LOOP(Sub6, Sub5, lexer::Check( '|') || lexer::Check( '^') || lexer::Check( '&'))
+		PARSE_LOOP(Sub7,Sub6, lexer::Check( Or) || lexer::Check( And))
+		PARSE_LOOP(Parse, Ternary::Parse, lexer::Check( '=') || lexer::Check({ AddAgn,SubAgn ,SubAgn,DivAgn,MulAgn,ModAgn,ShlAgn,ShrAgn,BAndAgn,BXORAgn,BORAgn }))
 	};
 
 	//**********   End of Expressions ****************
@@ -201,12 +200,12 @@ namespace parser
 			kernal = false,
 			is_extern = false;
 		std::wstring name;
-		StructType* self_type;
+		llvm::StructType* self_type;
 		std::wstring return_type;
 		std::shared_ptr<FuncParam> args;
 		std::shared_ptr<Statement> statements;
 
-		void SetInternal(const std::wstring structname,StructType* type)
+		void SetInternal(const std::wstring structname, llvm::StructType* type)
 		{
 			name = structname + L"." + name;
 			self_type = type;
@@ -338,7 +337,7 @@ namespace parser
 		case K_int:*debugger::out << "[" << static_cast<int>(value) << "]"; return;
 		case K_float:*debugger::out << "[" << value << "]", value; return;
 		case K_double:*debugger::out << "[" << value << "]"; return;
-		default:*debugger::out << "[" << Token::Name(type) << "]"; return;
+		default:*debugger::out << "[" << lexer::Token::Name(type) << "]"; return;
 		}
 	}
 	inline void String::ToString() { *debugger::out << "[\"" << value << "\"]"; }
@@ -354,8 +353,8 @@ namespace parser
 		}
 		*debugger::out << " )]\n";
 	}
-	inline void Unary::ToString() { *debugger::out << "<" << Token::Name(op) << ">"; expr->ToString(); }
-	inline void Binary::ToString() { *debugger::out << "("; LHS->ToString(); *debugger::out << " " << Token::Name(op) << " "; RHS->ToString(); *debugger::out << ")"; }
+	inline void Unary::ToString() { *debugger::out << "<" << lexer::Token::Name(op) << ">"; expr->ToString(); }
+	inline void Binary::ToString() { *debugger::out << "("; LHS->ToString(); *debugger::out << " " << lexer::Token::Name(op) << " "; RHS->ToString(); *debugger::out << ")"; }
 	inline void Ternary::ToString()
 	{
 		*debugger::out << "[";
@@ -376,8 +375,8 @@ namespace parser
 
 	inline std::shared_ptr<Statement> Statements::Parse()
 	{
-		while (Check( NewLine)) { Next(); VERIFY }
-		if (Check( '}')) return nullptr;
+		while (lexer::Check( NewLine)) { lexer::Next(); VERIFY }
+		if (lexer::Check( '}')) return nullptr;
 		const auto left = Statement::Parse(); VERIFY
 		const auto right = Statements::Parse(); VERIFY
 		if (right == nullptr)return left;
@@ -387,12 +386,12 @@ namespace parser
 	inline std::shared_ptr<FuncCall> FuncCall::Parse(std::vector <std::wstring> f)
 	{
 		auto func_call = std::make_shared<FuncCall>(f);
-		Next();												VERIFY
-		while (token->type != ')') {
+		lexer::Next();												VERIFY
+		while (lexer::token->type != ')') {
 			func_call->args.push_back(Binary::Parse());		VERIFY
-			if (Check( ',')) Match(',');					VERIFY
+			if (lexer::Check( ',')) lexer::Match(',');					VERIFY
 		}
-		Match(')');										VERIFY
+		lexer::Match(')');										VERIFY
 		return func_call;
 	}
 
@@ -400,13 +399,13 @@ namespace parser
 	{
 		const auto factor = ParsePrefix();
 																VERIFY
-		switch (token->type)
+		switch (lexer::token->type)
 		{
 
 		case Inc:
 		case Dec:
-			Next();												VERIFY
-			return std::make_shared<Unary>(factor, token->type, false);
+			lexer::Next();												VERIFY
+			return std::make_shared<Unary>(factor, lexer::token->type, false);
 		default:
 			return factor;
 		}
@@ -414,19 +413,19 @@ namespace parser
 
 	inline std::shared_ptr<Expr> Unary::ParsePrefix()
 	{
-		switch (token->type)
+		switch (lexer::token->type)
 		{
 		case NewLine:
-			AlertNewline();
-		    Alert(L"unexpected EndOfLine");
+			debugger::AlertNewline();
+			debugger::Alert(L"unexpected EndOfLine");
 			return nullptr;
 		case '-':
 		case '!':
 		case Inc:
 		case Dec: {
-			Next();											VERIFY
+			lexer::Next();											VERIFY
 				const auto parsed = Parse();						VERIFY
-				return std::make_shared<Unary>(parsed, token->type, true);
+				return std::make_shared<Unary>(parsed, lexer::token->type, true);
 		}
 		default:
 			return Factor::Parse();	
@@ -437,10 +436,10 @@ namespace parser
 	inline std::shared_ptr<Expr> Ternary::Parse()
 	{
 		const auto a = Binary::Sub7();		VERIFY
-		if (token->type != '?')return a;
-		Next();								VERIFY
+		if (lexer::token->type != '?')return a;
+		lexer::Next();								VERIFY
 		const auto b = Binary::Sub7();		VERIFY
-		Match(':');						VERIFY
+			lexer::Match(':');						VERIFY
 		const auto c = Binary::Sub7();		VERIFY
 		return std::make_shared<Ternary>(a, b, c);
 	}
@@ -449,10 +448,10 @@ namespace parser
 	{
 		
 		std::shared_ptr<Expr> factor;
-		switch (token->type)
+		switch (lexer::token->type)
 		{
 		case '(': {
-			Next();
+			lexer::Next();
 			// const auto point = src;
 			// auto is_lambda = false;
 			// Find('(', ')');
@@ -472,52 +471,52 @@ namespace parser
 			// else {
 				
 				factor = Binary::Parse();								VERIFY
-				Match(')');											VERIFY
+					lexer::Match(')');											VERIFY
 				return factor;
 			// }
 		}
 		case Str:
 		{
-			auto str = std::make_shared<String>(string_val);
-			Next(); VERIFY
+			auto str = std::make_shared<String>(lexer::string_val);
+			lexer::Next(); VERIFY
 			return str;
 		}
 
 		case Num:
 		{
-			const auto ty = token->value;
-			Next(); VERIFY
-			return std::make_shared<NumberConst>(number_val, ty);
+			const auto ty = lexer::token->value;
+			lexer::Next(); VERIFY
+			return std::make_shared<NumberConst>(lexer::number_val, ty);
 		}
 		case K_true:
-			Next(); VERIFY
+			lexer::Next(); VERIFY
 			return std::make_shared<Boolean>(true);
 		case K_false:
-			Next(); VERIFY
+			lexer::Next(); VERIFY
 			return std::make_shared<Boolean>(false);
 		case K_int: case K_short: case K_long: case K_float: case K_double:
 		case K_uint:case K_ushort:case K_ulong:case K_string:
 		case Id: {
 			// const auto id = string_val;
 			std::vector<std::wstring>names;
-			names.push_back(string_val);
-			Next(); VERIFY
-				const auto type = token->type;
-			while (token->type == '.')
+			names.push_back(lexer::string_val);
+			lexer::Next(); VERIFY
+				const auto type = lexer::token->type;
+			while (lexer::token->type == '.')
 			{
-				Next(); VERIFY
-					names.push_back(string_val);
-				Match(Id); VERIFY
+				lexer::Next(); VERIFY
+					names.push_back(lexer::string_val);
+				lexer::Match(Id); VERIFY
 			}
-			if (Check( '('))return FuncCall::Parse(names);
-			else if (Check('['))
+			if (lexer::Check( '('))return FuncCall::Parse(names);
+			else if (lexer::Check('['))
 			{
 				VERIFY
 			}
 			else return std::make_shared<Field>(names);
 		}
 		default:
-			Alert((std::wstringstream()<<"unexpected \"" << Token::Name(token->type) << "\" ").str());
+			debugger::Alert((std::wstringstream()<<"unexpected \"" << lexer::Token::Name(lexer::token->type) << "\" ").str());
 			return nullptr;
 		}
     }
@@ -527,32 +526,32 @@ namespace parser
 	inline std::shared_ptr<FuncParam> FuncParam::Parse()
 	{
 		auto param = std::make_shared<FuncParam>();
-		while (token->type != ')') {
+		while (lexer::token->type != ')') {
 			param->size++;
-			if (CheckType())
+			if (lexer::CheckType())
 			{
-				std::wstring t; t += static_cast<wchar_t>(token->type);
+				std::wstring t; t += static_cast<wchar_t>(lexer::token->type);
 				param->types.push_back(t);
-				Next();				VERIFY
+				lexer::Next();				VERIFY
 			}
-			else if (token->type == '.')		// Parse three dots '...' for variable argument.
+			else if (lexer::token->type == '.')		// Parse three dots '...' for variable argument.
 			{
-				Next();						VERIFY
-				Match('.');				VERIFY
-				Match('.');				VERIFY
+				lexer::Next();						VERIFY
+					lexer::Match('.');				VERIFY
+					lexer::Match('.');				VERIFY
 				param->size--;
 				param->isVarArg = true;
 				return param;
 			}
 			else
 			{
-				param->types.push_back(string_val);
-				Match(Id);				VERIFY
+				param->types.push_back(lexer::string_val);
+				lexer::Match(Id);				VERIFY
 			}
 
-			param->names.push_back(string_val);
-			Match(Id);					VERIFY
-			if (Check(',')) Match(',');	VERIFY
+			param->names.push_back(lexer::string_val);
+			lexer::Match(Id);					VERIFY
+			if (lexer::Check(',')) lexer::Match(',');	VERIFY
 		}
 		return param;
 	}
@@ -561,52 +560,52 @@ namespace parser
 	{
 		auto function = std::make_shared<FunctionDecl>();
 		function->is_extern = ext;
-		if (Check(K_dfunc))function->differentiable = true;
-		else if (Check(K_kernal))function->kernal = true;
-		Next();
+		if (lexer::Check(K_dfunc))function->differentiable = true;
+		else if (lexer::Check(K_kernal))function->kernal = true;
+		lexer::Next();
 
 
 		VERIFY
-		if (Check(Id))
+		if (lexer::Check(Id))
 		{
-			function->name = string_val;
-			Match(Id); VERIFY
+			function->name = lexer::string_val;
+			lexer::Match(Id); VERIFY
 		}
-		Match('('); VERIFY
+		lexer::Match('('); VERIFY
 		function->args = FuncParam::Parse();
-		Match(')'); VERIFY
+		lexer::Match(')'); VERIFY
 
 		function->return_type = '0';
-		if (Check(':'))
+		if (lexer::Check(':'))
 		{
-			Next(); VERIFY
-			if (CheckType())
+			lexer::Next(); VERIFY
+			if (lexer::CheckType())
 			{
-				function->return_type = static_cast<wchar_t>(token->type);
-				Next(); VERIFY
+				function->return_type = static_cast<wchar_t>(lexer::token->type);
+				lexer::Next(); VERIFY
 			}
 			else
 			{
-				function->return_type = string_val;
-				Match(Id); VERIFY
+				function->return_type = lexer::string_val;
+				lexer::Match(Id); VERIFY
 			}
 
 		}
 
-		while (Check(NewLine))Next(); VERIFY
+		while (lexer::Check(NewLine))lexer::Next(); VERIFY
 		if (ext)
 		{
-			*out<<"[Parsed] Extern function declaration\n";
+			*debugger::out<<"[Parsed] Extern function declaration\n";
 			return function;
 		}
-		*out <<"[Parsed] Function declaration\n";
-		Match('{'); VERIFY
+		*debugger::out <<"[Parsed] Function declaration\n";
+		lexer::Match('{'); VERIFY
 
 		function->statements = Statements::Parse();
-		while (Check(NewLine))Next(); VERIFY
+		while (lexer::Check(NewLine))lexer::Next(); VERIFY
 
-		Match('}'); VERIFY
-		*out<<"[Parsed] Function end\n";
+			lexer::Match('}'); VERIFY
+		* debugger::out<<"[Parsed] Function end\n";
 		return function;
 	}
 	
@@ -614,28 +613,28 @@ namespace parser
 	{
 		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;
-		Next(); VERIFY
-		let->name = string_val;
-		Match(Id);
-		if (Check(':'))
+		lexer::Next(); VERIFY
+		let->name = lexer::string_val;
+		lexer::Match(Id);
+		if (lexer::Check(':'))
 		{
-			Next(); VERIFY
-			if (CheckType())
+			lexer::Next(); VERIFY
+			if (lexer::CheckType())
 			{
-				let->type = static_cast<wchar_t>(token->type);
-				Next(); VERIFY
+				let->type = static_cast<wchar_t>(lexer::token->type);
+				lexer::Next(); VERIFY
 			}
 			else
 			{
-				let->type = string_val;
-				Match(Id); VERIFY
+				let->type = lexer::string_val;
+				lexer::Match(Id); VERIFY
 			}
 		}
-		Match('='); VERIFY
+		lexer::Match('='); VERIFY
 		let->value = Binary::Parse(); VERIFY
 
-		if (Check(';')) Next();
-		else Match(NewLine);
+		if (lexer::Check(';')) lexer::Next();
+		else lexer::Match(NewLine);
 		VERIFY
 		// PRINT("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->ToString();PRINT("\n");
 		return let;
@@ -644,17 +643,17 @@ namespace parser
 	inline std::shared_ptr<ClassDecl> ClassDecl::Parse()
 	{
 		auto instance = std::make_shared<ClassDecl>();
-		Next();													VERIFY
-		instance->name = string_val;
-		Match(Id);											VERIFY
-		while (Check(NewLine))Next();							VERIFY
-		Match('{');											VERIFY
+		lexer::Next();													VERIFY
+		instance->name = lexer::string_val;
+		lexer::Match(Id);											VERIFY
+		while (lexer::Check(NewLine))lexer::Next();							VERIFY
+			lexer::Match('{');											VERIFY
 		
 		
 		while (true) {
-			while (Check(NewLine))Next();							VERIFY
-			if (token->type == '}')break;
-			switch (token->type)
+			while (lexer::Check(NewLine))lexer::Next();							VERIFY
+			if (lexer::token->type == '}')break;
+			switch (lexer::token->type)
 			{
 			case K_init:
 			case K_deinit:
@@ -664,59 +663,59 @@ namespace parser
 				instance->functions.push_back(FunctionDecl::Parse()); VERIFY
 				break;
 			default:
-				instance->fields.push_back(string_val);
-				Match(Id); VERIFY
-				Match(':');
+				instance->fields.push_back(lexer::string_val);
+				lexer::Match(Id); VERIFY
+					lexer::Match(':');
 
-				if (CheckType())
+				if (lexer::CheckType())
 				{
-					std::wstring t; t += static_cast<wchar_t>(token->type);
+					std::wstring t; t += static_cast<wchar_t>(lexer::token->type);
 					instance->types.push_back(t);
-					Next(); VERIFY
+					lexer::Next(); VERIFY
 				}
 				else
 				{
-					instance->types.push_back(string_val);
-					Match(Id); VERIFY
+					instance->types.push_back(lexer::string_val);
+					lexer::Match(Id); VERIFY
 				}
 
-				if (Check(';')) Match(';');
-				else Match(NewLine);
-				while (Check(NewLine))Next();					VERIFY
+				if (lexer::Check(';')) lexer::Match(';');
+				else lexer::Match(NewLine);
+				while (lexer::Check(NewLine))lexer::Next();					VERIFY
 			}
 		}
-		Match('}'); VERIFY
+		lexer::Match('}'); VERIFY
 		return instance;
 	}
 	
 	inline std::shared_ptr<If> If::Parse()
 	{
 		const auto instance = std::make_shared<If>();
-		Next();
-		Match('(');
+		lexer::Next();
+		lexer::Match('(');
 		instance->condition = Binary::Parse();
-		Match(')');
-		if(Check('{'))
+		lexer::Match(')');
+		if(lexer::Check('{'))
 		{
-			Next();
+			lexer::Next();
 			instance->stmts = Statements::Parse();
-			Match('}');
+			lexer::Match('}');
 		}
 		else instance->stmts = Statement::Parse();
 		
 
-		if (Check(K_else))
+		if (lexer::Check(K_else))
 		{
-			Next();
-			if (Check('{'))
+			lexer::Next();
+			if (lexer::Check('{'))
 			{
-				Next();
+				lexer::Next();
 				instance->else_stmts = Statements::Parse();
-				Match('}');
+				lexer::Match('}');
 			}
 			else instance->else_stmts = Statement::Parse();
 		}
-		else if (Check(K_elif))instance->else_stmts = Parse();
+		else if (lexer::Check(K_elif))instance->else_stmts = Parse();
 	
 		return instance;
 	}
@@ -724,15 +723,15 @@ namespace parser
 	inline std::shared_ptr<While> While::Parse()
 	{
 		const auto instance = std::make_shared<While>();
-		Next();
-		Match('(');
+		lexer::Next();
+		lexer::Match('(');
 		instance->condition = Binary::Parse();
-		Match(')');
-		if (Check('{'))
+		lexer::Match(')');
+		if (lexer::Check('{'))
 		{
-			Next();
+			lexer::Next();
 			instance->stmts = Statements::Parse();
-			Match('}');
+			lexer::Match('}');
 		}
 		else instance->stmts = Statement::Parse();
 		return instance;
@@ -741,15 +740,15 @@ namespace parser
 	inline std::shared_ptr<For> For::Parse()
 	{
 		const auto instance = std::make_shared<For>();
-		Next();
-		Match('(');
+		lexer::Next();
+		lexer::Match('(');
 		instance->condition = Binary::Parse();
-		Match(')');
-		if (Check('{'))
+		lexer::Match(')');
+		if (lexer::Check('{'))
 		{
-			Next();
+			lexer::Next();
 			instance->stmts = Statements::Parse();
-			Match('}');
+			lexer::Match('}');
 		}
 		else instance->stmts = Statement::Parse();
 		return instance;
@@ -758,24 +757,24 @@ namespace parser
 	inline std::shared_ptr<Do> Do::Parse()
 	{
 		const auto instance = std::make_shared<Do>();
-		Next();
-		if (Check('{'))
+		lexer::Next();
+		if (lexer::Check('{'))
 		{
-			Next();
+			lexer::Next();
 			instance->stmts = Statements::Parse();
-			Match('}');
+			lexer::Match('}');
 		}
 		else instance->stmts = Statement::Parse();
 
-		Match(K_do);
-		Match('(');
+		lexer::Match(K_do);
+		lexer::Match('(');
 		instance->condition = Binary::Parse();
-		Match(')');
+		lexer::Match(')');
 		return instance;
 	}
 	inline std::shared_ptr<Throw> Throw::Parse()
 	{
-		Next();
+		lexer::Next();
 		auto instance = std::make_shared<Throw>();
 		instance->value = Factor::Parse();
 		return instance;
@@ -786,8 +785,8 @@ namespace parser
 	
 		auto instance = std::make_shared<Empty>();
 		instance->value = Binary::Parse(); VERIFY
-		if (token->type == ';')Next();
-		else Match(NewLine);
+		if (lexer::token->type == ';')lexer::Next();
+		else lexer::Match(NewLine);
 								VERIFY
 		// PRINT("[Parsed] Expression \n");instance->value->ToString();
 		return instance;
@@ -795,46 +794,46 @@ namespace parser
 
 	inline std::shared_ptr<Return> Return::Parse()
 	{
-		Next();
+		lexer::Next();
 		auto instance = std::make_shared<Return>(); 
-		if (token->type == ';'||token->type ==NewLine)
+		if (lexer::token->type == ';'|| lexer::token->type ==NewLine)
 		{
 			instance->value = nullptr;
-			Next();
+			lexer::Next();
 			return instance;
 		}
 		instance->value = Binary::Parse();
-		if (token->type == ';')Next();
-		else Match(NewLine);
-		*out <<"[Parsed] Return Statement\n";
+		if (lexer::token->type == ';')lexer::Next();
+		else lexer::Match(NewLine);
+		*debugger::out <<"[Parsed] Return Statement\n";
 		return instance;
 	}
 
 	inline std::shared_ptr<Import> Import::Parse()
 	{
-		Next();
+		lexer::Next();
 		auto instance = std::make_shared<Import>();
 		return instance;
 	}
 	
 	inline std::shared_ptr<Break> Break::Parse()
 	{
-		Next();
+		lexer::Next();
 		auto instance = std::make_shared<Break>();
 		return instance;
 	}
 	
 	inline std::shared_ptr<Continue> Continue::Parse()
 	{
-		Next();
+		lexer::Next();
 		auto instance = std::make_shared<Continue>();
 		return instance;
 	}
 
 	inline std::shared_ptr<Statement> Statement::Parse()
 	{
-		while (Check(NewLine))Next(); VERIFY
-			switch (token->type)
+		while (lexer::Check(NewLine))lexer::Next(); VERIFY
+			switch (lexer::token->type)
 			{
 			case K_let:		return FieldDecl::Parse(true);
 			case K_var:		return FieldDecl::Parse(false);
@@ -855,9 +854,9 @@ namespace parser
 		std::vector<std::shared_ptr<Statement>> statements;
 		std::vector<std::shared_ptr<Declaration>> declarations;
 		void ParseSingle() {
-			switch (token->type)
+			switch (lexer::token->type)
 			{
-			case NewLine:Next(); break;
+			case NewLine:lexer::Next(); break;
 			case K_func:
 			case K_dfunc:
 			case K_kernal:	declarations.push_back(FunctionDecl::Parse());break;
@@ -866,18 +865,18 @@ namespace parser
 			case K_class:	declarations.push_back(ClassDecl::Parse()); break;
 			default: statements.push_back(Statement::Parse());
 			}
-			while (error_occurred)
+			while (debugger::error_occurred)
 			{
-				error_occurred = false;
-				MoveLine();
-				Next();
+				debugger::error_occurred = false;
+				lexer::MoveLine();
+				lexer::Next();
 			}
 		}
 	public:
 		static std::shared_ptr<Program> Parse()
 		{
 			auto program = std::make_shared<Program>();
-			while (peek > 0 && token != nullptr) program->ParseSingle();
+			while (lexer::peek > 0 && lexer::token != nullptr) program->ParseSingle();
 			return program;
 		}
 		void Gen();
@@ -885,9 +884,9 @@ namespace parser
 
 	static std::shared_ptr<Program> Parse()
 	{
-		Next();
-		if (!only_tokenize)return Program::Parse();
-		while (peek > 0 && token!=nullptr) { *out <<"["<< Token::Name(token->type)<<"] ";	if (Check(NewLine) || Check(';'))* out <<"\n";Next();}return nullptr;
+		lexer::Next();
+		if (!debugger::only_tokenize)return Program::Parse();
+		while (lexer::peek > 0 && lexer::token!=nullptr) { *debugger::out <<"["<< lexer::Token::Name(lexer::token->type)<<"] ";	if (lexer::Check(NewLine) || lexer::Check(';'))* debugger::out <<"\n"; lexer::Next();}return nullptr;
 	}
 };
 

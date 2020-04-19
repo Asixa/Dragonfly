@@ -154,7 +154,7 @@ namespace debugger {
         PrintErrorPostfix();
     }
     // this micro should be called each time AST parsed a node, to stop immediately if there are error.
-#define VERIFY {if(error_occurred)return nullptr;}
+#define VERIFY {if(debugger::error_occurred)return nullptr;}
 
 
 }

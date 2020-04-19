@@ -27,29 +27,29 @@ int main(int argc, char** argv)
 		filename = argv[1];
 	}
 
-	SetStream(argc == 1);
+	debugger::SetStream(argc == 1);
       
-	only_tokenize = argc>2;
+	debugger::only_tokenize = argc>2;
 	// only_tokenize = true;
-	error_existed = only_tokenize;
+	debugger::error_existed = debugger::only_tokenize;
 	
 	std::wcout.imbue(std::locale(""));
 	const auto start = clock();
-	LoadFile(filename.c_str());
+    lexer::LoadFile(filename.c_str());
 
-	auto program = Parse();
-    if(!is_std_out)
-    std::wcout << dynamic_cast<std::wstringstream*>(out)->str();
-	if (!error_existed)
+	auto program = parser::Parse();
+    if(!debugger::is_std_out)
+    std::wcout << dynamic_cast<std::wstringstream*>(debugger::out)->str();
+	if (!debugger::error_existed)
 	{
 		program->Gen();
-		WriteReadableIr(the_module.get(),"ir.txt",true);
-		WriteBitCodeIr(the_module.get(),"a.ll");
+		debugger::WriteReadableIr(the_module.get(),"ir.txt",true);
+		debugger::WriteBitCodeIr(the_module.get(),"a.ll");
 		std::cout <<"Compiled successfully, took a total of "<<static_cast<double>(clock() - start)<<"ms\n\n";
 	}
 	else std::cout<<"Compiler stopped due to errors occurred\n\n";
 	
-	WriteOutput("log.txt");
+	debugger::WriteOutput("log.txt");
 
 	if(argc==1)system("pause");
 
