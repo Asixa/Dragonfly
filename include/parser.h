@@ -15,17 +15,11 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-// #include <iostream>
-// #include <utility>
-// #include <vector>
-// #include <llvm/IR/DerivedTypes.h>
-
 #include "lexer.h"
+#include <llvm/IR/Value.h>
+#include <llvm/IR/DerivedTypes.h>
 
 namespace parser {
-    //********************************************************************************************************
-    //*							AST
-    //********************************************************************************************************
 
     // Base Class for Expressions
     class Expr {
@@ -122,8 +116,8 @@ namespace parser {
     public:
         void ToString() override;
         llvm::Value* Gen(const int cmd = 0) override;
-        lexer::Token* tok;
-        explicit Factor(lexer::Token* t): tok(t) {}
+        Lexer::Token* tok;
+        explicit Factor(Lexer::Token* t): tok(t) {}
         static std::shared_ptr<Expr> Parse();
     };
 	
@@ -170,23 +164,25 @@ namespace parser {
         static std::shared_ptr<Expr> name() {                       \
             auto left = func();VERIFY                               \
             check(condition) {                                      \
-                auto op = lexer::token->type;lexer::Next();         \
-                if(lexer::Check(NewLine)) {                         \
-                    debugger::AlertNewline();                       \
-                    debugger::Alert(L"unexpected EndOfLine");       \
+                auto op = Lexer::token->type;Lexer::Next();         \
+                if(Lexer::Check(NewLine)) {                         \
+                    Debugger::AlertNewline();                       \
+                    Debugger::Alert(L"unexpected EndOfLine");       \
                     return nullptr;                                 \
                 }   VERIFY                                          \
                 left= std::make_shared<Binary>(left, func(), op);   \
             } return left;}
-        PARSE(Sub1, Unary::Parse, lexer::Check('*') || lexer::Check( '/') || lexer::Check( '%'),while)
-        PARSE(Sub2, Sub1, lexer::Check( '+') || lexer::Check( '-'), while)
-        PARSE(Sub3, Sub2, lexer::Check( Shl) || lexer::Check( Shr), while)
-        PARSE(Sub4, Sub3, lexer::Check( '>') || lexer::Check( '<') || lexer::Check( Ge) || lexer::Check( Le), if)
-        PARSE(Sub5, Sub4, lexer::Check( Eq) || lexer::Check( Ne), while)
-        PARSE(Sub6, Sub5, lexer::Check( '|') || lexer::Check( '^') || lexer::Check( '&'), while)
-        PARSE(Sub7, Sub6, lexer::Check( Or) || lexer::Check( And), while)
+
+        PARSE(Sub1, Unary::Parse, Lexer::Check('*') || Lexer::Check( '/') || Lexer::Check( '%'),while)
+
+        PARSE(Sub2, Sub1, Lexer::Check( '+') || Lexer::Check( '-'), while)
+        PARSE(Sub3, Sub2, Lexer::Check( Shl) || Lexer::Check( Shr), while)
+        PARSE(Sub4, Sub3, Lexer::Check( '>') || Lexer::Check( '<') || Lexer::Check( Ge) || Lexer::Check( Le), if)
+        PARSE(Sub5, Sub4, Lexer::Check( Eq) || Lexer::Check( Ne), while)
+        PARSE(Sub6, Sub5, Lexer::Check( '|') || Lexer::Check( '^') || Lexer::Check( '&'), while)
+        PARSE(Sub7, Sub6, Lexer::Check( Or) || Lexer::Check( And), while)
         PARSE(Parse, Ternary::Parse,
-			lexer::Check({ '=',AddAgn,SubAgn ,SubAgn,DivAgn,MulAgn,ModAgn,ShlAgn,ShrAgn,BAndAgn,BXORAgn,BORAgn }),while)
+			Lexer::Check({ '=',AddAgn,SubAgn ,SubAgn,DivAgn,MulAgn,ModAgn,ShlAgn,ShrAgn,BAndAgn,BXORAgn,BORAgn }),while)
 #undef  PARSE
     };
 

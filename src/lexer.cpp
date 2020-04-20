@@ -1,15 +1,20 @@
+#include <iostream>
+#include <codecvt>
+#include <fstream>
+#include <sstream>
+
 #include "lexer.h"
 
 
-wchar_t* lexer::src = nullptr;
-wchar_t* lexer::root = nullptr;
-wchar_t lexer::peek;
-long lexer::size = 0;
-lexer::Token* lexer::token = nullptr;
-std::wstring lexer::string_val;
-double lexer::number_val = 0;
+wchar_t* Lexer::src = nullptr;
+wchar_t* Lexer::root = nullptr;
+wchar_t Lexer::peek;
+long Lexer::size = 0;
+Lexer::Token* Lexer::token = nullptr;
+std::wstring Lexer::string_val;
+double Lexer::number_val = 0;
 
-const char* lexer::Token::Name(const int type)
+const char* Lexer::Token::Name(const int type)
 {
 	if (type == Id)return "Identifier";
 	if (type == NewLine) return "NewLine";
@@ -25,33 +30,33 @@ const char* lexer::Token::Name(const int type)
 		return (new std::string(1, static_cast<char>(type)))->c_str();	// some type is just a chat, like ';' then we just return itself in a string.
 }
 
-void lexer::LoadFile(const char* file) {
+void Lexer::LoadFile(const char* file) {
     std::wifstream wif(file);
-    if (wif.fail()) debugger::PrintErrorInfo(L"No such file or directory", false);
+    if (wif.fail()) Debugger::PrintErrorInfo(L"No such file or directory", false);
     wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
     std::wstringstream wss;
     wss << wif.rdbuf();
     size = std::size(wss.str()) + 1;
     root = src = _wcsdup((wss.str() + L"\n").c_str());
-    debugger::lines.push_back(src);
-    debugger::end = root + size;
+    Debugger::lines.push_back(src);
+    Debugger::end = root + size;
 }
 
-wchar_t* lexer::Move() {
+wchar_t* Lexer::Move() {
     auto p = src;
-    debugger::ch++;
+    Debugger::ch++;
     if (*src == '\t') {
-        debugger::ch += 7;
-        debugger::tab = 1;
+        Debugger::ch += 7;
+        Debugger::tab = 1;
     }
-    else if (*src > 128) debugger::ch++;
+    else if (*src > 128) Debugger::ch++;
 
     src++;
     return p;
 }
 
-void lexer::MoveLine() {
-    if (debugger::skip_line) {
+void Lexer::MoveLine() {
+    if (Debugger::skip_line) {
         while (*src != 0 && *src != '\n')src++;
         // line++;
         // ch = tab= chp = 0;
@@ -59,10 +64,10 @@ void lexer::MoveLine() {
         // src++;
         // lines.push_back(src);
     }
-    debugger::skip_line = true;
+    Debugger::skip_line = true;
 }
 
-bool lexer::IsCjk(const wchar_t t) {
+bool Lexer::IsCjk(const wchar_t t) {
     return t >= L'\u2E80' && t <= L'\u2FD5'
         || t >= L'\u3190' && t <= L'\u319f'
         || t >= L'\u3400' && t <= L'\u4DBF'
@@ -70,12 +75,12 @@ bool lexer::IsCjk(const wchar_t t) {
         || t >= L'\uF900' && t <= L'\uFAAD';
 }
 
-bool lexer::IsChar() {
+bool Lexer::IsChar() {
     return peek >= 'a' && peek <= 'z' || peek >= 'A' && peek <= 'Z';
 }
 
-void lexer::Next() {
-    debugger::chp = debugger::ch;
+void Lexer::Next() {
+    Debugger::chp = Debugger::ch;
     wchar_t* last_pos;
     int hash;
     while ((peek = *src)) {
@@ -86,20 +91,20 @@ void lexer::Next() {
             return;
         }
         if (peek == '\n') {
-            debugger::line++;
-            debugger::chp = debugger::ch = 0;
-            debugger::lines.push_back(src);
+            Debugger::line++;
+            Debugger::chp = Debugger::ch = 0;
+            Debugger::lines.push_back(src);
             token = new Token(NewLine);
             return;
         }
         while (peek == ' ' || peek == '\t' || peek == '\n') {
-            debugger::chp = debugger::ch;
+            Debugger::chp = Debugger::ch;
             peek = *src;
             if (peek == '\n') {
-                debugger::line++;
-                debugger::ch = debugger::tab = debugger::chp = 0;
+                Debugger::line++;
+                Debugger::ch = Debugger::tab = Debugger::chp = 0;
                 Move();
-                debugger::lines.push_back(src);
+                Debugger::lines.push_back(src);
                 token = new Token(NewLine);
                 return;
             }
@@ -157,7 +162,7 @@ void lexer::Next() {
                     if (*src == '.') {
                         type = K_double;
                         if (decimal != 0) {
-                            debugger::Alert(L"There are more than 1 dot in the number");
+                            Debugger::Alert(L"There are more than 1 dot in the number");
                             token = nullptr;
                             return;
                         }
@@ -180,7 +185,7 @@ void lexer::Next() {
                     Move();
                     while ((*src >= '0' && *src <= '9') || *src == '.') {
                         if (*src == '.') {
-                            debugger::Alert(L"There are more than 1 dot in the number");
+                            Debugger::Alert(L"There are more than 1 dot in the number");
                             token = nullptr;
                             return;
                         }
@@ -270,13 +275,13 @@ void lexer::Next() {
         ASSGIN_OR_REPEAT_OP(D_SYMBOL)
         ASSGIN_AND_REPEAT_OP(T_SYMBOL)
 
-        debugger::Alert((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
+        Debugger::Alert((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
         token = nullptr;
         return;
     }
 }
 
-void lexer::Find(const wchar_t start, const wchar_t end) {
+void Lexer::Find(const wchar_t start, const wchar_t end) {
     auto i = 1;
     wchar_t t;
     while ((t = *Move())) {
@@ -286,11 +291,11 @@ void lexer::Find(const wchar_t start, const wchar_t end) {
     }
 }
 
-void lexer::Match(const int tk) {
+void Lexer::Match(const int tk) {
 
     if (token->type != tk) {
-        if (token->type == NewLine) { debugger::AlertNewline(); }
-        debugger::Alert(
+        if (token->type == NewLine) { Debugger::AlertNewline(); }
+        Debugger::Alert(
             (std::wstringstream() << L"expected \"" << Token::Name(tk) << L"\" but got \"" << Token::Name(token->type)
                 << L"\" instead").str());
         return;
@@ -298,16 +303,16 @@ void lexer::Match(const int tk) {
     Next();
 }
 
-bool lexer::Check(const int t) {
+bool Lexer::Check(const int t) {
     return token->type == t;
 }
 
-bool lexer::Check(const std::vector<int> t) {
+bool Lexer::Check(const std::vector<int> t) {
     return std::find(t.begin(), t.end(), token->type) != t.end();
 }
 
-bool lexer::CheckType() {
-    return lexer::token->type >= K_int && lexer::token->type <= K_double;
+bool Lexer::CheckType() {
+    return Lexer::token->type >= K_int && Lexer::token->type <= K_double;
 }
 
 

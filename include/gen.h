@@ -27,14 +27,14 @@
 
 #include "parser.h"
 
-class gen {
+class Gen {
 public:
 	static llvm::LLVMContext the_context;
 	static std::unique_ptr<llvm::Module> the_module;
 	static llvm::IRBuilder<> builder;
 	static llvm::Function* the_function;
-	static std::map<std::string, llvm::Value*> named_values;
-	static std::map<std::string, parser::ClassDecl*> named_types;
+	static std::map<std::string, llvm::Value*> fields_table;
+	static std::map<std::string, parser::ClassDecl*> types_table;
 
 	static llvm::Value* True;
 	static llvm::Value* False;

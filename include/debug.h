@@ -12,23 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DEBUGG_H
-#define DEBUGG_H
-
-#include <string>
-#include <iostream>
-#include <vector>
-#include <sstream>
-#include <fstream>
-#include <codecvt>
-//
-#include <llvm/Support/raw_ostream.h>
-#include <llvm/IR/Module.h>
+#ifndef DEBUG_H
+#define DEBUG_H
 #include <llvm/Bitcode/BitcodeWriter.h>
 
-#include <windows.h>
-
-class debugger {
+class Debugger {
 public:
     static std::basic_ostream<wchar_t>* out;
     static bool is_std_out;
@@ -78,9 +66,7 @@ public:
         kWhite
     };
 
-
     static void SetColor(const int c);
-
 
     // this function is implemented in main.cpp,
     // because there are some issues with include<windows.h> before other headers.
@@ -97,7 +83,8 @@ public:
 
     static void Warn(const std::wstring info);
     // this micro should be called each time AST parsed a node, to stop immediately if there are error.
-#define VERIFY {if(debugger::error_occurred)return nullptr;}
+
+    #define VERIFY {if(Debugger::error_occurred)return nullptr;}
 
 };
 

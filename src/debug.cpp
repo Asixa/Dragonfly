@@ -1,26 +1,40 @@
-#include "debug.h"
+
+#include <iostream>
+#include <sstream>
+#include <codecvt>
+#include <string>
+#include <vector>
+#include <fstream>
+
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Bitcode/BitcodeWriter.h>
+
+#include <windows.h>
+
 #include "lexer.h"
-std::basic_ostream<wchar_t>* debugger::out = nullptr;
-bool debugger::is_std_out = false;
-bool debugger::error_existed = false;
-bool debugger::error_occurred = false;
-bool debugger::only_tokenize = false;
-bool debugger::skip_line = true;
 
-int debugger::line = 0;
-int debugger::ch = 0;
-int debugger::chp = 0;
-int debugger::tab = 0;
-int debugger::log_color = 0;
-wchar_t* debugger::end = nullptr;
-std::vector<wchar_t*> debugger::lines;
 
-void debugger::SetStream(const bool t) {
+std::basic_ostream<wchar_t>* Debugger::out = nullptr;
+bool Debugger::is_std_out = false;
+bool Debugger::error_existed = false;
+bool Debugger::error_occurred = false;
+bool Debugger::only_tokenize = false;
+bool Debugger::skip_line = true;
+
+int Debugger::line = 0;
+int Debugger::ch = 0;
+int Debugger::chp = 0;
+int Debugger::tab = 0;
+int Debugger::log_color = 0;
+wchar_t* Debugger::end = nullptr;
+std::vector<wchar_t*> Debugger::lines;
+
+void Debugger::SetStream(const bool t) {
     is_std_out = t;
     out = is_std_out ? &std::wcout : new std::wstringstream();
 }
 
-void debugger::WriteOutput(const char* file) {
+void Debugger::WriteOutput(const char* file) {
     if (is_std_out)return;
     std::wofstream stream;
     stream.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t, 0x10ffff, std::generate_header>));
@@ -29,7 +43,7 @@ void debugger::WriteOutput(const char* file) {
     stream.close();
 }
 
-void debugger::WriteReadableIr(llvm::Module* module, const char* file, bool print) {
+void Debugger::WriteReadableIr(llvm::Module* module, const char* file, bool print) {
     std::string ir;
     llvm::raw_string_ostream ir_stream(ir);
     ir_stream << *module;
@@ -41,20 +55,20 @@ void debugger::WriteReadableIr(llvm::Module* module, const char* file, bool prin
     if (print)std::cout << ir;
 }
 
-void debugger::WriteBitCodeIr(llvm::Module* module, const char* file) {
+void Debugger::WriteBitCodeIr(llvm::Module* module, const char* file) {
     std::error_code ec;
     llvm::raw_fd_ostream os(file, ec, llvm::sys::fs::F_None);
     WriteBitcodeToFile(*module, os);
     os.flush();
 }
 
-void debugger::SetColor(const int c) {
+void Debugger::SetColor(const int c) {
     static HANDLE handle;
     if (handle == nullptr)handle = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(handle, c);
 }
 
-void debugger::PrintErrorInfo(const std::wstring type, const bool show_location) {
+void Debugger::PrintErrorInfo(const std::wstring type, const bool show_location) {
     if (show_location)
         *out << L"[" << line + 1 << L"," << ch << L"]: ";
     SetColor(log_color);
@@ -62,7 +76,7 @@ void debugger::PrintErrorInfo(const std::wstring type, const bool show_location)
     SetColor(kWhite);
 }
 
-void debugger::PrintErrorPostfix() {
+void Debugger::PrintErrorPostfix() {
     auto pt = lines[line];							//find the start pointer of this line.
     std::wstring str;
     while (*pt != L'\n' && pt < end)str += *pt++;		//push all the characters to str
@@ -79,13 +93,13 @@ void debugger::PrintErrorPostfix() {
     SetColor(kWhite);
 }
 
-void debugger::AlertNewline() {
-    chp = ch = --lexer::src - lines[--line];
+void Debugger::AlertNewline() {
+    chp = ch = --Lexer::src - lines[--line];
     lines.pop_back();
     skip_line = false;
 }
 
-void debugger::AlertNonBreak(const std::wstring info) {
+void Debugger::AlertNonBreak(const std::wstring info) {
     error_existed = true;
     log_color = kRed;
     PrintErrorInfo(L"error");
@@ -93,12 +107,12 @@ void debugger::AlertNonBreak(const std::wstring info) {
     PrintErrorPostfix();
 }
 
-void debugger::Alert(const std::wstring info) {
+void Debugger::Alert(const std::wstring info) {
     error_occurred = true;
     AlertNonBreak(info);
 }
 
-void debugger::Warn(const std::wstring info) {
+void Debugger::Warn(const std::wstring info) {
     log_color = kYellow;
     PrintErrorInfo(L"warning");
     *out << info << std::endl;

@@ -14,26 +14,17 @@
 
 #ifndef LEXER_H
 #define LEXER_H
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <codecvt>
+
 #include "keywords.h"
 #include "debug.h"
 
 #include <vector>
-
-enum {
-    OTHER_KEYWORDS
-#define ENUM(NAME) K_##NAME,
-    KEYWORDS(ENUM)
-#define ENUM(NAME,_) NAME,
-    OPERATORS(ENUM)
-#undef ENUM
-};
+#include <string>
 
 
-class lexer {
+class Lexer {
+
+
 public:
 
     class Token {
@@ -41,40 +32,43 @@ public:
         int type, value;
         explicit Token(const int t, const int v = 0) : type(t), value(v) {}
         static const char* Name(int type);
-
     };
 
     static wchar_t* src;
     static wchar_t* root;
     static wchar_t peek;
+	// last current token
     static long size;
+	// the current token
     static Token* token;
+	// last encountered string literals
     static std::wstring string_val;
+	// last encountered number literals
     static double number_val;
 
+    //Initialize the lexer with the given file.
     static void LoadFile(const char* file);
-
+	//Lexer ignores current line.
     static wchar_t* Move();
-
+	//Lexer ignores current line.
     static void MoveLine();
-
-    static bool IsCjk(const wchar_t t);
-
+	//Check if given wchar is Chinese, Janpanese, Or Korean Character.
+    static bool IsCjk(wchar_t t);
+	//Check if current peek is 'a'~'z' or 'A'~'Z'
     static bool IsChar();
 
+    //Calculate the next token
     static void Next();
 
-    static void Find(const wchar_t start, const wchar_t end);
+    static void Find(wchar_t start, wchar_t end);
 
-    static void Match(const int tk);
-
+    static void Match(int tk);
+    //Check if current token's type equal to the given type.
     static bool Check(const int t);
-
+	//Check if current token's type belong to the given list of type.
     static bool Check(const std::vector<int> t);
-
+	//Check if current token's type is basic type, eg: int double.
     static bool CheckType();
-
-
 };
 
 
