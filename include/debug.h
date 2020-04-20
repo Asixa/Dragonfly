@@ -28,18 +28,6 @@
 
 #include <windows.h>
 
-namespace lexer {
-    class Token;
-    static wchar_t* src;
-    static wchar_t* root;
-    static wchar_t peek;
-    static long size;
-    static Token* token;
-    static std::wstring string_val;
-    static double number_val;
-}
-
-
 class debugger {
 public:
     static std::basic_ostream<wchar_t>* out;
@@ -108,10 +96,8 @@ public:
     static void Alert(const std::wstring info);
 
     static void Warn(const std::wstring info);
-
     // this micro should be called each time AST parsed a node, to stop immediately if there are error.
 #define VERIFY {if(debugger::error_occurred)return nullptr;}
-
 
 };
 

@@ -1,5 +1,5 @@
 #include "debug.h"
-
+#include "lexer.h"
 std::basic_ostream<wchar_t>* debugger::out = nullptr;
 bool debugger::is_std_out = false;
 bool debugger::error_existed = false;
