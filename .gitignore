@@ -14,3 +14,7 @@ build
 out
 *.ilk
 *.pdb
+*.testdurations
+tools/a.exe
+bin
+

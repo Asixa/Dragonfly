@@ -1,0 +1,5 @@
+﻿[Parsed] Function declaration
+[Parsed] Return Statement
+[Parsed] Function end
+[Parsed] Function declaration
+[Parsed] Function end
