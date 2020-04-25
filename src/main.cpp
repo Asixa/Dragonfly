@@ -16,7 +16,7 @@
 
 #include "lexer.h"
 #include "parser.h"
-#include "gen.h"
+#include "codegen.h"
 
 
 int main(int argc, char** argv) {
@@ -30,9 +30,7 @@ int main(int argc, char** argv) {
     }
 
     Debugger::SetStream(argc == 1);
-
     Debugger::only_tokenize = argc > 2;
-    // only_tokenize = true;
     Debugger::error_existed = Debugger::only_tokenize;
 
     std::wcout.imbue(std::locale(""));
@@ -45,8 +43,8 @@ int main(int argc, char** argv) {
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
     if (!Debugger::error_existed) {
         program->Gen();
-        Debugger::WriteReadableIr(Gen::the_module.get(), "ir.txt", true);
-        Debugger::WriteBitCodeIr(Gen::the_module.get(), "a.ll");
+        CodeGen::WriteReadableIr(CodeGen::the_module.get(), "ir.txt", true);
+		CodeGen::WriteBitCodeIr(CodeGen::the_module.get(), "a.ll");
         std::cout << "Compiled successfully, took a total of " << static_cast<double>(clock() - start) << "ms\n\n";
     }
     else std::cout << "Compiler stopped due to errors occurred\n\n";

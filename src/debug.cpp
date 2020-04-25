@@ -1,3 +1,16 @@
+// Copyright 2019 The Dragonfly Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <iostream>
 #include <sstream>
@@ -6,12 +19,11 @@
 #include <vector>
 #include <fstream>
 
-#include <llvm/Support/raw_ostream.h>
-#include <llvm/Bitcode/BitcodeWriter.h>
+#include "lexer.h"
 
 #include <windows.h>
 
-#include "lexer.h"
+
 
 
 std::basic_ostream<wchar_t>* Debugger::out = nullptr;
@@ -26,7 +38,6 @@ int Debugger::ch = 0;
 int Debugger::chp = 0;
 int Debugger::tab = 0;
 int Debugger::log_color = 0;
-wchar_t* Debugger::end = nullptr;
 std::vector<wchar_t*> Debugger::lines;
 
 void Debugger::SetStream(const bool t) {
@@ -41,25 +52,6 @@ void Debugger::WriteOutput(const char* file) {
     stream.open(file);
     stream << dynamic_cast<std::wstringstream*>(out)->str();
     stream.close();
-}
-
-void Debugger::WriteReadableIr(llvm::Module* module, const char* file, bool print) {
-    std::string ir;
-    llvm::raw_string_ostream ir_stream(ir);
-    ir_stream << *module;
-    ir_stream.flush();
-    std::ofstream file_stream;
-    file_stream.open(file);
-    file_stream << ir;
-    file_stream.close();
-    if (print)std::cout << ir;
-}
-
-void Debugger::WriteBitCodeIr(llvm::Module* module, const char* file) {
-    std::error_code ec;
-    llvm::raw_fd_ostream os(file, ec, llvm::sys::fs::F_None);
-    WriteBitcodeToFile(*module, os);
-    os.flush();
 }
 
 void Debugger::SetColor(const int c) {
@@ -79,7 +71,7 @@ void Debugger::PrintErrorInfo(const std::wstring type, const bool show_location)
 void Debugger::PrintErrorPostfix() {
     auto pt = lines[line];							//find the start pointer of this line.
     std::wstring str;
-    while (*pt != L'\n' && pt < end)str += *pt++;		//push all the characters to str
+    while (*pt != L'\n' && pt < Lexer::end)str += *pt++;		//push all the characters to str
 
     SetColor(kDarkTeal);
     *out << str << std::endl;						// print error line of code

@@ -27,7 +27,7 @@
 
 #include "parser.h"
 
-class Gen {
+class CodeGen {
 public:
 	static llvm::LLVMContext the_context;
 	static std::unique_ptr<llvm::Module> the_module;
@@ -49,7 +49,7 @@ public:
 
     static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* the_function, llvm::Type* type,
                                                     const std::string& var_name);
-    static std::string WstrToStr(const std::wstring str);
+    static std::string MangleStr(const std::wstring str);
 
     static llvm::Type* GetType(std::wstring type_name);
 
@@ -58,6 +58,14 @@ public:
     static llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
 
     static void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false);
+
+	// Write human-readable ir to file , for debug and testing.
+	static void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
+	// Write compilable ir to file , for further compilation.
+	static void WriteBitCodeIr(llvm::Module* module, const char* file);
+
+
+
 };
 
 

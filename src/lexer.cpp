@@ -1,3 +1,17 @@
+// Copyright 2019 The Dragonfly Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <iostream>
 #include <codecvt>
 #include <fstream>
@@ -8,6 +22,7 @@
 
 wchar_t* Lexer::src = nullptr;
 wchar_t* Lexer::root = nullptr;
+wchar_t* Lexer::end = nullptr;
 wchar_t Lexer::peek;
 long Lexer::size = 0;
 Lexer::Token* Lexer::token = nullptr;
@@ -38,12 +53,12 @@ void Lexer::LoadFile(const char* file) {
     wss << wif.rdbuf();
     size = std::size(wss.str()) + 1;
     root = src = _wcsdup((wss.str() + L"\n").c_str());
+	end = root + size;
     Debugger::lines.push_back(src);
-    Debugger::end = root + size;
 }
 
 wchar_t* Lexer::Move() {
-    auto p = src;
+    const auto p = src;
     Debugger::ch++;
     if (*src == '\t') {
         Debugger::ch += 7;
@@ -67,12 +82,12 @@ void Lexer::MoveLine() {
     Debugger::skip_line = true;
 }
 
-bool Lexer::IsCjk(const wchar_t t) {
-    return t >= L'\u2E80' && t <= L'\u2FD5'
-        || t >= L'\u3190' && t <= L'\u319f'
-        || t >= L'\u3400' && t <= L'\u4DBF'
-        || t >= L'\u4E00' && t <= L'\u9FCC'
-        || t >= L'\uF900' && t <= L'\uFAAD';
+bool Lexer::IsCjk(const wchar_t c) {
+    return c >= L'\u2E80' && c <= L'\u2FD5'
+        || c >= L'\u3190' && c <= L'\u319f'
+        || c >= L'\u3400' && c <= L'\u4DBF'
+        || c >= L'\u4E00' && c <= L'\u9FCC'
+        || c >= L'\uF900' && c <= L'\uFAAD';
 }
 
 bool Lexer::IsChar() {
@@ -291,24 +306,24 @@ void Lexer::Find(const wchar_t start, const wchar_t end) {
     }
 }
 
-void Lexer::Match(const int tk) {
+void Lexer::Match(const int ty) {
 
-    if (token->type != tk) {
+    if (token->type != ty) {
         if (token->type == NewLine) { Debugger::AlertNewline(); }
         Debugger::Alert(
-            (std::wstringstream() << L"expected \"" << Token::Name(tk) << L"\" but got \"" << Token::Name(token->type)
+            (std::wstringstream() << L"expected \"" << Token::Name(ty) << L"\" but got \"" << Token::Name(token->type)
                 << L"\" instead").str());
         return;
     }
     Next();
 }
 
-bool Lexer::Check(const int t) {
-    return token->type == t;
+bool Lexer::Check(const int ty) {
+    return token->type == ty;
 }
 
-bool Lexer::Check(const std::vector<int> t) {
-    return std::find(t.begin(), t.end(), token->type) != t.end();
+bool Lexer::Check(const std::vector<int> tys) {
+    return std::find(tys.begin(), tys.end(), token->type) != tys.end();
 }
 
 bool Lexer::CheckType() {

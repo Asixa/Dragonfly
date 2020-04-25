@@ -24,7 +24,7 @@ namespace parser {
     // Base Class for Expressions
     class Expr {
     public:
-        virtual ~Expr() {}
+        virtual ~Expr() = default;
         virtual void ToString() = 0;
         virtual llvm::Value* Gen(int cmd = 0) = 0;
     };

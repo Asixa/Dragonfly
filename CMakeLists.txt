@@ -8,7 +8,7 @@ if(${LLVM_DIR} MATCHES "LLVM_DIR-NOTFOUND" )
 	include("${PROJECT_SOURCE_DIR}/cmake/FindLLVM.cmake")
 endif(${LLVM_DIR} MATCHES "LLVM_DIR-NOTFOUND" )
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+
 
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -20,6 +20,7 @@ llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter)
 
 
 #MAIN
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 include_directories(
         ${PROJECT_SOURCE_DIR}/include)
 #        ${PROJECT_SOURCE_DIR}/src

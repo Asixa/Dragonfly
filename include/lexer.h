@@ -21,29 +21,36 @@
 #include <vector>
 #include <string>
 
-
 class Lexer {
-
-
 public:
 
     class Token {
     public:
-        int type, value;
+        // The type of the token
+		int type;
+		// The value used to store secondary type.
+		// For example the bit length of number literals.
+        int value;
         explicit Token(const int t, const int v = 0) : type(t), value(v) {}
+        // Takes a token type, returns its name in string.
         static const char* Name(int type);
     };
 
+	// Current position of source code memeory..
     static wchar_t* src;
+	// The head of source code memeory.
     static wchar_t* root;
+	// pointer to the last character of source code memeory.
+	static wchar_t* end;
+	// Current character.
     static wchar_t peek;
-	// last current token
+	// Length of the source code snippet.
     static long size;
-	// the current token
+	// The current token.
     static Token* token;
-	// last encountered string literals
+	// Last encountered string literals.
     static std::wstring string_val;
-	// last encountered number literals
+	// Last encountered number literals.
     static double number_val;
 
     //Initialize the lexer with the given file.
@@ -53,20 +60,20 @@ public:
 	//Lexer ignores current line.
     static void MoveLine();
 	//Check if given wchar is Chinese, Janpanese, Or Korean Character.
-    static bool IsCjk(wchar_t t);
+    static bool IsCjk(wchar_t c);
 	//Check if current peek is 'a'~'z' or 'A'~'Z'
     static bool IsChar();
-
     //Calculate the next token
     static void Next();
 
     static void Find(wchar_t start, wchar_t end);
-
-    static void Match(int tk);
+	//If current token is in expected type, move to next token.
+	//Other wise throw an error to debugger.
+    static void Match(int ty);
     //Check if current token's type equal to the given type.
-    static bool Check(const int t);
+    static bool Check(const int ty);
 	//Check if current token's type belong to the given list of type.
-    static bool Check(const std::vector<int> t);
+    static bool Check(const std::vector<int> tys);
 	//Check if current token's type is basic type, eg: int double.
     static bool CheckType();
 };

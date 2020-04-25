@@ -19,6 +19,8 @@
 class Debugger {
 public:
     static std::basic_ostream<wchar_t>* out;
+	// collection of pointers to the beginning of each line of source code.
+	static std::vector<wchar_t*> lines;
     static bool is_std_out;
     // Once called ALERT, error_existed will be true and will not be changed, and the compiler won't generate IR.
     static bool error_existed;
@@ -29,22 +31,14 @@ public:
     static bool  only_tokenize;
 	// to Solve an error, the lexer will skip current line, but for special cases like NEWLINE, lexer will not skip.
     static bool skip_line;		
-	// collection of pointers to the beginning of each line of source code.
-    static std::vector<wchar_t*> lines;	
     // line is the number of current line, tab is 1 if there are tabs in this line, otherwise is 0
 	// ch is the right location of error token, chp is the left location of error token. 
     static int line, ch, chp, tab;		
     static int log_color;				// the color the debugger going to use while print infos.
-    static wchar_t* end;				// pointer to the last character of  sourcecode
-
+    
     static void SetStream(const bool t);
-
     // Write all output to file , for debug and testing.
     static void WriteOutput(const char* file);
-    // Write human-readable ir to file , for debug and testing.
-    static void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
-    // Write compilable ir to file , for further compilation.
-    static void WriteBitCodeIr(llvm::Module* module, const char* file);
 
     // this special micro will be called when the error token is "Newline", then we need to go back a line to print debug info.
 
@@ -82,8 +76,8 @@ public:
     static void Alert(const std::wstring info);
 
     static void Warn(const std::wstring info);
-    // this micro should be called each time AST parsed a node, to stop immediately if there are error.
 
+    // this micro should be called each time AST parsed a node, to stop immediately if there are error.
     #define VERIFY {if(Debugger::error_occurred)return nullptr;}
 
 };
