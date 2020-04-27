@@ -577,6 +577,8 @@ namespace parser {
         CodeGen::the_function = main_func;
         CodeGen::builder.SetInsertPoint(entry);
 
+        
+
         for (auto& statement : statements)if (statement != nullptr)statement->Gen();
 
         CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));

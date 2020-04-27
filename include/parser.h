@@ -309,6 +309,14 @@ namespace parser {
         void Gen() override;
     };
 
+	class Switch final : public Statement {
+	public:
+		std::shared_ptr<Expr> value;
+		std::shared_ptr<Statement> stmts;
+		static std::shared_ptr<Switch> Parse();
+		void Gen() override;
+	};
+
     class For final : public Statement {
     public:
         std::shared_ptr<Expr> condition;

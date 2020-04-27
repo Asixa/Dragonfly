@@ -8,7 +8,7 @@ namespace parser {
 
     // implement all the ToString function for Expression nodes below.
     void Factor::ToString() { *Debugger::out << "[Factor]"; }
-
+    
     void NumberConst::ToString() {
         switch (type) {
         case K_int: *Debugger::out << "[" << static_cast<int>(value) << "]";
@@ -487,6 +487,20 @@ namespace parser {
         instance->condition = Binary::Parse();
         Lexer::Match(')');
         return instance;
+    }
+
+    std::shared_ptr<Switch> Switch::Parse() {
+		Lexer::Next();
+		Lexer::Match('(');
+		Lexer::Match(')');
+		Lexer::Match('{');
+
+		while (true) {
+            break;
+		}
+
+		Lexer::Match('}');
+		return nullptr;
     }
 
     std::shared_ptr<Throw> Throw::Parse() {

@@ -1,0 +1,32 @@
+
+
+
+
+
+for (i=0;i<200;i++)
+{
+	
+}
+
+for i in range(100)
+{
+	
+}
+
+var a = 10
+
+while (a<100)
+{
+ a++;
+}
+
+
+switch (233)
+{
+	case 1: printf("One")
+	case 2: printf("two")
+	case 3: printf("three")
+	case 233: printf("lol")
+	default: 
+		printf("error")
+}
