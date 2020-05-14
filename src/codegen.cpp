@@ -23,12 +23,18 @@
 llvm::LLVMContext CodeGen::the_context;
 std::unique_ptr<llvm::Module> CodeGen::the_module = std::make_unique<llvm::Module>("Program", CodeGen::the_context);
 llvm::IRBuilder<> CodeGen::builder(CodeGen::the_context);
-llvm::Function* CodeGen::the_function = nullptr;
-std::map<std::string, llvm::Value*> CodeGen::fields_table;
+// llvm::Function* CodeGen::the_function = nullptr;
+std::map<std::string, llvm::Value*> CodeGen::local_fields_table;
+std::map<std::string, llvm::Value*> CodeGen::global_fields_table;
 std::map<std::string, parser::ClassDecl*> CodeGen::types_table;
 llvm::Value* CodeGen::True = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 1);
 llvm::Value* CodeGen::False = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 0);
 
+bool CodeGen::is_sub_block = false;
+llvm::BasicBlock* CodeGen::block_begin = nullptr;
+llvm::BasicBlock* CodeGen::block_end = nullptr;
+
+// llvm::Value* CodeGen::This = nullptr;
 
 llvm::Value* CodeGen::LogErrorV(const char* str) {
     *Debugger::out << str;
@@ -114,6 +120,42 @@ void CodeGen::WriteBitCodeIr(llvm::Module* module, const char* file) {
 	os.flush();
 }
 
+llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name) {
+
+	const auto obj_type_name = obj->getType()->getPointerElementType()->getStructName().str();
+	// std::cout << ((obj->getType()->getTypeID() == llvm::Type::PointerTyID)) << std::endl;
+	auto decl = CodeGen::types_table[obj_type_name];
+	auto idx = -1;
+	for (int id = 0, n = decl->fields.size(); id < n; id++) {
+
+		if (decl->fields[id] == name) {
+			idx = id;
+			break;
+		}
+	}
+	if (idx == -1)return CodeGen::LogErrorV("Cannot find field... \n");
+	const auto v = obj;
+	return  CodeGen::builder.CreateStructGEP(v, idx);
+}
+llvm::Value* CodeGen::GetField(const std::wstring name, const bool warn) {
+	llvm::Value* v = nullptr;
+	const auto mangle_name = CodeGen::MangleStr(name);
+	if (!v && CodeGen::local_fields_table.find(mangle_name) != CodeGen::local_fields_table.end())
+		v = CodeGen::local_fields_table[mangle_name];
+	//
+	// find v in global scope
+	if (!v && CodeGen::global_fields_table.find(mangle_name) != CodeGen::global_fields_table.end())
+		v = CodeGen::global_fields_table[mangle_name];
+
+	// TODO find v in public Enums
+	// TODO find v in namespaces
+	// TODO find v in this
+
+	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end())
+		v = CodeGen::builder.CreateLoad(CodeGen::GetMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
+	if (!v && warn) return  CodeGen::LogErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str());
+    return nullptr;
+}
 namespace parser {
 
     void Statements::Gen() {
@@ -138,38 +180,44 @@ namespace parser {
         return CodeGen::builder.CreateGlobalStringPtr(llvm::StringRef(CodeGen::MangleStr(value)));
     }
 
-    llvm::Value* Field::Gen(int cmd) {
-        auto v = CodeGen::fields_table[CodeGen::MangleStr(names[0])];
-        if (!v) CodeGen::LogErrorV("Unknown variable name\n");
-        std::string debug_name;
-        for (const auto& name : names)debug_name += "_" + CodeGen::MangleStr(name);
-        if (names.size() > 1) {
-            for (auto i = 1; i < names.size(); i++) {
-                auto name = names[i];
-                auto decl = CodeGen::types_table[v->getType()->getPointerElementType()->getPointerElementType()->
-                                                getStructName().str()];
-                auto idx = -1;
-                for (int id = 0, n = decl->fields.size(); id < n; id++) {
 
-                    if (decl->fields[id] == name) {
-                        idx = id;
-                        break;
-                    }
-                }
-                if (idx == -1)return CodeGen::LogErrorV("Cannot find field... \n");
-                v = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v, debug_name));
-                v = CodeGen::builder.CreateStructGEP(v, idx);
-            }
-        }
+
+    llvm::Value* Field::Gen(int cmd) {
+
+        auto v = CodeGen::GetField(names[0]);
+   
+        // std::string full_name; 
+        // for (const auto& name : names)full_name += "." + CodeGen::MangleStr(name);
+
+        //Get Nested Field
+        for (auto i = 1; i < names.size(); i++) 
+			v = CodeGen::GetMemberField(CodeGen::builder.CreateLoad(v), names[i]);
 
         if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
-            return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v, debug_name));
+            return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
+
         return v;
     }
 
     llvm::Value* FuncCall::Gen(int cmd) {
-        const auto callee = CodeGen::the_module->getFunction(CodeGen::MangleStr(names[0]));
-        if (!callee) return CodeGen::LogErrorV("Unknown function referenced");
+		std::string callee_name = "";
+        const auto head = CodeGen::GetField(names[0],false);
+		if (head != nullptr) {
+			callee_name += head->getType()->getStructName();
+			for (auto i = 0; i < names.size(); i++) {
+                const auto field = CodeGen::GetMemberField(head, names[i]);
+				if (field != nullptr) {
+					callee_name += ",";
+					callee_name += field->getType()->getStructName();
+				}
+				else {
+					callee_name += CodeGen::MangleStr(names[i]);
+				}
+			}
+		}
+		else callee_name = CodeGen::MangleStr(names[0]);
+        const auto callee = CodeGen::the_module->getFunction(callee_name);
+        if (!callee) return CodeGen::LogErrorV((std::string("Unknown function referenced :")+ CodeGen::MangleStr(names[0])).c_str());
         if (callee->arg_size() != args.size() && !callee->isVarArg())
             return CodeGen::LogErrorV("Incorrect # arguments passed");
         std::vector<llvm::Value*> args_v;;
@@ -200,7 +248,11 @@ namespace parser {
         }
     }
 
+
     llvm::Value* Binary::Gen(int cmd) {
+
+
+
         const auto load_ptr = op == '=' || op >= AddAgn;
         auto lhs = LHS->Gen(load_ptr);
         auto rhs = RHS->Gen(load_ptr);
@@ -233,22 +285,39 @@ namespace parser {
                 }
             }
         }
-
-
+    
         switch (op) {
 
-#define BASIC(a,b,c)case a:{\
-			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)\
-				return CodeGen::builder.Create##b(lhs, rhs, #b"_tmp");\
-			if (type == llvm::Type::IntegerTyID)\
-				return CodeGen::builder.Create##c(lhs, rhs, #c"_tmp");\
-			return CodeGen::LogErrorV(" "#a" operation cannot apply on Non-number operands\n"); }
+#define BASIC(f,i)[&](){                                                                                     \
+			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)                        \
+				return CodeGen::builder.Create##f(lhs, rhs, #f"_tmp");                                  \
+			if (type == llvm::Type::IntegerTyID)                                                        \
+				return CodeGen::builder.Create##i(lhs, rhs, #i"_tmp");                                  \
+			return CodeGen::LogErrorV( std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Non-number operands\n")); }();
+#define BITWISE(f)[&](){                                                                                                                             \
+			if (type == llvm::Type::IntegerTyID)return CodeGen::builder.Create##f(lhs, rhs, "and_tmp");                                         \
+			return CodeGen::LogErrorV(std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Integer operands\n")); \
+		}();
 
-        BASIC('+', FAdd, Add)
-        BASIC('-', FSub, Sub)
-        BASIC('*', FMul, Mul)
+		case '+':return BASIC(FAdd, Add)
+		case '-':return BASIC(FSub, Sub)
+		case '*':return BASIC(FMul, Mul)
+		case '%':return BASIC(FRem, SRem)
+		case '<':return BASIC(FCmpULT, ICmpULT)
+		case '>':return BASIC(FCmpULT, ICmpULT)
+		case Le :return BASIC(FCmpULE, ICmpULE)
+		case Ge :return BASIC(FCmpUGE, ICmpUGE)
+		case Eq :return BASIC(FCmpUEQ, ICmpEQ)
+		case Ne :return BASIC(FCmpUNE, ICmpNE)
 
-        BASIC('%', FRem, SRem)
+		case And:
+		case '&': return BITWISE(And)
+		case '^': return BITWISE(Xor)
+		case Or:
+		case '|': return BITWISE(Or)
+		case Shr: return BITWISE(AShr)
+		case Shl: return BITWISE(Shl)
+
         case '/': {
             if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)
                 return CodeGen::builder.CreateFDiv(
@@ -260,46 +329,9 @@ namespace parser {
                     "FDiv""_tmp");
             return CodeGen::LogErrorV(" ""'/'"" operation cannot apply on Non-number operands\n");
         }
-        case And:
-        case '&': {
-            if (type == llvm::Type::IntegerTyID)return CodeGen::builder.CreateAnd(lhs, rhs, "and_tmp");
-            return CodeGen::LogErrorV(" '&' operation cannot apply on Integer operands\n");
-        }
-        case '^': {
-            if (type == llvm::Type::IntegerTyID)return CodeGen::builder.CreateXor(lhs, rhs, "xor_tmp");
-            return CodeGen::LogErrorV(" '^' operation cannot apply on Integer operands\n");
-        }
-        case Or:
-        case '|': {
-            if (type == llvm::Type::IntegerTyID)return CodeGen::builder.CreateOr(lhs, rhs, "or_tmp");
-            return CodeGen::LogErrorV(" '|' operation cannot apply on Integer operands\n");
-        }
         case BAndAgn: { }
         case BXORAgn: { }
         case BORAgn: { }
-        case Shr: {
-            if (type == llvm::Type::IntegerTyID)return CodeGen::builder.CreateAShr(lhs, rhs, "shr_tmp");
-            return CodeGen::LogErrorV(" '<<' operation cannot apply on Integer operands\n");
-        }
-        case Shl: {
-            if (type == llvm::Type::IntegerTyID)return CodeGen::builder.CreateShl(lhs, rhs, "shl_tmp");
-            return CodeGen::LogErrorV(" '>>' operation cannot apply on Integer operands\n");
-        }
-
-#define CMP(a,b,c)case a:\
-		{\
-			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)\
-				return CodeGen::builder.CreateFCmp##b(lhs, rhs, #b"_tmp");\
-			if (type == llvm::Type::IntegerTyID)\
-				return CodeGen::builder.CreateICmp##c(lhs, rhs, #b"_tmp");\
-			return CodeGen::LogErrorV(" "#a" operation cannot apply on Non-number operands\n");\
-		}
-        CMP('<', ULT, ULT)
-        CMP('>', UGT, UGT)
-        CMP(Le, ULE, ULE)
-        CMP(Ge, UGE, UGE)
-        CMP(Eq, UEQ, EQ)
-        CMP(Ne, UNE, NE)
 
         case '=': {
             if (lhs->getType()->getTypeID() != llvm::Type::PointerTyID)
@@ -308,18 +340,29 @@ namespace parser {
             auto rhv = rhs;
             if (rhs->getType()->getTypeID() != lhs->getType()->getPointerElementType()->getTypeID())
                 rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
-                          ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs))
+                          ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs,"rhs"))
                           : rhs;
             CodeGen::AlignStore(CodeGen::builder.CreateStore(rhv, lhs));
             return lhs;
         }
+
+#define ASSGIN(x){																											\
+				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs,"rhs")) : rhs;			\
+				if (ltype == llvm::Type::PointerTyID)																			\
+				{																										\
+					type = lhs->getType()->getPointerElementType()->getTypeID();										\
+					const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs,"lhs"));															\
+					return CodeGen::AlignStore(CodeGen::builder.CreateStore(x, lhs));						\
+				}																										\
+				return CodeGen::LogErrorV(" cannot reassign a constant\n");														\
+			}
 #define BASIC_ASSGIN(a,b,c,d)case a:																					\
 			{																											\
-				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs)) : rhs;			\
+				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs,"rhs")) : rhs;			\
 				if (type == llvm::Type::PointerTyID)																			\
 				{																										\
 					type = lhs->getType()->getPointerElementType()->getTypeID();										\
-					const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs));															\
+					const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs,"lhs"));															\
 					if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)											\
 						return CodeGen::AlignStore(CodeGen::builder.CreateStore(CodeGen::builder.Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
 					if (type == llvm::Type::IntegerTyID)																		\
@@ -342,11 +385,11 @@ namespace parser {
 
         case DivAgn: {
             auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
-                           ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs))
+                           ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs, "rhs"))
                            : rhs;
             if (type == llvm::Type::PointerTyID) {
                 type = lhs->getType()->getPointerElementType()->getTypeID();
-                const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs));
+                const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs, "lhs"));
                 if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)
                     return CodeGen::AlignStore(
                         CodeGen::builder.CreateStore(CodeGen::builder.CreateFDiv(lhsv, rhv, "FDiv""_tmp"), lhs));
@@ -410,38 +453,52 @@ namespace parser {
         const auto bb = llvm::BasicBlock::Create(CodeGen::the_context, CodeGen::MangleStr(name) + "_entry", function);
         CodeGen::builder.SetInsertPoint(bb);
 
+		
+		// CodeGen::This = nullptr;
+        for (auto& arg : function->args())CodeGen::local_fields_table[arg.getName()] = &arg;
+		// CodeGen::local_fields_table.clear();
+		// CodeGen::This = nullptr;
 
-        CodeGen::fields_table.clear();
-        for (auto& arg : function->args())CodeGen::fields_table[arg.getName()] = &arg;
-
-        CodeGen::the_function = function;
+        // CodeGen::the_function = function;
         if (statements != nullptr)statements->Gen();
-
+		CodeGen::local_fields_table.clear();
         verifyFunction(*function);
-        return;
+ 
     }
 
     void FieldDecl::Gen() {
-        const auto _name = CodeGen::MangleStr(name);
+        const auto mangled_name = CodeGen::MangleStr(name);
         const auto val = value->Gen();
 
-        auto ty = type.size() == 0 ? val->getType() : CodeGen::GetType(type);
+        const auto ty = type.empty()? val->getType() : CodeGen::GetType(type);
         if (!val) return;
 
         if (constant) {
             const auto const_v = static_cast<llvm::ConstantFP*>(val);
-            const auto v = CodeGen::CreateGlob(CodeGen::builder, _name, CodeGen::builder.getDoubleTy());
+            const auto v = CodeGen::CreateGlob(CodeGen::builder, mangled_name, CodeGen::builder.getDoubleTy());
             v->setInitializer(const_v);
-            CodeGen::fields_table[_name] = v;
+		
+            CodeGen::local_fields_table[mangled_name] = v;
         }
-        else {
-            const auto alloca = CodeGen::CreateEntryBlockAlloca(CodeGen::the_function, ty, _name);
-            alloca->setAlignment(llvm::MaybeAlign(8));
-
-            CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
-            CodeGen::fields_table[_name] = alloca;
-        }
-
+		else {
+            const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();
+			if (the_function->getName() == "main") {
+				
+                // All fields in main function are stored in heap.
+				const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, ty, mangled_name);
+				alloca->setAlignment(llvm::MaybeAlign(8));
+				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
+				CodeGen::global_fields_table[mangled_name] = alloca;
+			}
+			else {
+				std::cout << "what " << mangled_name << std::endl;
+                // otherwise the local field store on stack.
+				const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, ty, mangled_name);
+				alloca->setAlignment(llvm::MaybeAlign(8));
+				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
+				CodeGen::local_fields_table[mangled_name] = alloca;
+			}
+		}
     }
 
     void ClassDecl::GenHeader() {
@@ -538,7 +595,7 @@ namespace parser {
     }
 
     void Throw::Gen() { }
-
+     
     void Return::Gen() {
         if (value == nullptr) {
             CodeGen::builder.CreateRetVoid();
@@ -549,17 +606,62 @@ namespace parser {
         else CodeGen::builder.CreateRet(val);
     }
 
-    void Break::Gen() { }
+    void Break::Gen() {
+        if(!CodeGen::is_sub_block) {
+			Debugger::AlertNonBreak(L"invalid break");
+            return;
+        }
+		CodeGen::builder.CreateBr(CodeGen::block_end);
+    }
 
-    void Continue::Gen() { }
+    void Continue::Gen() {
+		if (!CodeGen::is_sub_block) {
+			Debugger::AlertNonBreak(L"invalid continue");
+			return;
+		}
+		CodeGen::builder.CreateBr(CodeGen::block_begin);
+    }
 
     void Import::Gen() { }
 
-    void While::Gen() { }
+    void While::Gen() {
 
-    void Do::Gen() { }
+		auto cond_v = condition->Gen();
+		if (!cond_v) {
+			Debugger::AlertNonBreak(L"Error in condititon");
+			return;
+		}
+		cond_v = CodeGen::builder.CreateICmpEQ(cond_v, CodeGen::True, "cond");
+        const auto function = CodeGen::builder.GetInsertBlock()->getParent();
+        const auto while_bb = llvm::BasicBlock::Create(CodeGen::the_context, "while", function);
+        const auto end_bb = llvm::BasicBlock::Create(CodeGen::the_context, "end_while");
+		CodeGen::builder.SetInsertPoint(while_bb);
+		CodeGen::builder.CreateCondBr(cond_v, while_bb, end_bb);
+		stmts->Gen();
+		CodeGen::builder.CreateBr(while_bb);
+    }
 
-    void For::Gen() { }
+    void Do::Gen() {
+		auto cond_v = condition->Gen();
+		if (!cond_v) {
+			Debugger::AlertNonBreak(L"Error in condititon");
+			return;
+		}
+		cond_v = CodeGen::builder.CreateICmpEQ(cond_v, CodeGen::True, "cond");
+		const auto function = CodeGen::builder.GetInsertBlock()->getParent();
+		const auto while_bb = llvm::BasicBlock::Create(CodeGen::the_context, "do", function);
+		const auto end_bb = llvm::BasicBlock::Create(CodeGen::the_context, "end_do");
+		CodeGen::builder.SetInsertPoint(while_bb);
+		stmts->Gen();
+		CodeGen::builder.CreateCondBr(cond_v, while_bb, end_bb);
+		CodeGen::builder.CreateBr(while_bb);
+    }
+
+    void For::Gen() {
+
+		init->Gen();
+
+    }
 
     void Program::Gen() {
         CodeGen::BuildInFunc("malloc", llvm::Type::getInt8PtrTy(CodeGen::the_context),
@@ -574,7 +676,7 @@ namespace parser {
 
         const auto main_func = CodeGen::CreateFunc(CodeGen::builder, "main");
         const auto entry = CodeGen::CreateBb(main_func, "entry");
-        CodeGen::the_function = main_func;
+        // CodeGen::the_function = main_func;
         CodeGen::builder.SetInsertPoint(entry);
 
         

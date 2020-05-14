@@ -1,18 +1,39 @@
-var 人之初: int  性本善 = 0
-var 性相近: int  习相远 = 0
+class A
+{
+	a:int;
+	b:int;
+	func foo(int c)
+	{
+		return a+c
+	}
 
-var 苟不教: int  性乃迁 = 0
+//	func bar(int c)=>a * b*c
 
-let xxx = func abc(){}
+//	init(x:int,y:int)
+//	{
+//		a=x
+//		b=y
+//	}
+	
+//	operator +(v:A)
+//	{
+//		a+=v.a
+//		this.b+=v.b
+//	}
 
-var a = 2 +
+//	overidde func toString()
+//	{
+//		
+//	}
+}
 
-//var a = 2 +
+var a =A()
+a.a=233
+a.b=666
+//var b=A(100,100)
 
-var a = (2 +
+printf("%d\n",a.foo(500))
+//printf("%d",a.bar(2))
+//printf("%d",b.bar(2))
+//printf("%d",(a+b).foo(2))
 
-$ var s
-
-var a = (2 + 3
-
-var a = (2 + 3))

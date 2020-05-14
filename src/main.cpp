@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     
     std::string filename;
     if (argc == 1) {
-        filename = "../tests/codes/basicIf/input.df";
+        filename = "../tests/codes/default.df";
     }
     else if (argc > 1) {
         filename = argv[1];

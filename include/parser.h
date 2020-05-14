@@ -222,6 +222,21 @@ namespace parser {
         static std::shared_ptr<FunctionDecl> Parse(bool ext = false);
     };
 
+    class ConstructorDecl final:public Declaration {
+		std::shared_ptr<FuncParam> args;
+		std::shared_ptr<Statement> statements;
+		void Gen() override;
+		void GenHeader() override;
+		static std::shared_ptr<ConstructorDecl> Parse();
+    };
+	class DestructorDecl final :public Declaration {
+		std::shared_ptr<FuncParam> args;
+		std::shared_ptr<Statement> statements;
+		void Gen() override;
+		void GenHeader() override;
+		static std::shared_ptr<DestructorDecl> Parse();
+	};
+
     // class for matching variable declaration.
     class FieldDecl : public Statement {
         bool constant;
@@ -254,6 +269,11 @@ namespace parser {
         void Gen() override;
     };
 
+	class EnumDecl final : public Declaration {
+		bool anonymous = false;
+
+	};
+
     class Empty : public Statement {
         std::shared_ptr<Expr> value;
     public:
@@ -275,19 +295,19 @@ namespace parser {
         void Gen() override;
     };
 
-    class Break final : Statement {
+    class Break final :public Statement {
     public:
         static std::shared_ptr<Break> Parse();
         void Gen() override;
     };
 
-    class Continue final : Statement {
+    class Continue final :public Statement {
     public:
         static std::shared_ptr<Continue> Parse();
         void Gen() override;
     };
 
-    class Import final : Statement {
+    class Import final :public Statement {
     public:
         static std::shared_ptr<Import> Parse();
         void Gen() override;
@@ -319,6 +339,7 @@ namespace parser {
 
     class For final : public Statement {
     public:
+		std::shared_ptr<Statement> init,post;
         std::shared_ptr<Expr> condition;
         std::shared_ptr<Statement> stmts;
         static std::shared_ptr<For> Parse();

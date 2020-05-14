@@ -32,12 +32,20 @@ public:
 	static llvm::LLVMContext the_context;
 	static std::unique_ptr<llvm::Module> the_module;
 	static llvm::IRBuilder<> builder;
-	static llvm::Function* the_function;
-	static std::map<std::string, llvm::Value*> fields_table;
+	// static llvm::Function* the_function;
+	static std::map<std::string, llvm::Value*> local_fields_table;
+	static std::map<std::string, llvm::Value*> global_fields_table;
 	static std::map<std::string, parser::ClassDecl*> types_table;
 
 	static llvm::Value* True;
 	static llvm::Value* False;
+
+    // True is in subblock like for or while
+	static bool is_sub_block;
+    static llvm::BasicBlock* block_begin;
+	static llvm::BasicBlock* block_end;
+
+	// static llvm::Value* This;
 
     static llvm::Value* LogErrorV(const char* str);
 
@@ -56,6 +64,9 @@ public:
     static llvm::StoreInst* AlignStore(llvm::StoreInst* a);
 
     static llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
+
+	static llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name);
+	static llvm::Value* CodeGen::GetField(const std::wstring name, bool warn = true);
 
     static void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false);
 

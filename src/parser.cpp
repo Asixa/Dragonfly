@@ -559,32 +559,28 @@ namespace parser {
         while (Lexer::Check(NewLine))Lexer::Next();
         VERIFY
         switch (Lexer::token->type) {
-        case K_let: return FieldDecl::Parse(true);
-        case K_var: return FieldDecl::Parse(false);
-        case K_if: return If::Parse();
-        case K_return: return Return::Parse();
-        case K_do: return For::Parse();
-        case K_while: return While::Parse();
-        case K_for: return For::Parse();
-        default:
-            return Empty::Parse();
+        case K_let:         return FieldDecl::Parse(true);
+        case K_var:         return FieldDecl::Parse(false);
+        case K_if:          return If::Parse();
+        case K_return:      return Return::Parse();
+        case K_do:          return For::Parse();
+        case K_while:       return While::Parse();
+		case K_for:         return For::Parse();
+		case K_continue:    return Break::Parse();
+		case K_break:       return Continue::Parse();
+        default:            return Empty::Parse();
         }
     }
 
     void Program::ParseSingle() {
         switch (Lexer::token->type) {
-        case NewLine: Lexer::Next();
-            break;
+        case NewLine: Lexer::Next(); break;
         case K_func:
         case K_dfunc:
-        case K_kernal: declarations.push_back(FunctionDecl::Parse());
-            break;
-        case K_extern: declarations.push_back(FunctionDecl::Parse(true));
-            break;
-        case K_import: Import::Parse();
-            break;
-        case K_class: declarations.push_back(ClassDecl::Parse());
-            break;
+        case K_kernal: declarations.push_back(FunctionDecl::Parse()); break;
+        case K_extern: declarations.push_back(FunctionDecl::Parse(true)); break;
+        case K_import: Import::Parse(); break;
+        case K_class: declarations.push_back(ClassDecl::Parse()); break;
         default: statements.push_back(Statement::Parse());
         }
         while (Debugger::error_occurred) {
