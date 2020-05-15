@@ -171,7 +171,6 @@ llvm::Value* CodeGen::GetField(const std::wstring name, const bool warn) {
 		v = CodeGen::builder.CreateLoad(CodeGen::GetMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
 	}
 
-
 	if (!v && CodeGen::global_fields_table.find(mangle_name) != CodeGen::global_fields_table.end())
 		v = CodeGen::global_fields_table[mangle_name];
 
@@ -206,24 +205,16 @@ namespace parser {
 		return CodeGen::builder.CreateGlobalStringPtr(llvm::StringRef(CodeGen::MangleStr(value)));
 	}
 
-
-
+    // c is 0 by default, when c is 1, then it keep the pointer of the value.
 	llvm::Value* Field::Gen(const int c) {
 	    cmd=c;
 		return GenField(nullptr);
-		auto v = CodeGen::GetField(name);
-		// std::string full_name; 
-		// for (const auto& name : names)full_name += "." + CodeGen::MangleStr(name);
-		
-		//Get Nested Field
-		// for (auto i = 1; i < names.size(); i++)
-		// 	v = CodeGen::GetMemberField(CodeGen::builder.CreateLoad(v), names[i]);
-		
-		if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
-			return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
-		
-		return v; 
 	}
+
+	llvm::Value* FuncCall::Gen(int cmd) {
+		return GenField(nullptr);
+	}
+
 	llvm::Value* Field::GenField(llvm::Value* parent) {
 	
 		llvm::Value* v = nullptr;
@@ -231,7 +222,6 @@ namespace parser {
 		else {
 			parent = CodeGen::builder.CreateLoad(parent);
 		    v = CodeGen::GetMemberField(parent, name);
-			
 		}
 
 		if (child != nullptr)
@@ -239,45 +229,37 @@ namespace parser {
 			child->cmd = cmd;
 			v = child->GenField(v);
 		}
+
 		if (parent==nullptr) {
-			printf("233-createload\n");
 			if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
 			    return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
 		}
+
 		return v;
 
     }
+
 	llvm::Value* FuncCall::GenField(llvm::Value* parent) {
         // TODO function call like a()()
 
-
 		const auto is_member_func = parent != nullptr;
 
-		std::string callee_name;
-		llvm::Value* v = nullptr;
-
+        llvm::Value* v = nullptr;
 
 		if (left != nullptr)
 			v = left->GenField(parent);
 
-		if (parent == nullptr) {
-		    callee_name = CodeGen::MangleStr(name);
-		}
-		else {
-			callee_name = CodeGen::GetValueStructType(parent);
-			callee_name+="." + CodeGen::MangleStr(name);
-           
-		}
+        const auto callee_name = parent == nullptr
+                                      ? CodeGen::MangleStr(name)
+                                      : CodeGen::GetValueStructType(parent) + "." + CodeGen::MangleStr(name);
 
-	   printf("function full name :%s \n", callee_name.c_str());
 
        // callee_name should now be the full function name, eg: A.bar
 	   const auto callee = CodeGen::the_module->getFunction(callee_name);
 	   // check if the function exist
        if (!callee)  
 		   return CodeGen::LogErrorV((std::string("Unknown function referenced :")+ callee_name).c_str());
-	   // check if the function argument count matchs,
-	   // notes that member func pass an extra argument.
+	   // check if the function argument count matchs, notes that member func pass an extra argument.
 	   // some function could have varible arguments size when isVarArg is true.
        if (callee->arg_size() != (args.size()+ (is_member_func?1:0)) && !callee->isVarArg())
            return CodeGen::LogErrorV("Incorrect # arguments passed");
@@ -285,67 +267,33 @@ namespace parser {
        // generate all the argument values;
        std::vector<llvm::Value*> args_v;
 	   if (is_member_func) {
-		   auto ptr_level = CodeGen::GetValuePtrDepth(parent);
-		   printf("ptr_level :%d\n", ptr_level);
+           const auto ptr_depth = CodeGen::GetValuePtrDepth(parent);
 		   auto this_arg = parent;
-		   if (ptr_level == 2)
+		   if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
 			   this_arg = CodeGen::builder.CreateLoad(parent);
 		   args_v.push_back(this_arg);
 	   }
-
+       // prepare the argv list
        for (unsigned i = 0, e = args.size(); i != e; ++i) {
            args_v.push_back(args[i]->Gen());
-		   printf("%s\n", CodeGen::GetValueDebugType(args_v[args_v.size() - 1]).c_str());
            if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
        }
-
-
+	   // call the function
 	   v= callee->getReturnType()->getTypeID() == llvm::Type::VoidTyID
 	    ? CodeGen::builder.CreateCall(callee, args_v)
 	    : CodeGen::builder.CreateCall(callee, args_v, "calltmp");
-	   
 
+       // for cases like A().a or A().B(), we need to continue the DFS.
 	   if (child != nullptr)
 	   {
 		   child->cmd = cmd;
 		   v = child->GenField(v);
 	   }
-	  
+	   // and return the value of the whole nested field.
 	   return v;
 	}
 
-    llvm::Value* FuncCall::Gen(int cmd) {
-		
-		return GenField(nullptr);
-		// std::string callee_name = "";
-  //       const auto head = CodeGen::GetField(names[0],false);
-		// if (head != nullptr) {
-		// 	callee_name += head->getType()->getStructName();
-		// 	for (auto i = 0; i < names.size(); i++) {
-  //               const auto field = CodeGen::GetMemberField(head, names[i]);
-		// 		if (field != nullptr) {
-		// 			callee_name += ",";
-		// 			callee_name += field->getType()->getStructName();
-		// 		}
-		// 		else {
-		// 			callee_name += CodeGen::MangleStr(names[i]);
-		// 		}
-		// 	}
-		// }
-		// else callee_name = CodeGen::MangleStr(names[0]);
-  //       const auto callee = CodeGen::the_module->getFunction(callee_name);
-  //       if (!callee) return CodeGen::LogErrorV((std::string("Unknown function referenced :")+ CodeGen::MangleStr(names[0])).c_str());
-  //       if (callee->arg_size() != args.size() && !callee->isVarArg())
-  //           return CodeGen::LogErrorV("Incorrect # arguments passed");
-  //       std::vector<llvm::Value*> args_v;;
-  //       for (unsigned i = 0, e = args.size(); i != e; ++i) {
-  //           args_v.push_back(args[i]->Gen());
-  //           if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
-  //       }
-  //       if (callee->getReturnType()->getTypeID() == llvm::Type::VoidTyID)
-  //           return CodeGen::builder.CreateCall(callee, args_v);
-  //       return CodeGen::builder.CreateCall(callee, args_v, "calltmp");
-    }
+
 
     llvm::Value* Factor::Gen(int cmd) {
         return nullptr;

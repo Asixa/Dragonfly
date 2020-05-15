@@ -35,11 +35,12 @@ a.a=233
 a.b=666
 printf("Hello,World\n")
 printf("%d,%d \n",a.a,a.b)
-printf("%d\n",a.foo(500))
+var b = 600
+printf("%d\n",a.foo(b))
 
-var b = 2333
+b = 2333
 var c =A().bar()
-printf("%d   \n",A().bar())
+printf("%d\n",A().bar())
 printf("%d\n",b)
 printf("%d\n",c)
 
