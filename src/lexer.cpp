@@ -341,4 +341,13 @@ bool Lexer::CheckType() {
     return Lexer::token->type >= K_int && Lexer::token->type <= K_double;
 }
 
+void Lexer::MatchSemicolon() {
+	if (token->type == ';')Lexer::Next();
+	else Match(NewLine);
+}
+
+void Lexer::SkipNewlines() {
+	while (Check(NewLine))Next();
+}
+
 

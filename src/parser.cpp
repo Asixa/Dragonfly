@@ -85,15 +85,10 @@ namespace parser {
     //********************************************************************************************************
 
     std::shared_ptr<Statement> Statements::Parse() {
-        while (Lexer::Check(NewLine)) {
-            Lexer::Next();
-            VERIFY
-        }
+		Lexer::SkipNewlines(); VERIFY
         if (Lexer::Check('}')) return nullptr;
-        const auto left = Statement::Parse();
-        VERIFY
-        const auto right = Statements::Parse();
-        VERIFY
+        const auto left = Statement::Parse(); VERIFY
+        const auto right = Statements::Parse(); VERIFY
         if (right == nullptr)return left;
         return std::make_shared<Statements>(left, right);
     }
@@ -359,7 +354,7 @@ namespace parser {
 
         }
 
-        while (Lexer::Check(NewLine))Lexer::Next();
+        Lexer::SkipNewlines();
         VERIFY
         if (ext) {
             *Debugger::out << "[Parsed] Extern function declaration\n";
@@ -370,7 +365,7 @@ namespace parser {
         VERIFY
 
         function->statements = Statements::Parse();
-        while (Lexer::Check(NewLine))Lexer::Next();
+        Lexer::SkipNewlines();
         VERIFY
 
         Lexer::Match('}');
@@ -405,15 +400,15 @@ namespace parser {
         let->value = Binary::Parse();
         VERIFY
 
-        if (Lexer::Check(';')) Lexer::Next();
-        else Lexer::Match(NewLine);
+		Lexer::MatchSemicolon();
         VERIFY
         // PRINT("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->ToString();PRINT("\n");
         return let;
     }
 
-    std::shared_ptr<ClassDecl> ClassDecl::Parse() {
+    std::shared_ptr<ClassDecl> ClassDecl::Parse(bool interface) {
         auto instance = std::make_shared<ClassDecl>();
+        instance->is_interface = interface;
         Lexer::Next();
         VERIFY
         instance->name = Lexer::string_val;
@@ -422,6 +417,7 @@ namespace parser {
         if(Lexer::Check(':')) {
 			Lexer::Next();
 			instance->interfaces.push_back(Lexer::string_val);
+			Lexer::Next();
             while (Lexer::Check(',')) {
 				Lexer::Next();
 				instance->interfaces.push_back(Lexer::string_val);
@@ -430,14 +426,14 @@ namespace parser {
         }
 
         VERIFY
-        while (Lexer::Check(NewLine))Lexer::Next();
+        Lexer::SkipNewlines();
         VERIFY
         Lexer::Match('{');
         VERIFY
 
 
         while (true) {
-            while (Lexer::Check(NewLine))Lexer::Next();
+            Lexer::SkipNewlines();
             VERIFY
             if (Lexer::token->type == '}')break;
             switch (Lexer::token->type) {
@@ -450,6 +446,7 @@ namespace parser {
                 VERIFY
                 break;
             default:
+				if (instance->is_interface)break;
                 instance->fields.push_back(Lexer::string_val);
                 Lexer::Match(Id);
                 VERIFY
@@ -468,9 +465,8 @@ namespace parser {
                     VERIFY
                 }
 
-                if (Lexer::Check(';')) Lexer::Match(';');
-                else Lexer::Match(NewLine);
-                while (Lexer::Check(NewLine))Lexer::Next();
+				Lexer::MatchSemicolon();
+                Lexer::SkipNewlines();
                 VERIFY
             }
         }
@@ -483,22 +479,25 @@ namespace parser {
 		auto instance = std::make_shared<Extension>();
 		Lexer::Next();
 		VERIFY
-			instance->name = Lexer::string_val;
+		instance->name = Lexer::string_val;
 		Lexer::Match(Id);
 
-
 		VERIFY
-			while (Lexer::Check(NewLine))Lexer::Next();
+		Lexer::SkipNewlines();
 		VERIFY
 
-			const auto brackets = Lexer::Check('{');
-		if (brackets) Lexer::Next();
+		const auto brackets = Lexer::Check('{');
+
+	
+        if (brackets) Lexer::Next();
 		else Lexer::Match(Arrow);
+
+        
 		VERIFY
 			while (true) {
-				while (Lexer::Check(NewLine))Lexer::Next();
+				Lexer::SkipNewlines();
 				VERIFY
-					if (Lexer::token->type == '}')break;
+				if (Lexer::token->type == '}')break;
 				switch (Lexer::token->type) {
 				case K_init:
 				case K_deinit:
@@ -511,10 +510,11 @@ namespace parser {
 				default:
 					VERIFY
 				}
+				if (!brackets)break;
 			}
 		if (brackets)Lexer::Match('}');
 		VERIFY
-			return instance;
+		return instance;
 	}
 
     std::shared_ptr<If> If::Parse() {
@@ -618,8 +618,7 @@ namespace parser {
         auto instance = std::make_shared<Empty>();
         instance->value = Binary::Parse();
         VERIFY
-        if (Lexer::token->type == ';')Lexer::Next();
-        else Lexer::Match(NewLine);
+		Lexer::MatchSemicolon();
         VERIFY
         // PRINT("[Parsed] Expression \n");instance->value->ToString();
         return instance;
@@ -634,8 +633,7 @@ namespace parser {
             return instance;
         }
         instance->value = Binary::Parse();
-        if (Lexer::token->type == ';')Lexer::Next();
-        else Lexer::Match(NewLine);
+		Lexer::MatchSemicolon();
         *Debugger::out << "[Parsed] Return Statement\n";
         return instance;
     }
@@ -659,7 +657,7 @@ namespace parser {
     }
 
     std::shared_ptr<Statement> Statement::Parse() {
-        while (Lexer::Check(NewLine))Lexer::Next();
+        Lexer::SkipNewlines();
         VERIFY
         switch (Lexer::token->type) {
         case K_let:         return FieldDecl::Parse(true);
@@ -683,7 +681,9 @@ namespace parser {
         case K_kernal: declarations.push_back(FunctionDecl::Parse()); break;
         case K_extern: declarations.push_back(FunctionDecl::Parse(true)); break;
         case K_import: Import::Parse(); break;
-        case K_class: declarations.push_back(ClassDecl::Parse()); break;
+		case K_class: declarations.push_back(ClassDecl::Parse()); break;
+		case K_interface: declarations.push_back(ClassDecl::Parse(true)); break;
+		case K_extension: declarations.push_back(Extension::Parse()); break;
         default: statements.push_back(Statement::Parse());
         }
         while (Debugger::error_occurred) {

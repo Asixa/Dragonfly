@@ -73,7 +73,8 @@ std::string CodeGen::MangleStr(const std::wstring str) {
 }
 
 llvm::Type* CodeGen::GetType(std::wstring type_name) {
-    if (type_name.size() != 1)return the_module->getTypeByName(MangleStr(type_name))->getPointerTo();
+	if (type_name.size() != 1|| type_name[0]<128||Lexer::IsCjk(type_name[0])) 
+	    return the_module->getTypeByName(MangleStr(type_name))->getPointerTo();
     const int type = type_name[0];
     switch (type) {
     case '0': return llvm::Type::getVoidTy(CodeGen::the_context);
@@ -82,7 +83,9 @@ llvm::Type* CodeGen::GetType(std::wstring type_name) {
     case K_double: return llvm::Type::getDoubleTy(CodeGen::the_context);
     case K_bool: return llvm::Type::getInt1Ty(CodeGen::the_context);
     case K_string: return llvm::Type::getInt8PtrTy(CodeGen::the_context);
-	default: return nullptr;
+	default:
+		CodeGen::LogErrorV("in CodeGen::GetType , unexpected typename");
+        return nullptr;
     }
 }
 
@@ -143,22 +146,51 @@ std::string CodeGen::GetValueDebugType(llvm::Value* value) {
 	return ir;
 }
 
+llvm::Value* CodeGen::Malloc(llvm::Type* type) {
+	const auto ptr = CodeGen::builder.CreateCall(CodeGen::the_module->getFunction("malloc"),
+		llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 32));
+    const auto value= CodeGen::builder.CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
+
+    const auto decl = types_table[type->getStructName()];
+    if(!decl->base_type_name.empty()) {
+        const auto base = CodeGen::GetMemberField(value,L"base");
+        const auto base_constructor = CodeGen::the_module->getFunction(CodeGen::MangleStr(decl->base_type_name));
+        const std::vector<llvm::Value*> args_v;
+		CodeGen::builder.CreateStore(builder.CreateCall(base_constructor, args_v, "base"),base );
+    }
+
+    return value;
+}
+
 
 llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name) {
-	auto obj_type_name = obj->getType()->getPointerElementType()->getStructName().str();
+    const auto obj_type_name = obj->getType()->getPointerElementType()->getStructName().str();
 	auto decl = CodeGen::types_table[obj_type_name];
 	auto idx = -1;
 	for (int id = 0, n = decl->fields.size(); id < n; id++) {
-
 		if (decl->fields[id] == name) { 
 			idx = id;
 			break;
 		}
 	}
-	if (idx == -1)return CodeGen::LogErrorV("Cannot find field... \n");
-	const auto v = obj;
+	if (idx == -1) {
+        if(!decl->base_type_name.empty()) {
+			auto base_decl = CodeGen::types_table[CodeGen::MangleStr(decl->base_type_name)];
+			for (int id = 0, n = decl->fields.size(); id < n; id++) {
+				if (base_decl->fields[id] == name) {
+					idx = id;
+					break;
+				}
+			}
+            if(idx!=-1) {
+                const auto base = CodeGen::builder.CreateStructGEP(obj, 0);
+				return  CodeGen::builder.CreateStructGEP(CodeGen::builder.CreateLoad(base), idx);
+            }
+        }
+        return CodeGen::LogErrorV("Cannot find field... \n");
+	}
 
-	return  CodeGen::builder.CreateStructGEP(v, idx);
+	return  CodeGen::builder.CreateStructGEP(obj, idx);
 }
 llvm::Value* CodeGen::GetField(const std::wstring name, const bool warn) {
 	llvm::Value* v = nullptr;
@@ -167,8 +199,31 @@ llvm::Value* CodeGen::GetField(const std::wstring name, const bool warn) {
 	if (!v && CodeGen::local_fields_table.find(mangle_name) != CodeGen::local_fields_table.end())
 		v = CodeGen::local_fields_table[mangle_name];
 
+	for (auto& it : local_fields_table)
+        std::cout << it.first << ",";
+	std::cout << std::endl;
+
 	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end()) {
-		v = CodeGen::builder.CreateLoad(CodeGen::GetMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
+		auto this_fields = types_table[CodeGen::GetValueStructType(local_fields_table["this"])]->fields;
+		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end())
+		    v = CodeGen::builder.CreateLoad(CodeGen::GetMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
+	}
+
+	if (!v && CodeGen::local_fields_table.find("base") != CodeGen::local_fields_table.end()) {
+
+	    auto base_field = types_table[CodeGen::GetValueStructType(local_fields_table["base"])]->fields;
+		
+		if (std::find(base_field.begin(), base_field.end(), name) != base_field.end()) {
+			printf("try get %s in  \n",name.c_str());
+			for (auto& i : base_field)printf("%s,", i.c_str());
+			std::cout << std::endl;
+
+			auto f = CodeGen::GetMemberField(CodeGen::builder.CreateLoad(CodeGen::local_fields_table["base"]), name);
+			printf("try get f \n");
+		    v = CodeGen::builder.CreateLoad(f, "base." + mangle_name);
+		}
+	       
+
 	}
 
 	if (!v && CodeGen::global_fields_table.find(mangle_name) != CodeGen::global_fields_table.end())
@@ -519,6 +574,23 @@ namespace parser {
 		
 		// CodeGen::This = nullptr;
         for (auto& arg : function->args())CodeGen::local_fields_table[arg.getName()] = &arg;
+
+        //load base
+		if (self_type != nullptr) {
+			auto self_decl= CodeGen::types_table[self_type->getStructName()];
+			if (!self_decl->base_type_name.empty()) {
+
+				const auto alloca = CodeGen::CreateEntryBlockAlloca(function,CodeGen::GetType(self_decl->base_type_name), "base");
+				alloca->setAlignment(llvm::MaybeAlign(8));
+				auto base = CodeGen::GetMemberField(function->getArg(0), L"base");
+				CodeGen::AlignStore(CodeGen::builder.CreateStore(
+                    CodeGen::builder.CreateLoad(base), alloca)
+				);
+				CodeGen::local_fields_table["base"] = alloca;
+			}
+		}
+
+
 		// CodeGen::local_fields_table.clear();
 		// CodeGen::This = nullptr;
 
@@ -573,10 +645,30 @@ namespace parser {
         auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
         std::vector<llvm::Type*> field_tys;
 
-		llvm::Type* baseType = nullptr;
-		// for (const auto& interface : interfaces) {
-		// 	CodeGen::GetType(interface);
-		// }
+		if (!interfaces.empty()) {
+			llvm::Type* baseType = nullptr;
+			for (const auto& interface : interfaces) {
+				auto mangled_name = CodeGen::MangleStr(interface);
+				if (CodeGen::types_table.find(mangled_name) != CodeGen::types_table.end()) {
+                    const auto decl = CodeGen::types_table[mangled_name];
+                    if(!decl->is_interface) {
+						if (baseType == nullptr) {
+							baseType = CodeGen::GetType(interface);
+							base_type_name = interface;
+							printf("%s  %d\n", interface.c_str(), baseType == nullptr);
+						}
+						else CodeGen::LogErrorV("Inherit multiple classes is not allowed");
+                    }
+				}
+				else  CodeGen::LogErrorV((std::string(mangled_name) + " is not defined").c_str());
+			}
+			if (baseType != nullptr) {
+				
+				fields.insert(fields.begin(), L"base");
+				field_tys.insert(field_tys.begin(), baseType);
+			}
+		}
+
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetType(type));
         the_struct->setBody(field_tys);
         CodeGen::types_table[the_struct->getName().str()] = this;
@@ -593,11 +685,7 @@ namespace parser {
         // const auto alloca = CreateEntryBlockAlloca(the_function, the_struct, "struct");
         // alloca->setAlignment(MaybeAlign(8));
 
-        const auto ptr = CodeGen::builder.CreateCall(CodeGen::the_module->getFunction("malloc"),
-                                                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 32));
-        auto p = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, ptr, the_struct->getPointerTo());
-
-        CodeGen::builder.CreateRet(p);
+        CodeGen::builder.CreateRet(CodeGen::Malloc(the_struct));
         // auto field1= CodeGen::builder.CreateStructGEP(the_struct, alloca, 1);
         // CodeGen::builder.CreateStore(llvm::ConstantInt::get(Type::getInt32Ty(CodeGen::the_context), 233),field1);
         verifyFunction(*function);
@@ -610,10 +698,16 @@ namespace parser {
     }
 
     void Extension::Gen() {
-        
+		const auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
+		for (auto& function : functions) {
+			function->SetInternal(name, the_struct);
+			function->GenHeader();
+			function->Gen();
+		}
     }
 	void Extension::GenHeader() {
-
+        const auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
+		if (!the_struct) *Debugger::out << "Type " << name << " is not defined" << std::endl;
 	}
 
 

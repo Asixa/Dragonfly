@@ -79,7 +79,11 @@ public:
     static bool Check(const std::vector<int> tys);
 	//Check if current token's type is basic type, eg: int double.
     static bool CheckType();
+
+	static void MatchSemicolon();
+	static void SkipNewlines();
 };
+
 
 
 #endif

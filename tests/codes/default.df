@@ -1,10 +1,17 @@
-class A
+class B
+{
+	z:int
+}
+
+
+
+class A:B
 {
 	a:int;
 	b:int;
 	func foo(int c):int
 	{
-		return a+c
+		return a+c+z
 	}
 
 	func bar():int
@@ -29,24 +36,28 @@ class A
 //		
 //	}
 }
-//extension A
-//{
-//	func bar():int
-//	{
-//		return 666;
-//	}
-//}
-//extension A => func bar():int
-//{
-//	return 666;
-//}
+
+extension A
+{
+	func baz():int
+	{
+		return 666;
+	}
+}
+
+extension A => func smt():int
+{
+	return a+666;
+}
 
 
 var a =A()
 a.a=233
 a.b=666
+a.z=10000
+
 printf("Hello,World\n")
-printf("%d,%d \n",a.a,a.b)
+printf("%d,%d,%d \n",a.a,a.b,a.z)
 var b = 600
 printf("%d\n",a.foo(b))
 
