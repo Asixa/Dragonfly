@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     const auto start = clock();
     Lexer::LoadFile(filename.c_str());
 
-	
+    
     auto program = parser::Parse();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();

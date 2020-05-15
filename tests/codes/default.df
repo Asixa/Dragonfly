@@ -29,6 +29,18 @@ class A
 //		
 //	}
 }
+//extension A
+//{
+//	func bar():int
+//	{
+//		return 666;
+//	}
+//}
+//extension A => func bar():int
+//{
+//	return 666;
+//}
+
 
 var a =A()
 a.a=233

@@ -572,7 +572,12 @@ namespace parser {
     void ClassDecl::Gen() {
         auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
         std::vector<llvm::Type*> field_tys;
-        for (const auto& type : types)field_tys.push_back(CodeGen::GetType(type));
+
+		llvm::Type* baseType = nullptr;
+		// for (const auto& interface : interfaces) {
+		// 	CodeGen::GetType(interface);
+		// }
+		for (const auto& type : types)field_tys.push_back(CodeGen::GetType(type));
         the_struct->setBody(field_tys);
         CodeGen::types_table[the_struct->getName().str()] = this;
 
@@ -603,6 +608,15 @@ namespace parser {
             function->Gen();
         }
     }
+
+    void Extension::Gen() {
+        
+    }
+	void Extension::GenHeader() {
+
+	}
+
+
 
     void If::Gen() {
         auto cond_v = condition->Gen();

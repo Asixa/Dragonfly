@@ -208,29 +208,13 @@ namespace parser {
             Lexer::Next();
             VERIFY
             return std::make_shared<Boolean>(false);
-        case K_int: case K_short: case K_long: case K_float: case K_double:
-        case K_uint: case K_ushort: case K_ulong: case K_string:
+
+
         case Id: {
 			return Field::Parse();
-            // // const auto id = string_val;
-            // std::vector<std::wstring> names;
-            // names.push_back(Lexer::string_val);
-            // Lexer::Next();
-            // VERIFY
-            // const auto type = Lexer::token->type;
-            // while (Lexer::token->type == '.') {
-            //     Lexer::Next();
-            //     VERIFY
-            //     names.push_back(Lexer::string_val);
-            //     Lexer::Match(Id);
-            //     VERIFY
-            // }
-            // if (Lexer::Check('('))return FuncCall::Parse(names);
-            // else if (Lexer::Check('[')) {
-            //     VERIFY
-            // }
-            // else return std::make_shared<Field>(names);
         }
+		case K_int: case K_short: case K_long: case K_float: case K_double:
+		case K_uint: case K_ushort: case K_ulong: case K_string:
         default:
             Debugger::Alert(
                 (std::wstringstream() << "unexpected \"" << Lexer::Token::Name(Lexer::token->type) << "\" ").str());
@@ -434,6 +418,17 @@ namespace parser {
         VERIFY
         instance->name = Lexer::string_val;
         Lexer::Match(Id);
+
+        if(Lexer::Check(':')) {
+			Lexer::Next();
+			instance->interfaces.push_back(Lexer::string_val);
+            while (Lexer::Check(',')) {
+				Lexer::Next();
+				instance->interfaces.push_back(Lexer::string_val);
+				Lexer::Match(Id);
+            }
+        }
+
         VERIFY
         while (Lexer::Check(NewLine))Lexer::Next();
         VERIFY
@@ -483,6 +478,44 @@ namespace parser {
         VERIFY
         return instance;
     }
+
+	std::shared_ptr<Extension> Extension::Parse() {
+		auto instance = std::make_shared<Extension>();
+		Lexer::Next();
+		VERIFY
+			instance->name = Lexer::string_val;
+		Lexer::Match(Id);
+
+
+		VERIFY
+			while (Lexer::Check(NewLine))Lexer::Next();
+		VERIFY
+
+			const auto brackets = Lexer::Check('{');
+		if (brackets) Lexer::Next();
+		else Lexer::Match(Arrow);
+		VERIFY
+			while (true) {
+				while (Lexer::Check(NewLine))Lexer::Next();
+				VERIFY
+					if (Lexer::token->type == '}')break;
+				switch (Lexer::token->type) {
+				case K_init:
+				case K_deinit:
+				case K_func:
+				case K_dfunc:
+				case K_kernal:
+					instance->functions.push_back(FunctionDecl::Parse());
+					VERIFY
+						break;
+				default:
+					VERIFY
+				}
+			}
+		if (brackets)Lexer::Match('}');
+		VERIFY
+			return instance;
+	}
 
     std::shared_ptr<If> If::Parse() {
         const auto instance = std::make_shared<If>();

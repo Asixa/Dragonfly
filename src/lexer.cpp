@@ -95,6 +95,15 @@ bool Lexer::IsChar() {
 }
 
 void Lexer::Next() {
+	NextOneToken();
+  //   while (Check(NewLine)) {
+		// NextOneToken();
+  //   }
+
+}
+
+
+void Lexer::NextOneToken() {
     Debugger::chp = Debugger::ch;
     wchar_t* last_pos;
     int hash;
@@ -296,6 +305,8 @@ void Lexer::Next() {
     }
 }
 
+
+
 void Lexer::Find(const wchar_t start, const wchar_t end) {
     auto i = 1;
     wchar_t t;
@@ -315,7 +326,7 @@ void Lexer::Match(const int ty) {
                 << L"\" instead").str());
         return;
     }
-    Next();
+	Next();
 }
 
 bool Lexer::Check(const int ty) {

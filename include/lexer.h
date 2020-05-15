@@ -64,7 +64,10 @@ public:
 	//Check if current peek is 'a'~'z' or 'A'~'Z'
     static bool IsChar();
     //Calculate the next token
-    static void Next();
+	static void Next();
+
+	static void NextOneToken();
+
 
     static void Find(wchar_t start, wchar_t end);
 	//If current token is in expected type, move to next token.

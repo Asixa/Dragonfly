@@ -264,11 +264,21 @@ namespace parser {
     public:
         std::wstring name;
         std::vector<std::wstring> fields;
-        std::vector<std::wstring> types;
+		std::vector<std::wstring> types;
+		std::vector<std::wstring> interfaces;
         std::vector<std::shared_ptr<FunctionDecl>> functions;
         static std::shared_ptr<ClassDecl> Parse();
         void Gen() override;
         void GenHeader() override;
+    };
+
+    class Extension final:public Declaration {
+	public:
+		std::wstring name;
+		std::vector<std::shared_ptr<FunctionDecl>> functions;
+		static std::shared_ptr<Extension> Parse();
+		void Gen() override;
+		void GenHeader() override;
     };
 	
     // class for if statement.

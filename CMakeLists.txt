@@ -22,13 +22,13 @@ llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter)
 #MAIN
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 include_directories(
-        ${PROJECT_SOURCE_DIR}/include)
-#        ${PROJECT_SOURCE_DIR}/src
-#)
+        ${PROJECT_SOURCE_DIR}/include
+	    ${PROJECT_SOURCE_DIR}/src
+)
  
 file(GLOB all_SRCS
-        "${PROJECT_SOURCE_DIR}/include/*.h"
-        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+	    "${PROJECT_SOURCE_DIR}/src/*.cpp"
+        "${PROJECT_SOURCE_DIR}/include/*.h" 
         )
 
 add_executable (${PROJECT_NAME} ${all_SRCS})
