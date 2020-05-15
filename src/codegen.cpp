@@ -119,31 +119,59 @@ void CodeGen::WriteBitCodeIr(llvm::Module* module, const char* file) {
 	WriteBitcodeToFile(*module, os);
 	os.flush();
 }
+int CodeGen::GetValuePtrDepth(llvm::Value* value) {
+    auto depth = 0;
+	auto type = value->getType();
+    while (type->getTypeID()==llvm::Type::PointerTyID) {
+		depth++;
+		type = type->getPointerElementType();
+    }
+	return depth;
+}
+
+std::string CodeGen::GetValueStructType(llvm::Value* value) {
+	auto type = value->getType();
+	while (type->getTypeID() == llvm::Type::PointerTyID) 
+		type = type->getPointerElementType();
+	return type->getStructName();
+}
+
+std::string CodeGen::GetValueDebugType(llvm::Value* value) {
+	std::string ir;
+	llvm::raw_string_ostream ir_stream(ir);
+	value->print(ir_stream, true);
+	return ir;
+}
+
 
 llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name) {
-
-	const auto obj_type_name = obj->getType()->getPointerElementType()->getStructName().str();
-	// std::cout << ((obj->getType()->getTypeID() == llvm::Type::PointerTyID)) << std::endl;
+	auto obj_type_name = obj->getType()->getPointerElementType()->getStructName().str();
 	auto decl = CodeGen::types_table[obj_type_name];
 	auto idx = -1;
 	for (int id = 0, n = decl->fields.size(); id < n; id++) {
 
-		if (decl->fields[id] == name) {
+		if (decl->fields[id] == name) { 
 			idx = id;
 			break;
 		}
 	}
 	if (idx == -1)return CodeGen::LogErrorV("Cannot find field... \n");
 	const auto v = obj;
+
 	return  CodeGen::builder.CreateStructGEP(v, idx);
 }
 llvm::Value* CodeGen::GetField(const std::wstring name, const bool warn) {
 	llvm::Value* v = nullptr;
 	const auto mangle_name = CodeGen::MangleStr(name);
+
 	if (!v && CodeGen::local_fields_table.find(mangle_name) != CodeGen::local_fields_table.end())
 		v = CodeGen::local_fields_table[mangle_name];
-	//
-	// find v in global scope
+
+	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end()) {
+		v = CodeGen::builder.CreateLoad(CodeGen::GetMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
+	}
+
+
 	if (!v && CodeGen::global_fields_table.find(mangle_name) != CodeGen::global_fields_table.end())
 		v = CodeGen::global_fields_table[mangle_name];
 
@@ -151,83 +179,172 @@ llvm::Value* CodeGen::GetField(const std::wstring name, const bool warn) {
 	// TODO find v in namespaces
 	// TODO find v in this
 
-	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end())
-		v = CodeGen::builder.CreateLoad(CodeGen::GetMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
 	if (!v && warn) return  CodeGen::LogErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str());
-    return nullptr;
+    return v;
 }
 namespace parser {
 
-    void Statements::Gen() {
-        stmt1->Gen();
-        stmt2->Gen();
+	void Statements::Gen() {
+		stmt1->Gen();
+		stmt2->Gen();
+	}
+
+	llvm::Value* NumberConst::Gen(int cmd) {
+		switch (type) {
+		case K_float: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(static_cast<float>(value)));
+		case K_double: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(value));
+		case K_int: return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), static_cast<int>(value));
+		default: return CodeGen::LogErrorV("Unknown number type");
+		}
+	}
+
+	llvm::Value* Boolean::Gen(int cmd) {
+		return value ? CodeGen::True : CodeGen::False;;
+	}
+
+	llvm::Value* String::Gen(int cmd) {
+		return CodeGen::builder.CreateGlobalStringPtr(llvm::StringRef(CodeGen::MangleStr(value)));
+	}
+
+
+
+	llvm::Value* Field::Gen(const int c) {
+	    cmd=c;
+		return GenField(nullptr);
+		auto v = CodeGen::GetField(name);
+		// std::string full_name; 
+		// for (const auto& name : names)full_name += "." + CodeGen::MangleStr(name);
+		
+		//Get Nested Field
+		// for (auto i = 1; i < names.size(); i++)
+		// 	v = CodeGen::GetMemberField(CodeGen::builder.CreateLoad(v), names[i]);
+		
+		if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
+			return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
+		
+		return v; 
+	}
+	llvm::Value* Field::GenField(llvm::Value* parent) {
+	
+		llvm::Value* v = nullptr;
+		if (parent == nullptr)v = CodeGen::GetField(name);
+		else {
+			parent = CodeGen::builder.CreateLoad(parent);
+		    v = CodeGen::GetMemberField(parent, name);
+			
+		}
+
+		if (child != nullptr)
+		{
+			child->cmd = cmd;
+			v = child->GenField(v);
+		}
+		if (parent==nullptr) {
+			printf("233-createload\n");
+			if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
+			    return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
+		}
+		return v;
+
     }
-
-    llvm::Value* NumberConst::Gen(int cmd) {
-        switch (type) {
-        case K_float: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(static_cast<float>(value)));
-        case K_double: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(value));
-        case K_int: return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), static_cast<int>(value));
-        default: return CodeGen::LogErrorV("Unknown number type");
-        }
-    }
-
-    llvm::Value* Boolean::Gen(int cmd) {
-        return value ? CodeGen::True : CodeGen::False;;
-    }
-
-    llvm::Value* String::Gen(int cmd) {
-        return CodeGen::builder.CreateGlobalStringPtr(llvm::StringRef(CodeGen::MangleStr(value)));
-    }
+	llvm::Value* FuncCall::GenField(llvm::Value* parent) {
+        // TODO function call like a()()
 
 
+		const auto is_member_func = parent != nullptr;
 
-    llvm::Value* Field::Gen(int cmd) {
+		std::string callee_name;
+		llvm::Value* v = nullptr;
 
-        auto v = CodeGen::GetField(names[0]);
-   
-        // std::string full_name; 
-        // for (const auto& name : names)full_name += "." + CodeGen::MangleStr(name);
 
-        //Get Nested Field
-        for (auto i = 1; i < names.size(); i++) 
-			v = CodeGen::GetMemberField(CodeGen::builder.CreateLoad(v), names[i]);
+		if (left != nullptr)
+			v = left->GenField(parent);
 
-        if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
-            return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
+		if (parent == nullptr) {
+		    callee_name = CodeGen::MangleStr(name);
+		}
+		else {
+			callee_name = CodeGen::GetValueStructType(parent);
+			callee_name+="." + CodeGen::MangleStr(name);
+           
+		}
 
-        return v;
-    }
+	   printf("function full name :%s \n", callee_name.c_str());
+
+       // callee_name should now be the full function name, eg: A.bar
+	   const auto callee = CodeGen::the_module->getFunction(callee_name);
+	   // check if the function exist
+       if (!callee)  
+		   return CodeGen::LogErrorV((std::string("Unknown function referenced :")+ callee_name).c_str());
+	   // check if the function argument count matchs,
+	   // notes that member func pass an extra argument.
+	   // some function could have varible arguments size when isVarArg is true.
+       if (callee->arg_size() != (args.size()+ (is_member_func?1:0)) && !callee->isVarArg())
+           return CodeGen::LogErrorV("Incorrect # arguments passed");
+
+       // generate all the argument values;
+       std::vector<llvm::Value*> args_v;
+	   if (is_member_func) {
+		   auto ptr_level = CodeGen::GetValuePtrDepth(parent);
+		   printf("ptr_level :%d\n", ptr_level);
+		   auto this_arg = parent;
+		   if (ptr_level == 2)
+			   this_arg = CodeGen::builder.CreateLoad(parent);
+		   args_v.push_back(this_arg);
+	   }
+
+       for (unsigned i = 0, e = args.size(); i != e; ++i) {
+           args_v.push_back(args[i]->Gen());
+		   printf("%s\n", CodeGen::GetValueDebugType(args_v[args_v.size() - 1]).c_str());
+           if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
+       }
+
+
+	   v= callee->getReturnType()->getTypeID() == llvm::Type::VoidTyID
+	    ? CodeGen::builder.CreateCall(callee, args_v)
+	    : CodeGen::builder.CreateCall(callee, args_v, "calltmp");
+	   
+
+	   if (child != nullptr)
+	   {
+		   child->cmd = cmd;
+		   v = child->GenField(v);
+	   }
+	  
+	   return v;
+	}
 
     llvm::Value* FuncCall::Gen(int cmd) {
-		std::string callee_name = "";
-        const auto head = CodeGen::GetField(names[0],false);
-		if (head != nullptr) {
-			callee_name += head->getType()->getStructName();
-			for (auto i = 0; i < names.size(); i++) {
-                const auto field = CodeGen::GetMemberField(head, names[i]);
-				if (field != nullptr) {
-					callee_name += ",";
-					callee_name += field->getType()->getStructName();
-				}
-				else {
-					callee_name += CodeGen::MangleStr(names[i]);
-				}
-			}
-		}
-		else callee_name = CodeGen::MangleStr(names[0]);
-        const auto callee = CodeGen::the_module->getFunction(callee_name);
-        if (!callee) return CodeGen::LogErrorV((std::string("Unknown function referenced :")+ CodeGen::MangleStr(names[0])).c_str());
-        if (callee->arg_size() != args.size() && !callee->isVarArg())
-            return CodeGen::LogErrorV("Incorrect # arguments passed");
-        std::vector<llvm::Value*> args_v;;
-        for (unsigned i = 0, e = args.size(); i != e; ++i) {
-            args_v.push_back(args[i]->Gen());
-            if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
-        }
-        if (callee->getReturnType()->getTypeID() == llvm::Type::VoidTyID)
-            return CodeGen::builder.CreateCall(callee, args_v);
-        return CodeGen::builder.CreateCall(callee, args_v, "calltmp");
+		
+		return GenField(nullptr);
+		// std::string callee_name = "";
+  //       const auto head = CodeGen::GetField(names[0],false);
+		// if (head != nullptr) {
+		// 	callee_name += head->getType()->getStructName();
+		// 	for (auto i = 0; i < names.size(); i++) {
+  //               const auto field = CodeGen::GetMemberField(head, names[i]);
+		// 		if (field != nullptr) {
+		// 			callee_name += ",";
+		// 			callee_name += field->getType()->getStructName();
+		// 		}
+		// 		else {
+		// 			callee_name += CodeGen::MangleStr(names[i]);
+		// 		}
+		// 	}
+		// }
+		// else callee_name = CodeGen::MangleStr(names[0]);
+  //       const auto callee = CodeGen::the_module->getFunction(callee_name);
+  //       if (!callee) return CodeGen::LogErrorV((std::string("Unknown function referenced :")+ CodeGen::MangleStr(names[0])).c_str());
+  //       if (callee->arg_size() != args.size() && !callee->isVarArg())
+  //           return CodeGen::LogErrorV("Incorrect # arguments passed");
+  //       std::vector<llvm::Value*> args_v;;
+  //       for (unsigned i = 0, e = args.size(); i != e; ++i) {
+  //           args_v.push_back(args[i]->Gen());
+  //           if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
+  //       }
+  //       if (callee->getReturnType()->getTypeID() == llvm::Type::VoidTyID)
+  //           return CodeGen::builder.CreateCall(callee, args_v);
+  //       return CodeGen::builder.CreateCall(callee, args_v, "calltmp");
     }
 
     llvm::Value* Factor::Gen(int cmd) {
@@ -250,8 +367,6 @@ namespace parser {
 
 
     llvm::Value* Binary::Gen(int cmd) {
-
-
 
         const auto load_ptr = op == '=' || op >= AddAgn;
         auto lhs = LHS->Gen(load_ptr);
@@ -491,7 +606,6 @@ namespace parser {
 				CodeGen::global_fields_table[mangled_name] = alloca;
 			}
 			else {
-				std::cout << "what " << mangled_name << std::endl;
                 // otherwise the local field store on stack.
 				const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, ty, mangled_name);
 				alloca->setAlignment(llvm::MaybeAlign(8));

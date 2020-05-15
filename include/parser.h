@@ -92,23 +92,34 @@ namespace parser {
     };
 	
     // Expression node for variable or fields.
-    class Field final : public Expr {
+    class Field  : public Expr {
+		 
     public:
+		int cmd = 0;
+		std::shared_ptr<Field> child,left;
         void ToString() override;
         llvm::Value* Gen(const int cmd = 0) override;
-        std::vector<std::wstring> names;
-        explicit Field(std::vector<std::wstring> d) : names(d) {}
+		std::wstring name;
+        // std::vector<std::wstring> names;
+		// explicit Field(std::vector<std::wstring> d) : names(d) {}
+		explicit Field(std::wstring d) : name(d) {}
+
+		virtual llvm::Value* GenField(llvm::Value* parent);
+		static std::shared_ptr<Field>Parse();
+		static std::shared_ptr<Field>ParsePostfix();
     };
 	
     // Expression node for function calls.
-    class FuncCall final : public Expr {
+    class FuncCall final : public Field {
     public:
+
         void ToString() override;
         llvm::Value* Gen(const int cmd = 0) override;
-        std::vector<std::wstring> names;
+        // std::vector<std::wstring> names;
         std::vector<std::shared_ptr<Expr>> args;
-        explicit FuncCall(std::vector<std::wstring> d) : names(d) {}
-        static std::shared_ptr<FuncCall> Parse(std::vector<std::wstring> f);
+		llvm::Value* GenField(llvm::Value* parent) override;
+        explicit FuncCall(std::wstring d) : Field(d) {}
+        static std::shared_ptr<FuncCall> Parse(std::wstring f);
     };
 	
     // Expression node for All general factors (including all expression nodes above)
@@ -118,7 +129,8 @@ namespace parser {
         llvm::Value* Gen(const int cmd = 0) override;
         Lexer::Token* tok;
         explicit Factor(Lexer::Token* t): tok(t) {}
-        static std::shared_ptr<Expr> Parse();
+		static std::shared_ptr<Expr> Parse();
+	
     };
 	
     // Expression node for factors with prefix or postfix)

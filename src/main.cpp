@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
 
     Debugger::SetStream(argc == 1);
     Debugger::only_tokenize = argc > 2;
+	
     Debugger::error_existed = Debugger::only_tokenize;
-
     std::wcout.imbue(std::locale(""));
     const auto start = clock();
     Lexer::LoadFile(filename.c_str());
@@ -41,6 +41,8 @@ int main(int argc, char** argv) {
     auto program = parser::Parse();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
+	
+
     if (!Debugger::error_existed) {
         program->Gen();
         CodeGen::WriteReadableIr(CodeGen::the_module.get(), "ir.txt", true);

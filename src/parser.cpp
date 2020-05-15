@@ -24,15 +24,36 @@ namespace parser {
 
     void String::ToString() { *Debugger::out << "[\"" << value << "\"]"; }
     void Boolean::ToString() { *Debugger::out << "[" << (value ? "true" : "false") << "]"; }
-    void Field::ToString() { *Debugger::out << "[" << names[0] << "]"; }
+    void Field::ToString() {
+        *Debugger::out <<  name;
+		if (child != nullptr) {
+			*Debugger::out << ".";
+			child->ToString();
+		}
+    }
+
+  
 
     void FuncCall::ToString() {
-        *Debugger::out << "[CALL " << names[0] << " ( ";
-        for (auto& arg : args) {
+		if (left != nullptr)left->ToString();
+		*Debugger::out << name<<"(";
+		for (auto& arg : args) {
             arg->ToString();
             *Debugger::out << ",";
         }
-        *Debugger::out << " )]\n";
+		*Debugger::out << ")";
+		if (child != nullptr) {
+			*Debugger::out << ".";
+			child->ToString();
+		}
+        //
+        //
+        // *Debugger::out << "[CALL " << name << " ( ";
+        // for (auto& arg : args) {
+        //     arg->ToString();
+        //     *Debugger::out << ",";
+        // }
+        // *Debugger::out << " )]\n";
     }
 
     void Unary::ToString() {
@@ -77,20 +98,7 @@ namespace parser {
         return std::make_shared<Statements>(left, right);
     }
 
-    std::shared_ptr<FuncCall> FuncCall::Parse(std::vector<std::wstring> f) {
-        auto func_call = std::make_shared<FuncCall>(f);
-        Lexer::Next();
-        VERIFY
-        while (Lexer::token->type != ')') {
-            func_call->args.push_back(Binary::Parse());
-            VERIFY
-            if (Lexer::Check(',')) Lexer::Match(',');
-            VERIFY
-        }
-        Lexer::Match(')');
-        VERIFY
-        return func_call;
-    }
+
 
     std::shared_ptr<Expr> Unary::ParsePostfix() {
         const auto factor = ParsePrefix();
@@ -203,24 +211,25 @@ namespace parser {
         case K_int: case K_short: case K_long: case K_float: case K_double:
         case K_uint: case K_ushort: case K_ulong: case K_string:
         case Id: {
-            // const auto id = string_val;
-            std::vector<std::wstring> names;
-            names.push_back(Lexer::string_val);
-            Lexer::Next();
-            VERIFY
-            const auto type = Lexer::token->type;
-            while (Lexer::token->type == '.') {
-                Lexer::Next();
-                VERIFY
-                names.push_back(Lexer::string_val);
-                Lexer::Match(Id);
-                VERIFY
-            }
-            if (Lexer::Check('('))return FuncCall::Parse(names);
-            else if (Lexer::Check('[')) {
-                VERIFY
-            }
-            else return std::make_shared<Field>(names);
+			return Field::Parse();
+            // // const auto id = string_val;
+            // std::vector<std::wstring> names;
+            // names.push_back(Lexer::string_val);
+            // Lexer::Next();
+            // VERIFY
+            // const auto type = Lexer::token->type;
+            // while (Lexer::token->type == '.') {
+            //     Lexer::Next();
+            //     VERIFY
+            //     names.push_back(Lexer::string_val);
+            //     Lexer::Match(Id);
+            //     VERIFY
+            // }
+            // if (Lexer::Check('('))return FuncCall::Parse(names);
+            // else if (Lexer::Check('[')) {
+            //     VERIFY
+            // }
+            // else return std::make_shared<Field>(names);
         }
         default:
             Debugger::Alert(
@@ -229,6 +238,67 @@ namespace parser {
         }
     }
 
+	std::shared_ptr<Field> Field::Parse() {
+		auto field = ParsePostfix();
+		auto root = field;
+        while (Lexer::token->type=='.') {
+			Lexer::Next();
+            field->child = ParsePostfix();
+			field = field->child;
+        }
+		return root;
+    }
+	std::shared_ptr<Field> Field::ParsePostfix() {
+		auto name = Lexer::string_val;
+		
+		Lexer::Next();
+		VERIFY
+
+			if (Lexer::token->type == '(' || Lexer::token->type == '[')
+			{
+				std::shared_ptr<Field> field = nullptr;
+
+				while (true) {
+					bool br = false;
+					switch (Lexer::token->type) {
+					case '(': {
+						auto child = field;
+						field = FuncCall::Parse(name);
+						if (!name.empty())name = L"";
+						field->left = child;
+						break;
+					}
+					case '[': {
+						// array access
+						break;
+					}
+					default:
+						br = true;
+						break;
+					}
+					if (br)break;
+				}
+				return field;
+			}
+			else {
+			    return std::make_shared<Field>(name);
+			}
+	}
+
+	std::shared_ptr<FuncCall> FuncCall::Parse(std::wstring f) {
+		
+		auto func_call = std::make_shared<FuncCall>(f);
+		Lexer::Next(); VERIFY
+			while (Lexer::token->type != ')') {
+				func_call->args.push_back(Binary::Parse());
+				VERIFY
+					if (Lexer::Check(',')) Lexer::Match(',');
+				VERIFY
+			}
+		Lexer::Match(')');
+		VERIFY
+			return func_call;
+	}
 
     std::shared_ptr<FuncParam> FuncParam::Parse() {
         auto param = std::make_shared<FuncParam>();

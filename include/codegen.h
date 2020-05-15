@@ -65,6 +65,12 @@ public:
 
     static llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
 
+	static int GetValuePtrDepth(llvm::Value* value);
+
+    static std::string GetValueStructType(llvm::Value* value);
+
+	static std::string GetValueDebugType(llvm::Value* value);
+
 	static llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name);
 	static llvm::Value* CodeGen::GetField(const std::wstring name, bool warn = true);
 

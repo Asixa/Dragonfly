@@ -2,12 +2,15 @@ class A
 {
 	a:int;
 	b:int;
-	func foo(int c)
+	func foo(int c):int
 	{
 		return a+c
 	}
 
-//	func bar(int c)=>a * b*c
+	func bar():int
+	{
+		return 666;
+	}
 
 //	init(x:int,y:int)
 //	{
@@ -30,10 +33,14 @@ class A
 var a =A()
 a.a=233
 a.b=666
-//var b=A(100,100)
-
+printf("Hello,World\n")
+printf("%d,%d \n",a.a,a.b)
 printf("%d\n",a.foo(500))
-//printf("%d",a.bar(2))
-//printf("%d",b.bar(2))
-//printf("%d",(a+b).foo(2))
+
+var b = 2333
+var c =A().bar()
+printf("%d   \n",A().bar())
+printf("%d\n",b)
+printf("%d\n",c)
+
 
