@@ -18,6 +18,7 @@
 #include "parser.h"
 #include "codegen.h" 
 
+#include "nvvm.h"
 
 int main(int argc, char** argv) {
     

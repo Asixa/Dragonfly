@@ -26,10 +26,7 @@ namespace parser {
 
 	std::shared_ptr<Field> Field::ParsePostfix() {
 		auto name = Lexer::string_val;
-
-		Lexer::Next();
-		VERIFY
-
+		Lexer::Next(); VERIFY
 			if (Lexer::token->type == '(' || Lexer::token->type == '[')
 			{
 				std::shared_ptr<Field> field = nullptr;
@@ -56,9 +53,7 @@ namespace parser {
 				}
 				return field;
 			}
-			else {
-				return std::make_shared<Field>(name);
-			}
+			else  return std::make_shared<Field>(name);
 	}
 
 
@@ -71,10 +66,10 @@ namespace parser {
 	llvm::Value* Field::GenField(llvm::Value* parent) {
 
 		llvm::Value* v = nullptr;
-		if (parent == nullptr)v = CodeGen::GetField(name);
+		if (parent == nullptr)v = CodeGen::FindField(name);
 		else {
 			parent = CodeGen::builder.CreateLoad(parent);
-			v = CodeGen::GetMemberField(parent, name);
+			v = CodeGen::FindMemberField(parent, name);
 		}
 
 		if (child != nullptr)

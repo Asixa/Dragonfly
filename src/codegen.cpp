@@ -122,6 +122,8 @@ void CodeGen::WriteBitCodeIr(llvm::Module* module, const char* file) {
 	WriteBitcodeToFile(*module, os);
 	os.flush();
 }
+
+
 int CodeGen::GetValuePtrDepth(llvm::Value* value) {
     auto depth = 0;
 	auto type = value->getType();
@@ -153,19 +155,21 @@ llvm::Value* CodeGen::Malloc(llvm::Type* type) {
 
     const auto decl = types_table[type->getStructName()];
     if(!decl->base_type_name.empty()) {
-        const auto base = CodeGen::GetMemberField(value,L"base");
+        const auto base = CodeGen::FindMemberField(value,L"base");
         const auto base_constructor = CodeGen::the_module->getFunction(CodeGen::MangleStr(decl->base_type_name));
         const std::vector<llvm::Value*> args_v;
 		CodeGen::builder.CreateStore(builder.CreateCall(base_constructor, args_v, "base"),base );
     }
-
     return value;
 }
 
 
-llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name) {
+llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name) {
     const auto obj_type_name = obj->getType()->getPointerElementType()->getStructName().str();
-	auto decl = CodeGen::types_table[obj_type_name];
+
+
+	// get the this's type and check if it contains the field
+    auto decl = CodeGen::types_table[obj_type_name];
 	auto idx = -1;
 	for (int id = 0, n = decl->fields.size(); id < n; id++) {
 		if (decl->fields[id] == name) { 
@@ -173,6 +177,8 @@ llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name) 
 			break;
 		}
 	}
+
+    // get the base's type and check if it contains the field
 	if (idx == -1) {
         if(!decl->base_type_name.empty()) {
 			auto base_decl = CodeGen::types_table[CodeGen::MangleStr(decl->base_type_name)];
@@ -183,57 +189,45 @@ llvm::Value* CodeGen::GetMemberField(llvm::Value* obj, const std::wstring name) 
 				}
 			}
             if(idx!=-1) {
-                const auto base = CodeGen::builder.CreateStructGEP(obj, 0);
-				return  CodeGen::builder.CreateStructGEP(CodeGen::builder.CreateLoad(base), idx);
+                const auto base = CodeGen::builder.CreateStructGEP(obj, 0);                      // base is A**
+				return  CodeGen::builder.CreateStructGEP(CodeGen::builder.CreateLoad(base), idx);     // after a load, we get A* and return it.
             }
         }
         return CodeGen::LogErrorV("Cannot find field... \n");
 	}
-
 	return  CodeGen::builder.CreateStructGEP(obj, idx);
 }
 
-llvm::Value* CodeGen::GetField(const std::wstring name, const bool warn) {
+llvm::Value* CodeGen::FindField(const std::wstring name, const bool warn) {
 	llvm::Value* v = nullptr;
 	const auto mangle_name = CodeGen::MangleStr(name);
 
+	// find this field in local like function argument
 	if (!v && CodeGen::local_fields_table.find(mangle_name) != CodeGen::local_fields_table.end())
 		v = CodeGen::local_fields_table[mangle_name];
-
-	for (auto& it : local_fields_table)
-        std::cout << it.first << ",";
-	std::cout << std::endl;
-
+	//for (auto& it : local_fields_table)std::cout << it.first << ",";std::cout << std::endl;
+	// find this field in this
 	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end()) {
 		auto this_fields = types_table[CodeGen::GetValueStructType(local_fields_table["this"])]->fields;
 		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end())
-		    v = CodeGen::builder.CreateLoad(CodeGen::GetMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
+		    v = CodeGen::builder.CreateLoad(CodeGen::FindMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
 	}
-
+	// find this field in base
 	if (!v && CodeGen::local_fields_table.find("base") != CodeGen::local_fields_table.end()) {
 
 	    auto base_field = types_table[CodeGen::GetValueStructType(local_fields_table["base"])]->fields;
-		
 		if (std::find(base_field.begin(), base_field.end(), name) != base_field.end()) {
-			printf("try get %s in  \n",name.c_str());
-			for (auto& i : base_field)printf("%s,", i.c_str());
-			std::cout << std::endl;
-
-			auto f = CodeGen::GetMemberField(CodeGen::builder.CreateLoad(CodeGen::local_fields_table["base"]), name);
-			printf("try get f \n");
-		    v = CodeGen::builder.CreateLoad(f, "base." + mangle_name);
+		    v = CodeGen::builder.CreateLoad(
+				CodeGen::FindMemberField(CodeGen::builder.CreateLoad(CodeGen::local_fields_table["base"]), name)
+				, "base." + mangle_name);
 		}
-	       
-
 	}
-
+	// find this field in global varibales
 	if (!v && CodeGen::global_fields_table.find(mangle_name) != CodeGen::global_fields_table.end())
 		v = CodeGen::global_fields_table[mangle_name];
 
 	// TODO find v in public Enums
 	// TODO find v in namespaces
-	// TODO find v in this
 
-	if (!v && warn) return  CodeGen::LogErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str());
-    return v;
+	return  !v && warn ? CodeGen::LogErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str()) : v;
 }

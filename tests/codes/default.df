@@ -19,22 +19,7 @@ class A:B
 		return 666;
 	}
 
-//	init(x:int,y:int)
-//	{
-//		a=x
-//		b=y
-//	}
-	
-//	operator +(v:A)
-//	{
-//		a+=v.a
-//		this.b+=v.b
-//	}
 
-//	overidde func toString()
-//	{
-//		
-//	}
 }
 
 extension A

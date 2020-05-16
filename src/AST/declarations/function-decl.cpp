@@ -143,7 +143,7 @@ namespace parser {
 
 				const auto alloca = CodeGen::CreateEntryBlockAlloca(function, CodeGen::GetType(self_decl->base_type_name), "base");
 				alloca->setAlignment(llvm::MaybeAlign(8));
-				auto base = CodeGen::GetMemberField(function->getArg(0), L"base");
+				auto base = CodeGen::FindMemberField(function->getArg(0), L"base");
 				CodeGen::AlignStore(CodeGen::builder.CreateStore(
 					CodeGen::builder.CreateLoad(base), alloca)
 				);
