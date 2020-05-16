@@ -23,11 +23,16 @@ llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 include_directories(
         ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/include/AST
 	    ${PROJECT_SOURCE_DIR}/src
 )
  
 file(GLOB all_SRCS
 	    "${PROJECT_SOURCE_DIR}/src/*.cpp"
+	    "${PROJECT_SOURCE_DIR}/src/AST/*.cpp"
+	    "${PROJECT_SOURCE_DIR}/src/AST/expressions/*.cpp"
+	    "${PROJECT_SOURCE_DIR}/src/AST/statements/*.cpp"
+	    "${PROJECT_SOURCE_DIR}/src/AST/declarations/*.cpp"
         "${PROJECT_SOURCE_DIR}/include/*.h" 
         )
 

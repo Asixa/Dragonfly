@@ -20,11 +20,7 @@
 #include <fstream>
 
 #include "lexer.h"
-
 #include <windows.h>
-
-
-
 
 std::basic_ostream<wchar_t>* Debugger::out = nullptr;
 bool Debugger::is_std_out = false;

@@ -16,7 +16,7 @@
 
 #include "lexer.h"
 #include "parser.h"
-#include "codegen.h"
+#include "codegen.h" 
 
 
 int main(int argc, char** argv) {
@@ -52,6 +52,7 @@ int main(int argc, char** argv) {
     else std::cout << "Compiler stopped due to errors occurred\n\n";
     Debugger::WriteOutput("log.txt");
     if (argc == 1)system("pause");
-
+     
     return 0;
 }
+ 
