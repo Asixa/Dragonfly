@@ -21,6 +21,9 @@ llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter)
 
 
 #CUDA
+find_package(CUDA 10.1 REQUIRED)
+message(STATUS "Found CUDA ${CUDA_VERSION_STRING} at ${CUDA_TOOLKIT_ROOT_DIR}")
+
 if (DEFINED ENV{CUDA_HOME})
   set(CUDA_HOME "$ENV{CUDA_HOME}")
   set(CUDA_HOME "$ENV{CUDA_HOME}" CACHE PATH "Path to CUDA Toolkit.")
@@ -40,6 +43,8 @@ elseif (NOT DEFINED CUDA_HOME)
   set(CUDA_HOME "${CUDA_HOME}" CACHE PATH "Path to CUDA Toolkit.")
 endif()
 message(STATUS "Using CUDA_HOME: ${CUDA_HOME}")
+link_directories(${CUDA_HOME}/include/lib/x64)
+
 
 # libNVVM
 if(NOT DEFINED ENV{LIBNVVM_HOME})
@@ -101,8 +106,10 @@ message(STATUS "Using libnvvm library: ${NVVM_LIB}")
 
 #MAIN
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+
 include_directories(
 	    ${NVVM_INCLUDE_DIR}
+		${CUDA_HOME}/include
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include/AST
 	    ${PROJECT_SOURCE_DIR}/src
@@ -118,7 +125,8 @@ file(GLOB all_SRCS
         )
 
 add_executable (${PROJECT_NAME} ${all_SRCS})
-target_link_libraries(${PROJECT_NAME} ${llvm_libs} ${NVVM_LIB} )
+
+target_link_libraries(${PROJECT_NAME} ${llvm_libs} ${NVVM_LIB}  )
 
 #install(TARGETS "${PROJECT_NAME}" DESTINATION bin)
 include(CPack)

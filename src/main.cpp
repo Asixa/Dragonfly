@@ -17,14 +17,16 @@
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h" 
-
-#include "nvvm.h"
+#include "package-manager.h"
+#include "preprocessor.h"
 
 int main(int argc, char** argv) {
-    
+	PackageManager::QueryPackages();
+	// system("pause");
+	// return 0;
     std::string filename;
     if (argc == 1) {
-        filename = "../tests/codes/default.df";
+		filename = "../tests/codes/package.df";
     }
     else if (argc > 1) {
         filename = argv[1];
@@ -36,8 +38,9 @@ int main(int argc, char** argv) {
     Debugger::error_existed = Debugger::only_tokenize;
     std::wcout.imbue(std::locale(""));
     const auto start = clock();
-    Lexer::LoadFile(filename.c_str());
-
+	// Lexer::LoadFile(filename.c_str());
+	Preprocessor::AddFile(filename);
+	Preprocessor::Process();
     
     auto program = parser::Parse();
     if (!Debugger::is_std_out)

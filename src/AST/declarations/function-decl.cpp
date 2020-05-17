@@ -77,13 +77,14 @@ namespace parser {
 				}
 
 		}
+		if (ext) {
+			*Debugger::out << "[Parsed] Extern function declaration\n";
+			return function;
+		}
 
 		Lexer::SkipNewlines();
 		VERIFY
-			if (ext) {
-				*Debugger::out << "[Parsed] Extern function declaration\n";
-				return function;
-			}
+
 		*Debugger::out << "[Parsed] Function declaration\n";
 		Lexer::Match('{');
 		VERIFY

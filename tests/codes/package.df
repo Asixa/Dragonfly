@@ -1,0 +1,10 @@
+#import random
+printf("Hello random numbers! \n")
+
+printf("%d\n",rand())
+printf("%d\n",rand())
+printf("%d\n",rand())
+printf("%d\n",rand())
+printf("%d\n",rand())
+
+

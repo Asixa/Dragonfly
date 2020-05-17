@@ -21,6 +21,7 @@
 
 #include "lexer.h"
 #include <windows.h>
+#include "preprocessor.h"
 
 std::basic_ostream<wchar_t>* Debugger::out = nullptr;
 bool Debugger::is_std_out = false;
@@ -58,7 +59,7 @@ void Debugger::SetColor(const int c) {
 
 void Debugger::PrintErrorInfo(const std::wstring type, const bool show_location) {
     if (show_location)
-        *out << L"[" << line + 1 << L"," << ch << L"]: ";
+        *out << L"[" << Preprocessor::MapFileNumber(line) << L"," << ch << L"]: ";
     SetColor(log_color);
     *out << type << L": ";
     SetColor(kWhite);

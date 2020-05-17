@@ -26,7 +26,10 @@ namespace parser {
 
     std::shared_ptr<Program> Program::Parse() {
         auto program = std::make_shared<Program>();
-        while (Lexer::peek > 0 && Lexer::token != nullptr) program->ParseSingle();
+		while (Lexer::peek > 0 && Lexer::token != nullptr) {
+	
+			program->ParseSingle();
+		}
         return program;
     }
 
