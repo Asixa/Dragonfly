@@ -28,6 +28,10 @@ extension A
 	{
 		return 666;
 	}
+	func foo(int a,int b):int
+	{
+		return a+b;
+	}
 }
 
 extension A => func smt():int
@@ -42,13 +46,14 @@ a.b=666
 a.z=10000
 
 printf("Hello,World\n")
-printf("%d,%d,%d \n",a.a,a.b,a.z)
+printf("a's values: %d,%d,%d \n",a.a,a.b,a.z)
 var b = 600
-printf("%d\n",a.foo(b))
+printf("overload a.foo(b):      %d\n",a.foo(b))
+printf("overload a.foo(b,200):  %d\n",a.foo(b,200))
 
 b = 2333
 var c =A().bar()
-printf("%d\n",A().bar())
+printf("A().bar(): %d\n",A().bar())
 printf("%d\n",b)
 printf("%d\n",c)
 

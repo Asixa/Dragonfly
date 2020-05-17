@@ -135,11 +135,25 @@ int CodeGen::GetValuePtrDepth(llvm::Value* value) {
 	return depth;
 }
 
-std::string CodeGen::GetValueStructType(llvm::Value* value) {
-	auto type = value->getType();
-	while (type->getTypeID() == llvm::Type::PointerTyID) 
+std::string CodeGen::GetValueStructName(llvm::Value* value) {
+	return GetTypeStructName(value->getType());
+}
+std::string CodeGen::GetTypeStructName(llvm::Type* type) {
+	while (type->getTypeID() == llvm::Type::PointerTyID)
 		type = type->getPointerElementType();
-	return type->getStructName();
+
+    switch (type->getTypeID()) {
+	case llvm::Type::DoubleTyID:
+		return "double";
+	case llvm::Type::IntegerTyID:
+		return "int";
+	case llvm::Type::FloatTyID:
+		return "float";
+	default:
+		return type->getStructName();
+    }
+
+	
 }
 
 std::string CodeGen::GetValueDebugType(llvm::Value* value) {
@@ -210,7 +224,7 @@ llvm::Value* CodeGen::FindField(const std::wstring name, const bool warn) {
 	//for (auto& it : local_fields_table)std::cout << it.first << ",";std::cout << std::endl;
 	// find this field in this
 	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end()) {
-		auto this_fields = types_table[CodeGen::GetValueStructType(local_fields_table["this"])]->fields;
+		auto this_fields = types_table[CodeGen::GetValueStructName(local_fields_table["this"])]->fields;
 		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end())
 		    v = CodeGen::builder.CreateLoad(CodeGen::FindMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
 	}
@@ -218,7 +232,7 @@ llvm::Value* CodeGen::FindField(const std::wstring name, const bool warn) {
 	// find this field in base
 	if (!v && CodeGen::local_fields_table.find("base") != CodeGen::local_fields_table.end()) {
 		
-	    auto base_field = types_table[CodeGen::GetValueStructType(local_fields_table["base"])]->fields;
+	    auto base_field = types_table[CodeGen::GetValueStructName(local_fields_table["base"])]->fields;
 		if (std::find(base_field.begin(), base_field.end(), name) != base_field.end()) {
 		    v = CodeGen::builder.CreateLoad(
 				CodeGen::FindMemberField(CodeGen::builder.CreateLoad(CodeGen::local_fields_table["base"]), name)

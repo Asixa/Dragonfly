@@ -21,15 +21,13 @@ namespace parser {
 			kernal = false,
 			is_extern = false;
 		std::wstring name;
+		std::string full_name;
 		llvm::StructType* self_type;
 		std::wstring return_type;
 		std::shared_ptr<FuncParam> args;
 		std::shared_ptr<Statement> statements;
 
-		void SetInternal(const std::wstring structname, llvm::StructType* type) {
-			name = structname + L"." + name;
-			self_type = type;
-		}
+		void SetInternal(llvm::StructType* type);
 
 		void Gen() override;
 		void GenHeader() override;

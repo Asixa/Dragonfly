@@ -91,7 +91,6 @@ namespace parser {
 						if (baseType == nullptr) {
 							baseType = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(interface));
 							base_type_name = interface;
-							printf("%s  %d\n", interface.c_str(), baseType == nullptr);
 						}
 						else CodeGen::LogErrorV("Inherit multiple classes is not allowed");
 					}
@@ -111,7 +110,7 @@ namespace parser {
 
 		//Create a Constructor function
 		const auto func_type = llvm::FunctionType::get(the_struct->getPointerTo(), std::vector<llvm::Type*>(), false);
-		auto function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, CodeGen::MangleStr(name),
+		auto function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, CodeGen::MangleStr(name)+"()",
 			CodeGen::the_module.get());
 		const auto bb = llvm::BasicBlock::Create(CodeGen::the_context, CodeGen::MangleStr(name) + "_entry", function);
 		function->setCallingConv(llvm::CallingConv::C);
@@ -127,7 +126,7 @@ namespace parser {
 		verifyFunction(*function);
 
 		for (auto& function : functions) {
-			function->SetInternal(name, the_struct);
+			function->SetInternal(the_struct);
 			function->GenHeader();
 			function->Gen();
 		}

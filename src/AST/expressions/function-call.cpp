@@ -46,13 +46,29 @@ namespace parser {
 		if (left != nullptr)
 			v = left->GenField(parent);
 
-		const auto callee_name = parent == nullptr
+		auto callee_name = parent == nullptr
 			? CodeGen::MangleStr(name)
-			: CodeGen::GetValueStructType(parent) + "." + CodeGen::MangleStr(name);
+			: CodeGen::GetValueStructName(parent) + "::" + CodeGen::MangleStr(name);
+
+		// generate all the argument values;
+		std::vector<llvm::Value*> args_v;
+		// prepare the argv list
+		for (unsigned i = 0, e = args.size(); i != e; ++i) {
+			args_v.push_back(args[i]->Gen());
+			if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
+		}
+
 
 
 		// callee_name should now be the full function name, eg: A.bar
-		const auto callee = CodeGen::the_module->getFunction(callee_name);
+		auto callee = CodeGen::the_module->getFunction(callee_name);
+        if(!callee) {
+			callee_name += "(";
+            for(int i=0, argv_size = args_v.size();i< argv_size;i++)
+				callee_name += CodeGen::GetTypeStructName(args_v[i]->getType())+(i==argv_size - 1?"":", ");
+			callee_name += ")";
+			callee = CodeGen::the_module->getFunction(callee_name);
+        }
 		// check if the function exist
 		if (!callee)
 			return CodeGen::LogErrorV((std::string("Unknown function referenced :") + callee_name).c_str());
@@ -61,20 +77,16 @@ namespace parser {
 		if (callee->arg_size() != (args.size() + (is_member_func ? 1 : 0)) && !callee->isVarArg())
 			return CodeGen::LogErrorV("Incorrect # arguments passed");
 
-		// generate all the argument values;
-		std::vector<llvm::Value*> args_v;
+
+
 		if (is_member_func) {
 			const auto ptr_depth = CodeGen::GetValuePtrDepth(parent);
 			auto this_arg = parent;
 			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
 				this_arg = CodeGen::builder.CreateLoad(parent);
-			args_v.push_back(this_arg);
+			args_v.insert(args_v.begin(),this_arg);
 		}
-		// prepare the argv list
-		for (unsigned i = 0, e = args.size(); i != e; ++i) {
-			args_v.push_back(args[i]->Gen());
-			if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
-		}
+
 		// call the function
 		v = callee->getReturnType()->getTypeID() == llvm::Type::VoidTyID
 			? CodeGen::builder.CreateCall(callee, args_v)

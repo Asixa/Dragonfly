@@ -99,37 +99,48 @@ namespace parser {
 			* Debugger::out << "[Parsed] Function end\n";
 		return function;
 	}
+	void FunctionDecl::SetInternal(llvm::StructType* type) {
+		self_type = type;
+	}
 
 	void FunctionDecl::GenHeader() {
-		auto the_function = CodeGen::the_module->getFunction(CodeGen::MangleStr(name));
-	
-		if (!the_function) {
-			std::vector<llvm::Type*> types;
-			if (self_type != nullptr) {
-				types.push_back(self_type->getPointerTo());
-				args->names.insert(args->names.begin(), L"this");
-			}
-			for (auto i = 0; i < args->size; i++)
-				types.push_back(CodeGen::GetType(args->types[i]));
-	
-            
-			const auto func_type = llvm::FunctionType::get(CodeGen::GetType(return_type), types, args->isVarArg);
+		std::vector<llvm::Type*> types;
+		if (self_type != nullptr) {
+			types.push_back(self_type->getPointerTo());
+			args->names.insert(args->names.begin(), L"this");
+		}
+		for (auto i = 0; i < args->size; i++)
+			types.push_back(CodeGen::GetType(args->types[i]));
 
-			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, CodeGen::MangleStr(name),
+		full_name =
+			(self_type == nullptr ? "" : self_type->getStructName().str()) + "::" + CodeGen::MangleStr(name) + "(";
+
+		for (int i = self_type == nullptr ? 0 : 1,types_size = types.size(); i < types_size; i++)
+			full_name += CodeGen::GetTypeStructName(types[i]) + (i == types.size() - 1 ? "" : ", ");
+		full_name += ")";
+
+		
+		auto the_function = CodeGen::the_module->getFunction(full_name);
+		if (!the_function) {
+			const auto func_type = llvm::FunctionType::get(CodeGen::GetType(return_type), types, args->isVarArg);
+			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, full_name,
 				CodeGen::the_module.get());
-			;
 			unsigned idx = 0;
 			for (auto& arg : the_function->args())
 				arg.setName(CodeGen::MangleStr(args->names[idx++]));
-
 		}
-		else *Debugger::out << "function " << name << " already defined";
+		else {
+			// *Debugger::out << "function " << std::wstring(full_name.begin(), full_name.end()) << " already defined\n";
+			CodeGen::LogErrorV((std::string("function ") + full_name + std::string(" already defined\n")).c_str());
+		}
 	}
+
+   
 
 	void FunctionDecl::Gen() {
       
 		if (is_extern)return;
-		auto function = CodeGen::the_module->getFunction(CodeGen::MangleStr(name));
+		auto function = CodeGen::the_module->getFunction(full_name);
 		if (!function) {
 			*Debugger::out << "function head not found\n";
 			return;

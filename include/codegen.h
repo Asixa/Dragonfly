@@ -67,7 +67,8 @@ public:
 
 	static int GetValuePtrDepth(llvm::Value* value);
 
-    static std::string GetValueStructType(llvm::Value* value);
+	static std::string GetValueStructName(llvm::Value* value);
+	static std::string GetTypeStructName(llvm::Type* value);
 
 	static std::string GetValueDebugType(llvm::Value* value);
 

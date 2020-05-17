@@ -49,7 +49,7 @@ namespace parser {
 	void Extension::Gen() {
 		const auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
 		for (auto& function : functions) {
-			function->SetInternal(name, the_struct);
+			function->SetInternal(the_struct);
 			function->GenHeader();
 			function->Gen();
 		}
