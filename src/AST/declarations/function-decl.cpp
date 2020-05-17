@@ -83,6 +83,7 @@ namespace parser {
 		}
 
 		Lexer::SkipNewlines();
+
 		VERIFY
 
 		*Debugger::out << "[Parsed] Function declaration\n";
@@ -101,7 +102,7 @@ namespace parser {
 
 	void FunctionDecl::GenHeader() {
 		auto the_function = CodeGen::the_module->getFunction(CodeGen::MangleStr(name));
-
+	
 		if (!the_function) {
 			std::vector<llvm::Type*> types;
 			if (self_type != nullptr) {
@@ -110,11 +111,13 @@ namespace parser {
 			}
 			for (auto i = 0; i < args->size; i++)
 				types.push_back(CodeGen::GetType(args->types[i]));
-
+	
+            
 			const auto func_type = llvm::FunctionType::get(CodeGen::GetType(return_type), types, args->isVarArg);
+
 			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, CodeGen::MangleStr(name),
 				CodeGen::the_module.get());
-
+			;
 			unsigned idx = 0;
 			for (auto& arg : the_function->args())
 				arg.setName(CodeGen::MangleStr(args->names[idx++]));
@@ -124,6 +127,7 @@ namespace parser {
 	}
 
 	void FunctionDecl::Gen() {
+      
 		if (is_extern)return;
 		auto function = CodeGen::the_module->getFunction(CodeGen::MangleStr(name));
 		if (!function) {
@@ -132,31 +136,26 @@ namespace parser {
 		}
 		const auto bb = llvm::BasicBlock::Create(CodeGen::the_context, CodeGen::MangleStr(name) + "_entry", function);
 		CodeGen::builder.SetInsertPoint(bb);
-
+		
 
 		// CodeGen::This = nullptr;
 		for (auto& arg : function->args())CodeGen::local_fields_table[arg.getName()] = &arg;
 
-		//load base
-		if (self_type != nullptr) {
-			auto self_decl = CodeGen::types_table[self_type->getStructName()];
-			if (!self_decl->base_type_name.empty()) {
+	
+		 if (self_type != nullptr) {
+		 	auto self_decl = CodeGen::types_table[self_type->getStructName()];
+		 	if (!self_decl->base_type_name.empty()) {
+		
+		 		const auto alloca = CodeGen::CreateEntryBlockAlloca(function, CodeGen::GetType(self_decl->base_type_name), "base");
+		 		alloca->setAlignment(llvm::MaybeAlign(8));
+		 		auto base = CodeGen::FindMemberField(function->getArg(0), L"base");
+		 		CodeGen::AlignStore(CodeGen::builder.CreateStore(base, alloca)
+		 		);
+		 		CodeGen::local_fields_table["base"] = alloca;
+		 	}
+		 }
 
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(function, CodeGen::GetType(self_decl->base_type_name), "base");
-				alloca->setAlignment(llvm::MaybeAlign(8));
-				auto base = CodeGen::FindMemberField(function->getArg(0), L"base");
-				CodeGen::AlignStore(CodeGen::builder.CreateStore(
-					CodeGen::builder.CreateLoad(base), alloca)
-				);
-				CodeGen::local_fields_table["base"] = alloca;
-			}
-		}
 
-
-		// CodeGen::local_fields_table.clear();
-		// CodeGen::This = nullptr;
-
-		// CodeGen::the_function = function;
 		if (statements != nullptr)statements->Gen();
 		CodeGen::local_fields_table.clear();
 		verifyFunction(*function);

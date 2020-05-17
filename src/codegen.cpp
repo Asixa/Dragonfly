@@ -154,13 +154,14 @@ llvm::Value* CodeGen::Malloc(llvm::Type* type) {
 		llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 32));
     const auto value= CodeGen::builder.CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
 
-    const auto decl = types_table[type->getStructName()];
-    if(!decl->base_type_name.empty()) {
-        const auto base = CodeGen::FindMemberField(value,L"base");
-        const auto base_constructor = CodeGen::the_module->getFunction(CodeGen::MangleStr(decl->base_type_name));
-        const std::vector<llvm::Value*> args_v;
-		CodeGen::builder.CreateStore(builder.CreateCall(base_constructor, args_v, "base"),base );
-    }
+  //   const auto decl = types_table[type->getStructName()];
+  //   if(!decl->base_type_name.empty()) {
+  //       const auto base = CodeGen::FindMemberField(value,L"base");
+  //       const auto base_constructor = CodeGen::the_module->getFunction(CodeGen::MangleStr(decl->base_type_name));
+  //       const std::vector<llvm::Value*> args_v;
+		// auto obj = builder.CreateCall(base_constructor, args_v, "base");
+		// // CodeGen::builder.CreateStore(,base );
+  //   }
     return value;
 }
 
@@ -191,7 +192,7 @@ llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name)
 			}
             if(idx!=-1) {
                 const auto base = CodeGen::builder.CreateStructGEP(obj, 0);                      // base is A**
-				return  CodeGen::builder.CreateStructGEP(CodeGen::builder.CreateLoad(base), idx);     // after a load, we get A* and return it.
+				return  CodeGen::builder.CreateStructGEP(base, idx);     // after a load, we get A* and return it.
             }
         }
         return CodeGen::LogErrorV("Cannot find field... \n");
@@ -213,9 +214,10 @@ llvm::Value* CodeGen::FindField(const std::wstring name, const bool warn) {
 		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end())
 		    v = CodeGen::builder.CreateLoad(CodeGen::FindMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
 	}
+
 	// find this field in base
 	if (!v && CodeGen::local_fields_table.find("base") != CodeGen::local_fields_table.end()) {
-
+		
 	    auto base_field = types_table[CodeGen::GetValueStructType(local_fields_table["base"])]->fields;
 		if (std::find(base_field.begin(), base_field.end(), name) != base_field.end()) {
 		    v = CodeGen::builder.CreateLoad(

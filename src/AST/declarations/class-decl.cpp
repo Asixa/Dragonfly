@@ -89,7 +89,7 @@ namespace parser {
 					const auto decl = CodeGen::types_table[mangled_name];
 					if (!decl->is_interface) {
 						if (baseType == nullptr) {
-							baseType = CodeGen::GetType(interface);
+							baseType = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(interface));
 							base_type_name = interface;
 							printf("%s  %d\n", interface.c_str(), baseType == nullptr);
 						}
