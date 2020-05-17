@@ -26,8 +26,8 @@
 	F(return) F(continue) F(break) F(try) F(catch) F(throw)		\
 	F(import) F(typedef) F(extension) F(operator) F(extern)		\
 	F(struct) F(class) F(enum) F(interface)						\
-	F(new) F(get) F(set) F(init) F(deinit)						\
-	F(sizeof) F(print)											\
+	F(new) F(get) F(set) F(init) F(delete)						\
+	F(sizeof) 											\
 	F(in) F(from) F(to) 
 
 #define OPERATORS(F)\
