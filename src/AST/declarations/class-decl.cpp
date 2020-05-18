@@ -94,7 +94,7 @@ namespace parser {
 	}
 
 	void ClassDecl::Gen() {
-		auto mangled_name = CodeGen::MangleStr(name);
+        const auto mangled_name = CodeGen::MangleStr(name);
 		auto the_struct = CodeGen::the_module->getTypeByName(mangled_name);
 		std::vector<llvm::Type*> field_tys;
 
@@ -123,46 +123,5 @@ namespace parser {
 
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
-	
-
-		// //Create FAKE Constructor function 
-		// auto func_type = llvm::FunctionType::get(the_struct->getPointerTo(), std::vector<llvm::Type*>(), false);
-		// auto function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, mangled_name +"()",
-		// 	CodeGen::the_module.get());
-		// auto bb = llvm::BasicBlock::Create(CodeGen::the_context, mangled_name + "_entry", function);
-		// function->setCallingConv(llvm::CallingConv::C);
-		// CodeGen::builder.SetInsertPoint(bb);
-		// CodeGen::builder.CreateRet(CodeGen::Malloc(the_struct));
-		// verifyFunction(*function);
-		//
-		// //Create REALL Constructor function 
-		// func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(CodeGen::the_context), std::vector<llvm::Type*>{the_struct->getPointerTo()}, false);
-		// function = llvm::Function::Create(func_type, 
-		// 	llvm::Function::ExternalLinkage, mangled_name+"::"+mangled_name + "(" +")",
-		// 	CodeGen::the_module.get());
-		// bb = llvm::BasicBlock::Create(CodeGen::the_context, mangled_name + "_entry", function);
-		// function->setCallingConv(llvm::CallingConv::C);
-		// CodeGen::builder.SetInsertPoint(bb);
-
-  //       //test init
-		// if (types.size() == 2) {
-		//
-		// 	auto a=CodeGen::builder.CreateStructGEP(function->getArg(0), 1);
-  //           const auto v = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), static_cast<int>(233));
-		// 	CodeGen::builder.CreateStore(v,a);
-		// }
-
-		// CodeGen::builder.CreateRetVoid();
-  //
-  //
-		// // auto field1= CodeGen::builder.CreateStructGEP(the_struct, alloca, 1);
-		// // CodeGen::builder.CreateStore(llvm::ConstantInt::get(Type::getInt32Ty(CodeGen::the_context), 233),field1);
-  //       llvm::verifyFunction(*function);
-
-		// for (auto& function : functions) {
-		// 	function->SetInternal(the_struct);
-		// 	function->GenHeader();
-		// 	function->Gen();
-		// }
 	}
 }
