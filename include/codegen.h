@@ -32,6 +32,8 @@ public:
 	static llvm::LLVMContext the_context;
 	static std::unique_ptr<llvm::Module> the_module;
 	static llvm::IRBuilder<> builder;
+
+	static std::shared_ptr<parser::Program> program;
 	// static llvm::Function* the_function;
 	static std::map<std::string, llvm::Value*> local_fields_table;
 	static std::map<std::string, llvm::Value*> global_fields_table;
@@ -64,6 +66,7 @@ public:
     static llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
 
 	static int GetPtrDepth(llvm::Value* value);
+	static int GetPtrDepth(llvm::Type* type);
 
 	static std::string GetStructName(llvm::Value* value);
 	static std::string GetStructName(llvm::Type* type);

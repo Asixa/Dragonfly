@@ -55,9 +55,10 @@ namespace parser {
 
     class Program {
         std::vector<std::shared_ptr<Statement>> statements;
-        std::vector<std::shared_ptr<Declaration>> declarations;
+        
 		void ParseSingle();
     public:
+		std::vector<std::shared_ptr<Declaration>> declarations;
 		static std::shared_ptr<Program> Parse();
         void Gen();
     };

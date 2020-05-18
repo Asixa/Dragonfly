@@ -42,13 +42,13 @@ int main(int argc, char** argv) {
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
     
-    auto program = parser::Parse();
+   CodeGen::program = parser::Parse();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
 	
 
     if (!Debugger::error_existed) {
-        program->Gen();
+        CodeGen::program->Gen();
         CodeGen::WriteReadableIr(CodeGen::the_module.get(), "ir.txt", true);
 		CodeGen::WriteBitCodeIr(CodeGen::the_module.get(), "a.ll");
         std::cout << "Compiled successfully, took a total of " << static_cast<double>(clock() - start) << "ms\n\n";

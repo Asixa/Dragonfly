@@ -1,1 +1,29 @@
-a.b.c().d()()()().e
+class A
+{
+  a:int
+  func toB():B
+  {
+
+    return B(this)
+  }
+  init()
+  {
+  a=666
+  }
+}
+
+struct B
+{
+  a:int
+  init(A a)
+  {
+	this.a=a.a
+  }
+  init(){
+  a=233
+  }
+}
+
+var a=A()
+var b=a.toB()
+printf("%d %d\n",a.a,b.a)

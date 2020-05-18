@@ -54,7 +54,8 @@ namespace parser {
 		CodeGen::BuildInFunc("printf", llvm::Type::getVoidTy(CodeGen::the_context),
 			std::vector<llvm::Type*>{llvm::Type::getInt8PtrTy(CodeGen::the_context)}, true);
 
-		for (auto& declaration : declarations)declaration->GenHeader();
+        for(auto i=0;i<declarations.size();i++)declarations[i]->GenHeader();
+		// for (auto& declaration : declarations)declaration->GenHeader();
 		for (auto& declaration : declarations)declaration->Gen();
 
 		const auto main_func = CodeGen::CreateMainFunc();

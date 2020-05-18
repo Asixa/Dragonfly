@@ -86,6 +86,11 @@ namespace parser {
 		auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
 		if (!the_struct) the_struct = llvm::StructType::create(CodeGen::the_context, CodeGen::MangleStr(name));
 		else *Debugger::out << "Type " << name << " already defined" << std::endl;
+		CodeGen::types_table[the_struct->getName().str()] = this;
+		for (auto& function : functions) {
+			function->SetInternal(the_struct);
+		    CodeGen::program->declarations.push_back(function);
+		}
 	}
 
 	void ClassDecl::Gen() {
@@ -118,7 +123,7 @@ namespace parser {
 
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
-		CodeGen::types_table[the_struct->getName().str()] = this;
+	
 
 		// //Create FAKE Constructor function 
 		// auto func_type = llvm::FunctionType::get(the_struct->getPointerTo(), std::vector<llvm::Type*>(), false);
@@ -154,10 +159,10 @@ namespace parser {
 		// // CodeGen::builder.CreateStore(llvm::ConstantInt::get(Type::getInt32Ty(CodeGen::the_context), 233),field1);
   //       llvm::verifyFunction(*function);
 
-		for (auto& function : functions) {
-			function->SetInternal(the_struct);
-			function->GenHeader();
-			function->Gen();
-		}
+		// for (auto& function : functions) {
+		// 	function->SetInternal(the_struct);
+		// 	function->GenHeader();
+		// 	function->Gen();
+		// }
 	}
 }

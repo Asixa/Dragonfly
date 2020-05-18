@@ -20,7 +20,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include "codegen.h"
 
-
+std::shared_ptr<parser::Program>  CodeGen::program=nullptr;
 llvm::LLVMContext CodeGen::the_context;
 std::unique_ptr<llvm::Module> CodeGen::the_module = std::make_unique<llvm::Module>("Program", CodeGen::the_context);
 llvm::IRBuilder<> CodeGen::builder(CodeGen::the_context);
@@ -133,13 +133,17 @@ void CodeGen::WriteBitCodeIr(llvm::Module* module, const char* file) {
 
 
 int CodeGen::GetPtrDepth(llvm::Value* value) {
-    auto depth = 0;
-	auto type = value->getType();
-    while (type->getTypeID()==llvm::Type::PointerTyID) {
+	return GetPtrDepth(value->getType());
+}
+
+int CodeGen::GetPtrDepth(llvm::Type* type) {
+	auto depth = 0;
+	while (type->getTypeID() == llvm::Type::PointerTyID) {
 		depth++;
 		type = type->getPointerElementType();
-    }
+	}
 	return depth;
+
 }
 
 std::string CodeGen::GetStructName(llvm::Value* value) {

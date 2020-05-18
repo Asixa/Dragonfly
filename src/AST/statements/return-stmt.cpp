@@ -22,8 +22,23 @@ namespace parser {
 			CodeGen::builder.CreateRetVoid();
 			return;
 		}
-		const auto val = value->Gen();
-		if (!val) CodeGen::LogErrorV("Error in return");
-		else CodeGen::builder.CreateRet(val);
+		auto val = value->Gen();
+		if (!val) {
+			CodeGen::LogErrorV("Error in return");
+            return;
+		}
+        auto function=CodeGen::builder.GetInsertBlock()->getParent();
+		auto expected = function->getReturnType();
+        if(CodeGen::GetStructName(expected)!=CodeGen::GetStructName(val)) {
+			CodeGen::LogErrorV("return type not same");
+            return;
+        }
+		auto expected_ptr_level = CodeGen::GetPtrDepth(expected);
+        auto val_ptr_level= CodeGen::GetPtrDepth(val);
+	    while (val_ptr_level>expected_ptr_level) {
+			val = CodeGen::builder.CreateLoad(val);
+			val_ptr_level--;
+        }
+		CodeGen::builder.CreateRet(val);
 	}
 }
