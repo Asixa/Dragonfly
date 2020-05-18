@@ -4,7 +4,7 @@
 namespace parser {
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
-		instance->type = ty;
+		instance->category = ty;
 		Lexer::Next();
 		VERIFY
 			instance->name = Lexer::string_val;
@@ -53,7 +53,7 @@ namespace parser {
 					VERIFY
 						break;
 				default: 
-					if (instance->type==kInterface)break;
+					if (instance->category==kInterface)break;
 					instance->fields.push_back(Lexer::string_val);
 					Lexer::Match(Id);
 					VERIFY
@@ -97,9 +97,9 @@ namespace parser {
 			llvm::Type* baseType = nullptr;
 			for (const auto& interface : interfaces) {
 				auto mangled_name = CodeGen::MangleStr(interface);
-				if (CodeGen::types_table.find(mangled_name) != CodeGen::types_table.end()) {
+				if (CodeGen::IsCustomType(mangled_name)) {
 					const auto decl = CodeGen::types_table[mangled_name];
-					if (!decl->type==kInterface) {
+					if (!decl->category==kInterface) {
 						if (baseType == nullptr) {
 							baseType = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(interface));
 							base_type_name = interface;
@@ -116,7 +116,7 @@ namespace parser {
 			}
 		}
 
-		for (const auto& type : types)field_tys.push_back(CodeGen::GetType(type));
+		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
 		CodeGen::types_table[the_struct->getName().str()] = this;
 

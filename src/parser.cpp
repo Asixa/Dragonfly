@@ -57,13 +57,10 @@ namespace parser {
 		for (auto& declaration : declarations)declaration->GenHeader();
 		for (auto& declaration : declarations)declaration->Gen();
 
-		const auto main_func = CodeGen::CreateFunc(CodeGen::builder, "main");
-		const auto entry = CodeGen::CreateBb(main_func, "entry");
-		// CodeGen::the_function = main_func;
+		const auto main_func = CodeGen::CreateMainFunc();
+		const auto entry = CodeGen::CreateBasicBlock(main_func, "entry");
 		CodeGen::builder.SetInsertPoint(entry);
-
 		for (auto& statement : statements)if (statement != nullptr)statement->Gen();
-
 		CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));
 		verifyFunction(*main_func);
 	}

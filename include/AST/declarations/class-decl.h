@@ -10,7 +10,7 @@ namespace parser {
 	class ClassDecl final : public Declaration {
 	public:
         enum {kInterface,kClass,kStruct};
-		int type=kClass;
+		int category=kClass;
 		std::wstring name;
 		std::wstring base_type_name;
 		std::vector<std::wstring> fields;

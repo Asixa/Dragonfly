@@ -41,30 +41,27 @@ namespace parser {
 		const auto mangled_name = CodeGen::MangleStr(name);
 		const auto val = value->Gen();
 
-		const auto ty = type.empty() ? val->getType() : CodeGen::GetType(type);
+		const auto ty = type.empty() ? val->getType() : CodeGen::GetTypeByName(type);
 		if (!val) return;
 
 		if (constant) {
+            // TODO ERROR, constant not supported yet!
 			const auto const_v = static_cast<llvm::ConstantFP*>(val);
 			const auto v = CodeGen::CreateGlob(CodeGen::builder, mangled_name, CodeGen::builder.getDoubleTy());
 			v->setInitializer(const_v);
-
 			CodeGen::local_fields_table[mangled_name] = v;
 		}
 		else {
 			const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();
 			if (the_function->getName() == "main") {
-
 				// All fields in main function are stored in heap.
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, ty, mangled_name);
-				alloca->setAlignment(llvm::MaybeAlign(8));
+				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, mangled_name, the_function);
 				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
 				CodeGen::global_fields_table[mangled_name] = alloca;
 			}
 			else {
 				// otherwise the local field store on stack.
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, ty, mangled_name);
-				alloca->setAlignment(llvm::MaybeAlign(8));
+				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, mangled_name,the_function);
 				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
 				CodeGen::local_fields_table[mangled_name] = alloca;
 			}

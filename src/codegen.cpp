@@ -51,21 +51,23 @@ llvm::GlobalVariable* CodeGen::CreateGlob(llvm::IRBuilder<>& builder, const std:
     return g_var;
 }
 
-llvm::Function* CodeGen::CreateFunc(llvm::IRBuilder<>& builder, const std::string name) {
+llvm::Function* CodeGen::CreateMainFunc() {
     const auto func_type = llvm::FunctionType::get(builder.getInt32Ty(), false);
-    const auto foo_func = llvm::Function::Create(func_type, llvm::GlobalValue::ExternalLinkage, name,
-                                                 the_module.get());
-    return foo_func;
+    const auto func = llvm::Function::Create(func_type, llvm::GlobalValue::ExternalLinkage, "main",the_module.get());
+    return func;
 }
 
-llvm::BasicBlock* CodeGen::CreateBb(llvm::Function* func, const std::string name) {
+llvm::BasicBlock* CodeGen::CreateBasicBlock(llvm::Function* func, const std::string name) {
     return llvm::BasicBlock::Create(CodeGen::the_context, name, func);
 }
 
-llvm::AllocaInst* CodeGen::CreateEntryBlockAlloca(llvm::Function* the_function, llvm::Type* type,
-                                              const std::string& var_name) {
+llvm::AllocaInst* CodeGen::CreateEntryBlockAlloca(llvm::Type* type,const std::string& var_name, llvm::Function* the_function) {
+    if(the_function==nullptr)
+        the_function= builder.GetInsertBlock()->getParent();
     llvm::IRBuilder<> tmp_b(&the_function->getEntryBlock(), the_function->getEntryBlock().begin());
-    return tmp_b.CreateAlloca(type, 0, var_name);
+	auto alloca = tmp_b.CreateAlloca(type, 0, var_name);
+	alloca->setAlignment(llvm::MaybeAlign(8));
+    return alloca;
 }
 
 std::string CodeGen::MangleStr(const std::wstring str) {
@@ -73,12 +75,12 @@ std::string CodeGen::MangleStr(const std::wstring str) {
         to_bytes(str);
 }
 
-llvm::Type* CodeGen::GetType(std::wstring type_name) {
+llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
 	// if (type_name[0] == L'\0')printf("size %d %d\n", type_name.size(), type_name[0]);
 	if (type_name.size() != 1|| (type_name[0]>0&&type_name[0]<128)||Lexer::IsCjk(type_name[0])) {
         const auto mangled_name = MangleStr(type_name);
         const auto ty = the_module->getTypeByName(mangled_name);
-		return types_table[mangled_name]->type== parser::ClassDecl::kClass?ty->getPointerTo():static_cast<llvm::Type*>(ty);
+		return types_table[mangled_name]->category== parser::ClassDecl::kClass?ty->getPointerTo():static_cast<llvm::Type*>(ty);
 	}
 	    
     const int type = type_name[0];
@@ -130,7 +132,7 @@ void CodeGen::WriteBitCodeIr(llvm::Module* module, const char* file) {
 }
 
 
-int CodeGen::GetValuePtrDepth(llvm::Value* value) {
+int CodeGen::GetPtrDepth(llvm::Value* value) {
     auto depth = 0;
 	auto type = value->getType();
     while (type->getTypeID()==llvm::Type::PointerTyID) {
@@ -140,10 +142,10 @@ int CodeGen::GetValuePtrDepth(llvm::Value* value) {
 	return depth;
 }
 
-std::string CodeGen::GetValueStructName(llvm::Value* value) {
-	return GetTypeStructName(value->getType());
+std::string CodeGen::GetStructName(llvm::Value* value) {
+	return GetStructName(value->getType());
 }
-std::string CodeGen::GetTypeStructName(llvm::Type* type) {
+std::string CodeGen::GetStructName(llvm::Type* type) {
 	while (type->getTypeID() == llvm::Type::PointerTyID)
 		type = type->getPointerElementType();
     switch (type->getTypeID()) {
@@ -160,7 +162,7 @@ std::string CodeGen::GetTypeStructName(llvm::Type* type) {
 	
 }
 
-std::string CodeGen::GetValueDebugType(llvm::Value* value) {
+std::string CodeGen::DebugValue(llvm::Value* value) {
 	std::string ir;
 	llvm::raw_string_ostream ir_stream(ir);
 	value->print(ir_stream, true);
@@ -185,7 +187,7 @@ llvm::Value* CodeGen::Malloc(llvm::Type* type) {
 
 
 llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name) {
-	const auto obj_type_name = CodeGen::GetValueStructName(obj);
+	const auto obj_type_name = CodeGen::GetStructName(obj);
 
 
 	// get the this's type and check if it contains the field
@@ -229,7 +231,7 @@ llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool war
 	//for (auto& it : local_fields_table)std::cout << it.first << ",";std::cout << std::endl;
 	// find this field in this
 	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end()) {
-		auto this_fields = types_table[CodeGen::GetValueStructName(local_fields_table["this"])]->fields;
+		auto this_fields = types_table[CodeGen::GetStructName(local_fields_table["this"])]->fields;
 		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end()) {
 			v = CodeGen::FindMemberField(CodeGen::local_fields_table["this"], name);
             v= cmd == 0 ? CodeGen::builder.CreateLoad(v, "this." + mangle_name):v;
@@ -238,7 +240,7 @@ llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool war
 
 	// find this field in base
 	if (!v && CodeGen::local_fields_table.find("base") != CodeGen::local_fields_table.end()) {
-	    auto base_field = types_table[CodeGen::GetValueStructName(local_fields_table["base"])]->fields;
+	    auto base_field = types_table[CodeGen::GetStructName(local_fields_table["base"])]->fields;
 		if (std::find(base_field.begin(), base_field.end(), name) != base_field.end()) {
 			v = CodeGen::FindMemberField(CodeGen::builder.CreateLoad(CodeGen::local_fields_table["base"]), name);
 			v = cmd == 0 ? CodeGen::builder.CreateLoad(v, "base." + mangle_name) : v;
@@ -252,4 +254,16 @@ llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool war
 	// TODO find v in namespaces
 
 	return  !v && warn ? CodeGen::LogErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str()) : v;
+}
+
+bool CodeGen::IsCustomType(std::string name) {
+	return types_table.find(name) != CodeGen::types_table.end();
+}
+
+int CodeGen::GetCustomTypeCategory(llvm::Type* ty) {
+	return GetCustomTypeCategory(GetStructName(ty));
+}
+
+int CodeGen::GetCustomTypeCategory(const std::string ty) {
+	return IsCustomType(ty) ? types_table[ty]->category : -1;
 }

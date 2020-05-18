@@ -45,48 +45,86 @@ public:
     static llvm::BasicBlock* block_begin;
 	static llvm::BasicBlock* block_end;
 
-	// static llvm::Value* This;
 
     static llvm::Value* LogErrorV(const char* str);
 
     static llvm::GlobalVariable* CreateGlob(llvm::IRBuilder<>& builder, const std::string name, llvm::Type* ty);
 
-    static llvm::Function* CreateFunc(llvm::IRBuilder<>& builder, const std::string name);
+    static llvm::Function* CreateMainFunc();
 
-    static llvm::BasicBlock* CreateBb(llvm::Function* func, const std::string name);
+    static llvm::BasicBlock* CreateBasicBlock(llvm::Function* func, const std::string name);
 
-    static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* the_function, llvm::Type* type,
-                                                    const std::string& var_name);
+    static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Type* type,const std::string& var_name, llvm::Function* the_function = nullptr);
+
     static std::string MangleStr(const std::wstring str);
 
-    static llvm::Type* GetType(std::wstring type_name);
+    static llvm::Type* GetTypeByName(std::wstring type_name);
 
     static llvm::StoreInst* AlignStore(llvm::StoreInst* a);
-
     static llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
 
-	static int GetValuePtrDepth(llvm::Value* value);
+	static int GetPtrDepth(llvm::Value* value);
 
-	static std::string GetValueStructName(llvm::Value* value);
-	static std::string GetTypeStructName(llvm::Type* value);
+	static std::string GetStructName(llvm::Value* value);
+	static std::string GetStructName(llvm::Type* type);
 
-	static std::string GetValueDebugType(llvm::Value* value);
 
-    // Take a type, and return a value that on heap,
-    // NOTE: type should not be pointer, use the_module->getTypeByName instead of CodeGen::GetType
-    // eg:  XXX , not XXX*
+    /**
+	 * \brief Get the ir code for this value.
+	 * \param value The value want to debug.
+	 * \return ir code in string
+	 */
+	static std::string DebugValue(llvm::Value* value);
+
+    /**
+	 * \brief  Take a type, and return a value that created on heap,
+	 * \param type Type should not be pointer, use the_module->getTypeByName instead of CodeGen::GetType
+	 * \return Value of the given type that created on heap
+	 */
 	static llvm::Value* Malloc(llvm::Type* type);
+
+    /**
+	 * \brief Accpet a ptr value, and get it field'value by name.
+	 * if you only have a value but not ptr. store it to an alloca.
+	 * \param obj the object member.
+	 * \param name the name of its field
+	 * \return The value of the field, in...
+	 */
 	static llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name);
-	static llvm::Value* CodeGen::FindField(const std::wstring name, int cmd = 0, bool warn = true);
+
+    /**
+	 * \brief Find the field in current scope.
+	 * \param name The name of the field want to find.
+	 * \param cmd The wanted type.  'kConstantWanted' by default,
+	 *  should be 'kPtrWanted'  when it is LHS of assignment operation.
+	 * \param warn throw a error in not found.
+	 * \return The value of the field. in wanted type
+	 */
+	static llvm::Value* CodeGen::FindField(const std::wstring name, int cmd = parser::Field::kConstantWanted, bool warn = true);
+
+
+    // true if the name is a custom type.
+    static bool IsCustomType(std::string name);
+
+    /**
+	 * \brief find the category of a type 
+	 * \param ty type of the custom type
+	 * \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
+	 */
+	static int GetCustomTypeCategory(llvm::Type* ty);
+
+     /**
+	 * \brief find the category of a type 
+	 * \param ty name of the custom type
+	 * \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
+	 */
+	static int GetCustomTypeCategory(std::string ty);
 
     static void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false);
-
 	// Write human-readable ir to file , for debug and testing.
 	static void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
 	// Write compilable ir to file , for further compilation.
 	static void WriteBitCodeIr(llvm::Module* module, const char* file);
-
-
 
 };
 

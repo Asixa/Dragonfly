@@ -7,7 +7,8 @@ namespace parser {
 	class Field : public Expr {
 
 	public:
-		int cmd = 0;
+		enum { kConstantWanted = 0, kPtrWanted = 1 };
+		int cmd = kConstantWanted;
 		std::shared_ptr<Field> child, left;
 		void ToString() override;
 		llvm::Value* Gen(const int cmd = 0) override;
@@ -16,6 +17,7 @@ namespace parser {
 		// explicit Field(std::vector<std::wstring> d) : names(d) {}
 		explicit Field(std::wstring d) : name(d) {}
 
+        // eg. "a.b"  a is b's parent.
 		virtual llvm::Value* GenField(llvm::Value* parent);
 		static std::shared_ptr<Field>Parse();
 		static std::shared_ptr<Field>ParsePostfix();

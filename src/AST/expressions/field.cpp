@@ -66,23 +66,29 @@ namespace parser {
 	llvm::Value* Field::GenField(llvm::Value* parent) {
 		
 		llvm::Value* v = nullptr;
+        // if the parent is null, then we find this field in the scope.
 		if (parent == nullptr)v = CodeGen::FindField(name,cmd);
+		// if the parent is not, then we find this field in the parent.
 		else {
-            if(CodeGen::GetValuePtrDepth(parent)>1)
+            // we find parent's first-level-pointer.
+			// TODO load once is not safe, should loop untill it is first-level-pointer.
+            if(CodeGen::GetPtrDepth(parent)>1)
 			    parent = CodeGen::builder.CreateLoad(parent);
 			v = CodeGen::FindMemberField(parent, name);
 		}
 
+        // if this field is not done yet. finish it.
 		if (child != nullptr)
 		{
-			printf("phhhh %ws\n", name.c_str());
 			child->cmd = cmd;
 			v = child->GenField(v);
 		}
-		
+
+        // If we want the constant, when load the pointer.
+        // This only done in entry node where parent is null.
 		if (parent == nullptr) {
-			
-			if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
+			if (cmd == kConstantWanted && v->getType()->getTypeID() == llvm::Type::PointerTyID)
+                // TODO load once is not safe, should loop untill it is constant.
 				return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
 		}
 
