@@ -54,8 +54,18 @@ namespace parser {
 		std::vector<llvm::Value*> args_v;
 		// prepare the argv list
 
+		printf("*************** %d\n", args.size());
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
-			args_v.push_back(args[i]->Gen());
+			auto v = args[i]->Gen();
+			auto type_name = CodeGen::GetTypeStructName(v->getType());
+			if ( CodeGen::types_table.find(type_name) != CodeGen::types_table.end()) {
+				const auto decl = CodeGen::types_table[type_name];
+				if (decl->type == ClassDecl::kStruct && CodeGen::GetValuePtrDepth(v) != 0) {
+					v = CodeGen::builder.CreateLoad(v);
+
+				}
+			}
+			args_v.push_back(v);
 			if (!args_v.back())return CodeGen::LogErrorV("Incorrect # arguments passed with error");
 		}
 
@@ -65,7 +75,6 @@ namespace parser {
 		auto callee = CodeGen::the_module->getFunction(callee_name);
 
 		if (CodeGen::types_table.find(callee_name) != CodeGen::types_table.end()) {
-
 			auto decl = CodeGen::types_table[callee_name];
             if(decl->type==ClassDecl::kClass)
 			parent = CodeGen::Malloc(CodeGen::the_module->getTypeByName(callee_name));
@@ -79,6 +88,7 @@ namespace parser {
 			callee_name = callee_name + "::" + callee_name;
 			return_parent = true;
 		}
+
         if(!callee) {
 			callee_name += "(";
             for(int i=0, argv_size = args_v.size();i< argv_size;i++)

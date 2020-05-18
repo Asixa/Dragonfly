@@ -177,6 +177,19 @@ namespace parser {
 			auto type_name=CodeGen::GetTypeStructName(arg.getType());
 			
 
+			if (CodeGen::types_table.find(type_name) != CodeGen::types_table.end()) {
+				
+                const auto decl = CodeGen::types_table[type_name];
+				if (decl->type == ClassDecl::kStruct&&CodeGen::GetValuePtrDepth(&arg)==0) {
+
+				    const auto alloca = CodeGen::CreateEntryBlockAlloca(function, arg.getType(), arg.getName());
+					alloca->setAlignment(llvm::MaybeAlign(8));
+					auto arg_p = CodeGen::AlignStore(CodeGen::builder.CreateStore(&arg, alloca));
+					CodeGen::local_fields_table[arg.getName()] = alloca;
+		
+					continue;
+				}
+			}
 			CodeGen::local_fields_table[arg.getName()] = &arg;
 		}
 	

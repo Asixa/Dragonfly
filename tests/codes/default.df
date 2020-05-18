@@ -1,98 +1,29 @@
-class B
-{
-	z:int
-}
 
-interface C{
-
-}
-
-
-class A:B
-{
-	a:int;
-	b:int;
-	func foo(int c):int
-	{
-		return a+c+z
-	}
-
-	func bar():int
-	{
-		return 666;
-	}
-	init()
-	{
-		a=100
-		b=100
-		z=100
-	}
-	init(int a,int b,int z)
-	{
-		this.a=a
-		this.b=b
-		this.z=z
-		base.z=z
-	}
-	func test()
-	{
-	 
-	
-	}
-}
-
-extension A
-{
-	func baz():int
-	{
-		return 666;
-	}
-	func foo(int a,int b):int
-	{
-		return a+b;
-	}
-}
-
-extension A => func smt():int
-{
-	return a+666;
-}
 struct D
 {
 	a:int;
 	b:int;
-	func foo(int c):int
-	{
-		return a+b+c
-	}
-	func foo(int x,int y):int
-	{
-		return x+y;
-	}
-	func bar():int
-	{
-		return 666;
-	}
-	init()
-	{
-		a=0
-		b=0
-	}
-   
+ 
     init(D d)
 	{ 
-
+	    a=d.a
+		b=d.b
 	}
 
-	init(int x,int y)
+	init()
 	{
-	    a=x
-		b=y
-	}
-	delete()
-	{
+	 a=999
+	 b=555
 	}
 }
+
+var a =D()
+a.a=233
+a.b=666
+var b=D(a)
+
+printf("%d,%d\n",a.a,a.b)
+printf("%d,%d\n",b.a,b.b)
 
 
 
