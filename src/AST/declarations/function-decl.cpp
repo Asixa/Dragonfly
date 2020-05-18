@@ -179,13 +179,19 @@ namespace parser {
 		CodeGen::builder.SetInsertPoint(basic_block);
 
 		for (auto& arg : function->args()) {
-			const auto arg_type_name = CodeGen::GetStructName(arg.getType());
 			// store the argument to argument table.
 			// if argment is a struct passed by value. we store its alloca to local_fields.
-			CodeGen::local_fields_table[arg.getName()] =
-				(CodeGen::GetCustomTypeCategory(arg_type_name) == ClassDecl::kStruct && CodeGen::GetPtrDepth(&arg) == 0)
-				? CodeGen::CreateEntryBlockAlloca(arg.getType(), arg.getName(), function)
-				: static_cast<llvm::Value*>(&arg);
+			const auto arg_type_name = CodeGen::GetStructName(arg.getType());
+			if (CodeGen::GetCustomTypeCategory(arg_type_name) == ClassDecl::kStruct) {
+				if (CodeGen::GetPtrDepth(&arg) == 0) {
+					const auto alloca = CodeGen::CreateEntryBlockAlloca(arg.getType(), arg.getName());
+					CodeGen::AlignStore(CodeGen::builder.CreateStore(&arg, alloca));
+					CodeGen::local_fields_table[arg.getName()] = alloca;
+					continue;
+				}
+			}
+			CodeGen::local_fields_table[arg.getName()] = &arg;
+
 		}
 
 		// if 'this' have a base. then we create an alloca for the base.
