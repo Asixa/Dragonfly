@@ -72,10 +72,12 @@ public:
 
 	static std::string GetValueDebugType(llvm::Value* value);
 
-
+    // Take a type, and return a value that on heap,
+    // NOTE: type should not be pointer, use the_module->getTypeByName instead of CodeGen::GetType
+    // eg:  XXX , not XXX*
 	static llvm::Value* Malloc(llvm::Type* type);
 	static llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name);
-	static llvm::Value* CodeGen::FindField(const std::wstring name, bool warn = true);
+	static llvm::Value* CodeGen::FindField(const std::wstring name, int cmd = 0, bool warn = true);
 
     static void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false);
 

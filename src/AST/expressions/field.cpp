@@ -64,21 +64,24 @@ namespace parser {
 	}
 
 	llvm::Value* Field::GenField(llvm::Value* parent) {
-
+		
 		llvm::Value* v = nullptr;
-		if (parent == nullptr)v = CodeGen::FindField(name);
+		if (parent == nullptr)v = CodeGen::FindField(name,cmd);
 		else {
-			parent = CodeGen::builder.CreateLoad(parent);
+            if(CodeGen::GetValuePtrDepth(parent)>1)
+			    parent = CodeGen::builder.CreateLoad(parent);
 			v = CodeGen::FindMemberField(parent, name);
 		}
 
 		if (child != nullptr)
 		{
+			printf("phhhh %ws\n", name.c_str());
 			child->cmd = cmd;
 			v = child->GenField(v);
 		}
-
+		
 		if (parent == nullptr) {
+			
 			if (v->getType()->getTypeID() == llvm::Type::PointerTyID && cmd == 0)
 				return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
 		}

@@ -28,7 +28,7 @@ namespace parser {
 					if (Lexer::token->type == '}')break;
 				switch (Lexer::token->type) {
 				case K_init:
-				case K_deinit:
+				case K_delete:
 				case K_func:
 				case K_dfunc:
 				case K_kernal:

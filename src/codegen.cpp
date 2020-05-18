@@ -74,11 +74,16 @@ std::string CodeGen::MangleStr(const std::wstring str) {
 }
 
 llvm::Type* CodeGen::GetType(std::wstring type_name) {
-	if (type_name.size() != 1|| type_name[0]<128||Lexer::IsCjk(type_name[0])) 
-	    return the_module->getTypeByName(MangleStr(type_name))->getPointerTo();
+	// if (type_name[0] == L'\0')printf("size %d %d\n", type_name.size(), type_name[0]);
+	if (type_name.size() != 1|| (type_name[0]>0&&type_name[0]<128)||Lexer::IsCjk(type_name[0])) {
+        const auto mangled_name = MangleStr(type_name);
+        const auto ty = the_module->getTypeByName(mangled_name);
+		return types_table[mangled_name]->type== parser::ClassDecl::kClass?ty->getPointerTo():static_cast<llvm::Type*>(ty);
+	}
+	    
     const int type = type_name[0];
     switch (type) {
-    case '0': return llvm::Type::getVoidTy(CodeGen::the_context);
+    case L'\0': return llvm::Type::getVoidTy(CodeGen::the_context);
     case K_int: return llvm::Type::getInt32Ty(CodeGen::the_context);
     case K_float: return llvm::Type::getFloatTy(CodeGen::the_context);
     case K_double: return llvm::Type::getDoubleTy(CodeGen::the_context);
@@ -141,7 +146,6 @@ std::string CodeGen::GetValueStructName(llvm::Value* value) {
 std::string CodeGen::GetTypeStructName(llvm::Type* type) {
 	while (type->getTypeID() == llvm::Type::PointerTyID)
 		type = type->getPointerElementType();
-
     switch (type->getTypeID()) {
 	case llvm::Type::DoubleTyID:
 		return "double";
@@ -181,7 +185,7 @@ llvm::Value* CodeGen::Malloc(llvm::Type* type) {
 
 
 llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name) {
-    const auto obj_type_name = obj->getType()->getPointerElementType()->getStructName().str();
+	const auto obj_type_name = CodeGen::GetValueStructName(obj);
 
 
 	// get the this's type and check if it contains the field
@@ -211,10 +215,11 @@ llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name)
         }
         return CodeGen::LogErrorV("Cannot find field... \n");
 	}
+
 	return  CodeGen::builder.CreateStructGEP(obj, idx);
 }
 
-llvm::Value* CodeGen::FindField(const std::wstring name, const bool warn) {
+llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool warn) {
 	llvm::Value* v = nullptr;
 	const auto mangle_name = CodeGen::MangleStr(name);
 
@@ -225,18 +230,18 @@ llvm::Value* CodeGen::FindField(const std::wstring name, const bool warn) {
 	// find this field in this
 	if (!v && CodeGen::local_fields_table.find("this") != CodeGen::local_fields_table.end()) {
 		auto this_fields = types_table[CodeGen::GetValueStructName(local_fields_table["this"])]->fields;
-		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end())
-		    v = CodeGen::builder.CreateLoad(CodeGen::FindMemberField(CodeGen::local_fields_table["this"], name), "this." + mangle_name);
+		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end()) {
+			v = CodeGen::FindMemberField(CodeGen::local_fields_table["this"], name);
+            v= cmd == 0 ? CodeGen::builder.CreateLoad(v, "this." + mangle_name):v;
+		}  
 	}
 
 	// find this field in base
 	if (!v && CodeGen::local_fields_table.find("base") != CodeGen::local_fields_table.end()) {
-		
 	    auto base_field = types_table[CodeGen::GetValueStructName(local_fields_table["base"])]->fields;
 		if (std::find(base_field.begin(), base_field.end(), name) != base_field.end()) {
-		    v = CodeGen::builder.CreateLoad(
-				CodeGen::FindMemberField(CodeGen::builder.CreateLoad(CodeGen::local_fields_table["base"]), name)
-				, "base." + mangle_name);
+			v = CodeGen::FindMemberField(CodeGen::builder.CreateLoad(CodeGen::local_fields_table["base"]), name);
+			v = cmd == 0 ? CodeGen::builder.CreateLoad(v, "base." + mangle_name) : v;
 		}
 	}
 	// find this field in global varibales

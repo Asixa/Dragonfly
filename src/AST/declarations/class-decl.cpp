@@ -2,9 +2,9 @@
 #include "codegen.h"
 
 namespace parser {
-	std::shared_ptr<ClassDecl> ClassDecl::Parse(bool interface) {
+	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
-		instance->is_interface = interface;
+		instance->type = ty;
 		Lexer::Next();
 		VERIFY
 			instance->name = Lexer::string_val;
@@ -33,8 +33,19 @@ namespace parser {
 				VERIFY
 					if (Lexer::token->type == '}')break;
 				switch (Lexer::token->type) {
+				
+					
+				case K_delete: {
+					auto func = FunctionDecl::Parse();
+					if (instance->destructor == nullptr)instance->destructor = func;
+					else Debugger::Alert(L"Mutiple destructors is not allowed");
+					instance->functions.push_back(func);
+					VERIFY
+					break;
+				}
 				case K_init:
-				case K_deinit:
+					// instance->constructor.push_back(FunctionDecl::Parse());
+					// break;
 				case K_func:
 				case K_dfunc:
 				case K_kernal:
@@ -42,7 +53,7 @@ namespace parser {
 					VERIFY
 						break;
 				default: 
-					if (instance->is_interface)break;
+					if (instance->type==kInterface)break;
 					instance->fields.push_back(Lexer::string_val);
 					Lexer::Match(Id);
 					VERIFY
@@ -78,7 +89,8 @@ namespace parser {
 	}
 
 	void ClassDecl::Gen() {
-		auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
+		auto mangled_name = CodeGen::MangleStr(name);
+		auto the_struct = CodeGen::the_module->getTypeByName(mangled_name);
 		std::vector<llvm::Type*> field_tys;
 
 		if (!interfaces.empty()) {
@@ -87,7 +99,7 @@ namespace parser {
 				auto mangled_name = CodeGen::MangleStr(interface);
 				if (CodeGen::types_table.find(mangled_name) != CodeGen::types_table.end()) {
 					const auto decl = CodeGen::types_table[mangled_name];
-					if (!decl->is_interface) {
+					if (!decl->type==kInterface) {
 						if (baseType == nullptr) {
 							baseType = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(interface));
 							base_type_name = interface;
@@ -108,22 +120,39 @@ namespace parser {
 		the_struct->setBody(field_tys);
 		CodeGen::types_table[the_struct->getName().str()] = this;
 
-		//Create a Constructor function
-		const auto func_type = llvm::FunctionType::get(the_struct->getPointerTo(), std::vector<llvm::Type*>(), false);
-		auto function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, CodeGen::MangleStr(name)+"()",
-			CodeGen::the_module.get());
-		const auto bb = llvm::BasicBlock::Create(CodeGen::the_context, CodeGen::MangleStr(name) + "_entry", function);
-		function->setCallingConv(llvm::CallingConv::C);
-		CodeGen::builder.SetInsertPoint(bb);
-		//Constructor Body
+		// //Create FAKE Constructor function 
+		// auto func_type = llvm::FunctionType::get(the_struct->getPointerTo(), std::vector<llvm::Type*>(), false);
+		// auto function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, mangled_name +"()",
+		// 	CodeGen::the_module.get());
+		// auto bb = llvm::BasicBlock::Create(CodeGen::the_context, mangled_name + "_entry", function);
+		// function->setCallingConv(llvm::CallingConv::C);
+		// CodeGen::builder.SetInsertPoint(bb);
+		// CodeGen::builder.CreateRet(CodeGen::Malloc(the_struct));
+		// verifyFunction(*function);
+		//
+		// //Create REALL Constructor function 
+		// func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(CodeGen::the_context), std::vector<llvm::Type*>{the_struct->getPointerTo()}, false);
+		// function = llvm::Function::Create(func_type, 
+		// 	llvm::Function::ExternalLinkage, mangled_name+"::"+mangled_name + "(" +")",
+		// 	CodeGen::the_module.get());
+		// bb = llvm::BasicBlock::Create(CodeGen::the_context, mangled_name + "_entry", function);
+		// function->setCallingConv(llvm::CallingConv::C);
+		// CodeGen::builder.SetInsertPoint(bb);
 
-		// const auto alloca = CreateEntryBlockAlloca(the_function, the_struct, "struct");
-		// alloca->setAlignment(MaybeAlign(8));
+  //       //test init
+		// if (types.size() == 2) {
+		//
+		// 	auto a=CodeGen::builder.CreateStructGEP(function->getArg(0), 1);
+  //           const auto v = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), static_cast<int>(233));
+		// 	CodeGen::builder.CreateStore(v,a);
+		// }
 
-		CodeGen::builder.CreateRet(CodeGen::Malloc(the_struct));
-		// auto field1= CodeGen::builder.CreateStructGEP(the_struct, alloca, 1);
-		// CodeGen::builder.CreateStore(llvm::ConstantInt::get(Type::getInt32Ty(CodeGen::the_context), 233),field1);
-		verifyFunction(*function);
+		// CodeGen::builder.CreateRetVoid();
+  //
+  //
+		// // auto field1= CodeGen::builder.CreateStructGEP(the_struct, alloca, 1);
+		// // CodeGen::builder.CreateStore(llvm::ConstantInt::get(Type::getInt32Ty(CodeGen::the_context), 233),field1);
+  //       llvm::verifyFunction(*function);
 
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);

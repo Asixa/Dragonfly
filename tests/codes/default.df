@@ -21,6 +21,24 @@ class A:B
 	{
 		return 666;
 	}
+	init()
+	{
+		a=100
+		b=100
+		z=100
+	}
+	init(int a,int b,int z)
+	{
+		this.a=a
+		this.b=b
+		this.z=z
+		base.z=z
+	}
+	func test()
+	{
+	 
+	
+	}
 }
 
 extension A
@@ -39,23 +57,45 @@ extension A => func smt():int
 {
 	return a+666;
 }
+struct D
+{
+	a:int;
+	b:int;
+	func foo(int c):int
+	{
+		return a+b+c
+	}
+	func foo(int x,int y):int
+	{
+		return x+y;
+	}
+	func bar():int
+	{
+		return 666;
+	}
+	init()
+	{
+		a=0
+		b=0
+	}
+   
+    init(D d)
+	{ 
+
+	}
+
+	init(int x,int y)
+	{
+	    a=x
+		b=y
+	}
+	delete()
+	{
+	}
+}
 
 
-var a =A()
-a.a=233
-a.b=666
-a.z=10000
 
-printf("Hello,World\n")
-printf("a's values: %d,%d,%d \n",a.a,a.b,a.z)
-var b = 600
-printf("overload a.foo(b):      %d\n",a.foo(b))
-printf("overload a.foo(b,200):  %d\n",a.foo(b,200))
 
-b = 2333
-var c =A().bar()
-printf("A().bar(): %d\n",A().bar())
-printf("%d\n",b)
-printf("%d\n",c)
 
 

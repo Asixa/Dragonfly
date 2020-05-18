@@ -1,6 +1,7 @@
 #include "AST/expressions/factor.h"
 #include "parser.h"
 #include <sstream>
+#include "AST/expressions/new-expr.h"
 
 namespace parser {
 	void Factor::ToString() {
@@ -42,7 +43,7 @@ namespace parser {
 			auto str = std::make_shared<String>(Lexer::string_val);
 			Lexer::Next();
 			VERIFY
-				return str;
+			return str;
 		}
 
 		case Num: {
@@ -60,7 +61,9 @@ namespace parser {
 			VERIFY
 				return std::make_shared<Boolean>(false);
 
-
+		// case K_new: {
+		// 	return New::Parse();
+		// }
 		case Id: {
 			return Field::Parse();
 		}

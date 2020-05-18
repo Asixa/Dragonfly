@@ -12,8 +12,9 @@ namespace parser {
         case K_kernal: declarations.push_back(FunctionDecl::Parse()); break;
         case K_extern: declarations.push_back(FunctionDecl::Parse(true)); break;
         case K_import: Import::Parse(); break;
-		case K_class: declarations.push_back(ClassDecl::Parse()); break;
-		case K_interface: declarations.push_back(ClassDecl::Parse(true)); break;
+		case K_class: declarations.push_back(ClassDecl::Parse(ClassDecl::kClass)); break;
+		case K_interface: declarations.push_back(ClassDecl::Parse(ClassDecl::kInterface)); break;
+		case K_struct: declarations.push_back(ClassDecl::Parse(ClassDecl::kStruct)); break;
 		case K_extension: declarations.push_back(Extension::Parse()); break;
         default: statements.push_back(Statement::Parse());
         }

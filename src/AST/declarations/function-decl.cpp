@@ -42,26 +42,41 @@ namespace parser {
 	}
 
 	std::shared_ptr<FunctionDecl> FunctionDecl::Parse(const bool ext) {
+		auto has_name = true;
 		auto function = std::make_shared<FunctionDecl>();
 		function->is_extern = ext;
 		if (Lexer::Check(K_dfunc))function->differentiable = true;
 		else if (Lexer::Check(K_kernal))function->kernal = true;
+		else if (Lexer::Check(K_init)) {
+			has_name = false;
+			function->name = L"::init";
+		}
+		else if (Lexer::Check(K_delete))
+		{
+			has_name = false;
+			function->name = L"::delete";
+		}
 		Lexer::Next();
 
 
 		VERIFY
-			if (Lexer::Check(Id)) {
-				function->name = Lexer::string_val;
-				Lexer::Match(Id);
-				VERIFY
+			if (has_name==false||Lexer::Check(Id)) {
+				if (has_name) {
+					function->name = Lexer::string_val;
+					Lexer::Match(Id);
+					VERIFY
+				}
 			}
+            else {
+				Debugger::Alert(L"Need function name");
+            }
 		Lexer::Match('(');
 		VERIFY
 			function->args = FuncParam::Parse();
 		Lexer::Match(')');
 		VERIFY
 
-			function->return_type = '0';
+			function->return_type = L'\0';
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			VERIFY
@@ -112,9 +127,15 @@ namespace parser {
 		for (auto i = 0; i < args->size; i++)
 			types.push_back(CodeGen::GetType(args->types[i]));
 
-		full_name =
-			(self_type == nullptr ? "" : self_type->getStructName().str()) + "::" + CodeGen::MangleStr(name) + "(";
+       
+        const auto self_name =self_type == nullptr?"":self_type->getStructName().str();
+		if (name == L"::init")
+			full_name = self_name + "::" + self_name;
+		else if (name == L"::delete")
+			full_name = self_name + "::~" + self_name;
+		else full_name = self_name + "::" + CodeGen::MangleStr(name);
 
+        full_name+= "(";
 		for (int i = self_type == nullptr ? 0 : 1,types_size = types.size(); i < types_size; i++)
 			full_name += CodeGen::GetTypeStructName(types[i]) + (i == types.size() - 1 ? "" : ", ");
 		full_name += ")";
@@ -122,6 +143,7 @@ namespace parser {
 		
 		auto the_function = CodeGen::the_module->getFunction(full_name);
 		if (!the_function) {
+
 			const auto func_type = llvm::FunctionType::get(CodeGen::GetType(return_type), types, args->isVarArg);
 			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, full_name,
 				CodeGen::the_module.get());
@@ -150,8 +172,13 @@ namespace parser {
 		
 
 		// CodeGen::This = nullptr;
-		for (auto& arg : function->args())CodeGen::local_fields_table[arg.getName()] = &arg;
+		for (auto& arg : function->args()) {
+			
+			auto type_name=CodeGen::GetTypeStructName(arg.getType());
+			
 
+			CodeGen::local_fields_table[arg.getName()] = &arg;
+		}
 	
 		 if (self_type != nullptr) {
 		 	auto self_decl = CodeGen::types_table[self_type->getStructName()];
@@ -166,8 +193,11 @@ namespace parser {
 		 	}
 		 }
 
+      
+
 
 		if (statements != nullptr)statements->Gen();
+		if (function->getReturnType()->getTypeID() == llvm::Type::VoidTyID)CodeGen::builder.CreateRetVoid();
 		CodeGen::local_fields_table.clear();
 		verifyFunction(*function);
 
