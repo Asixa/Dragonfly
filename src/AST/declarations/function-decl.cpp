@@ -70,6 +70,10 @@ namespace parser {
             else {
 				Debugger::Alert(L" function name expected");
             }
+        if(Lexer::Check('<')) {
+            if(ext)Debugger::Alert(L" extern function cannot be generic");
+            else function->generic = GenericParam::Parse();
+        }
 		Lexer::Match('(');
 		VERIFY
 			function->args = FuncParam::Parse();

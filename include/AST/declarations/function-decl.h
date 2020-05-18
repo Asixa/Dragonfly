@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include "AST/declarations/declaration.h"
+#include "generic-param.h"
 
 namespace parser {
 	// class for matching function declaration parameters; 
@@ -24,6 +25,8 @@ namespace parser {
 		std::string full_name;
 		llvm::StructType* self_type;
 		std::wstring return_type;
+        
+		std::shared_ptr<GenericParam> generic;
 		std::shared_ptr<FuncParam> args;
 		std::shared_ptr<Statement> statements;
 

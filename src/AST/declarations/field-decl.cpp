@@ -46,9 +46,8 @@ namespace parser {
 
 		if (constant) {
             // TODO ERROR, constant not supported yet!
-			const auto const_v = static_cast<llvm::ConstantFP*>(val);
-			const auto v = CodeGen::CreateGlob(CodeGen::builder, mangled_name, CodeGen::builder.getDoubleTy());
-			v->setInitializer(const_v);
+			const auto v = CodeGen::CreateGlob(mangled_name, ty);
+			// v->setInitializer(val);
 			CodeGen::local_fields_table[mangled_name] = v;
 		}
 		else {

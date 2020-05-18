@@ -85,7 +85,10 @@ namespace parser {
 	void ClassDecl::GenHeader() {
 		auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
 		if (!the_struct) the_struct = llvm::StructType::create(CodeGen::the_context, CodeGen::MangleStr(name));
-		else *Debugger::out << "Type " << name << " already defined" << std::endl;
+		else {
+			*Debugger::out << "Type " << name << " already defined" << std::endl;
+            return;
+		}
 		CodeGen::types_table[the_struct->getName().str()] = this;
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);
@@ -123,5 +126,8 @@ namespace parser {
 
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
+
+
+	    // a->setAttributes()
 	}
 }

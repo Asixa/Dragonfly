@@ -1,0 +1,4 @@
+func a<T>()
+{
+}
+printf("hello\n")

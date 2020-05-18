@@ -35,7 +35,8 @@ bool CodeGen::is_sub_block = false;
 llvm::BasicBlock* CodeGen::block_begin = nullptr;
 llvm::BasicBlock* CodeGen::block_end = nullptr;
 
-// llvm::Value* CodeGen::This = nullptr;
+llvm::Type* CodeGen::metadata_type = nullptr;
+
 
 llvm::Value* CodeGen::LogErrorV(const char* str) {
     *Debugger::out << str;
@@ -43,7 +44,7 @@ llvm::Value* CodeGen::LogErrorV(const char* str) {
     exit(-1);
 }
 
-llvm::GlobalVariable* CodeGen::CreateGlob(llvm::IRBuilder<>& builder, const std::string name, llvm::Type* ty) {
+llvm::GlobalVariable* CodeGen::CreateGlob(const std::string name, llvm::Type* ty) {
     the_module->getOrInsertGlobal(name, ty);
     auto g_var = the_module->getNamedGlobal(name);
     g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
@@ -51,10 +52,50 @@ llvm::GlobalVariable* CodeGen::CreateGlob(llvm::IRBuilder<>& builder, const std:
     return g_var;
 }
 
+llvm::ConstantInt* CodeGen::CreateConstant(const int value) {
+	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), value);
+}
+
+llvm::GlobalVariable* CodeGen::CreateMetadata(const std::string name, int size, int align) {
+	if (metadata_type == nullptr)metadata_type = the_module->getTypeByName("#metadata");
+	auto glob=CreateGlob(name + "::meta", metadata_type);
+	glob->setInitializer(llvm::ConstantAggregateZero::get(metadata_type));
+	return glob;
+}
+
 llvm::Function* CodeGen::CreateMainFunc() {
     const auto func_type = llvm::FunctionType::get(builder.getInt32Ty(), false);
     const auto func = llvm::Function::Create(func_type, llvm::GlobalValue::ExternalLinkage, "main",the_module.get());
     return func;
+}
+
+void CodeGen::DeclMetadataStruct() {
+	auto metadata = CodeGen::the_module->getTypeByName("#metadata");
+	if (!metadata) {
+
+		metadata = llvm::StructType::create(CodeGen::the_context, "#metadata");
+		const auto int32 = llvm::Type::getInt32Ty(CodeGen::the_context);
+		metadata->setBody(std::vector<llvm::Type*>{int32, int32});
+		//Create metadata Constructor function
+        const auto i32 = llvm::Type::getInt32Ty(CodeGen::the_context);
+        const auto func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(CodeGen::the_context), std::vector<llvm::Type*>{metadata->getPointerTo()}, false);
+		auto function = llvm::Function::Create(func_type,
+			llvm::Function::ExternalLinkage,  + "#metadata()",CodeGen::the_module.get());
+        const auto bb = llvm::BasicBlock::Create(CodeGen::the_context,  + "metadata_entry", function);
+		function->setCallingConv(llvm::CallingConv::C);
+		CodeGen::builder.SetInsertPoint(bb);
+
+        const auto size = CodeGen::builder.CreateStructGEP(function->getArg(0), 0);
+		auto v = llvm::ConstantInt::get(i32, 8);
+		CodeGen::builder.CreateStore(v, size);
+  
+		const auto align = CodeGen::builder.CreateStructGEP(function->getArg(0), 1);
+		v = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 8);
+		CodeGen::builder.CreateStore(v, align);
+
+		CodeGen::builder.CreateRetVoid();
+
+	}
 }
 
 llvm::BasicBlock* CodeGen::CreateBasicBlock(llvm::Function* func, const std::string name) {

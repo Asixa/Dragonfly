@@ -47,6 +47,12 @@ namespace parser {
 
 
 	void Program::Gen() {
+
+		CodeGen::DeclMetadataStruct();
+
+		
+		
+
 		CodeGen::BuildInFunc("malloc", llvm::Type::getInt8PtrTy(CodeGen::the_context),
 			std::vector<llvm::Type*>{llvm::Type::getInt32Ty(CodeGen::the_context)});
 		CodeGen::BuildInFunc("free", llvm::Type::getVoidTy(CodeGen::the_context),
@@ -61,6 +67,13 @@ namespace parser {
 		const auto main_func = CodeGen::CreateMainFunc();
 		const auto entry = CodeGen::CreateBasicBlock(main_func, "entry");
 		CodeGen::builder.SetInsertPoint(entry);
+
+		// auto c = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 233);
+		// auto size = CodeGen::builder.CreateConstGEP1_32(a, 0,"233");
+		// auto z = CodeGen::builder.CreateStore(size, llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 233));
+		auto a = CodeGen::CreateMetadata("A", 8, 8);
+		CodeGen::builder.CreateCall(CodeGen::the_module->getFunction("#metadata()"),std::vector<llvm::Value*>{a});
+
 		for (auto& statement : statements)if (statement != nullptr)statement->Gen();
 		CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));
 		verifyFunction(*main_func);

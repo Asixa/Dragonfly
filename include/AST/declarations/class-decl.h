@@ -18,6 +18,7 @@ namespace parser {
 		std::vector<std::wstring> interfaces;
 		std::vector<std::shared_ptr<FunctionDecl>> functions;
 		std::vector<std::shared_ptr<FunctionDecl>> constructor;
+		std::shared_ptr<GenericParam> generic;
 		std::shared_ptr<FunctionDecl> destructor;
 		static std::shared_ptr<ClassDecl> Parse(int type = kClass);
 		void Gen() override;

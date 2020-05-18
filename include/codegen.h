@@ -42,6 +42,8 @@ public:
 	static llvm::Value* True;
 	static llvm::Value* False;
 
+	static llvm::Type* metadata_type;
+
     // True is in subblock like for or while
 	static bool is_sub_block;
     static llvm::BasicBlock* block_begin;
@@ -50,9 +52,12 @@ public:
 
     static llvm::Value* LogErrorV(const char* str);
 
-    static llvm::GlobalVariable* CreateGlob(llvm::IRBuilder<>& builder, const std::string name, llvm::Type* ty);
+    static llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
+	static llvm::ConstantInt* CreateConstant(int value);
+	static llvm::GlobalVariable* CreateMetadata(const std::string name,int size,int align);
 
-    static llvm::Function* CreateMainFunc();
+	static llvm::Function* CreateMainFunc();
+	static void DeclMetadataStruct();
 
     static llvm::BasicBlock* CreateBasicBlock(llvm::Function* func, const std::string name);
 
