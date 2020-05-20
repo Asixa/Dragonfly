@@ -50,30 +50,35 @@ namespace parser {
 
 		CodeGen::DeclMetadataStruct();
 
-		
-		
+		CodeGen::BuildInFunc("malloc", CodeGen::void_ptr,std::vector<llvm::Type*>{CodeGen::int32});
 
-		CodeGen::BuildInFunc("malloc", llvm::Type::getInt8PtrTy(CodeGen::the_context),
-			std::vector<llvm::Type*>{llvm::Type::getInt32Ty(CodeGen::the_context)});
-		CodeGen::BuildInFunc("free", llvm::Type::getVoidTy(CodeGen::the_context),
-			std::vector<llvm::Type*>{llvm::Type::getInt8PtrTy(CodeGen::the_context)});
-		CodeGen::BuildInFunc("printf", llvm::Type::getVoidTy(CodeGen::the_context),
-			std::vector<llvm::Type*>{llvm::Type::getInt8PtrTy(CodeGen::the_context)}, true);
+		CodeGen::BuildInFunc("memcpy", CodeGen::void_ptr,
+			std::vector<llvm::Type*>{CodeGen::void_ptr, CodeGen::void_ptr, CodeGen::int32});
+
+		CodeGen::BuildInFunc("free", CodeGen::void_type,std::vector<llvm::Type*>{CodeGen::void_ptr});
+
+		CodeGen::BuildInFunc("printf", CodeGen::void_type,std::vector<llvm::Type*>{CodeGen::void_ptr}, true);
 
         for(auto i=0;i<declarations.size();i++)declarations[i]->GenHeader();
 		// for (auto& declaration : declarations)declaration->GenHeader();
 		for (auto& declaration : declarations)declaration->Gen();
 
+		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(CodeGen::void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", CodeGen::the_module.get());
+		CodeGen::builder.SetInsertPoint(CodeGen::CreateBasicBlock(__df_global_var_init, "entry"));
+		for (auto i : CodeGen::metadata_init) {
+			const auto metadata = CodeGen::GetGenericMetaConstant(std::get<0>(i));
+		    CodeGen::builder.CreateStore(llvm::ConstantInt::get(CodeGen::int32, std::get<1>(i)),CodeGen::builder.CreateStructGEP(metadata, 0));
+			CodeGen::builder.CreateStore(llvm::ConstantInt::get(CodeGen::int32, std::get<2>(i)), CodeGen::builder.CreateStructGEP(metadata, 1));
+		}
+		CodeGen::builder.CreateRetVoid();
+
 		const auto main_func = CodeGen::CreateMainFunc();
 		const auto entry = CodeGen::CreateBasicBlock(main_func, "entry");
 		CodeGen::builder.SetInsertPoint(entry);
 
-		// auto c = llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 233);
-		// auto size = CodeGen::builder.CreateConstGEP1_32(a, 0,"233");
-		// auto z = CodeGen::builder.CreateStore(size, llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 233));
-		auto a = CodeGen::CreateMetadata("A", 8, 8);
-		CodeGen::builder.CreateCall(CodeGen::the_module->getFunction("#metadata()"),std::vector<llvm::Value*>{a});
-
+        if(!CodeGen::metadata_init.empty()) {
+			CodeGen::builder.CreateCall(__df_global_var_init, std::vector<llvm::Value*>{});
+        }
 		for (auto& statement : statements)if (statement != nullptr)statement->Gen();
 		CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));
 		verifyFunction(*main_func);

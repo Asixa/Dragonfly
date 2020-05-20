@@ -10,8 +10,9 @@ namespace parser {
 	class FuncParam {
 	public:
 		int size;
-		bool isVarArg = false;
+		bool is_var_arg = false;
 		std::vector<std::wstring> names, types;
+		std::vector<int>generic_id;
 		static std::shared_ptr<FuncParam> Parse();
 	};
 
@@ -19,19 +20,24 @@ namespace parser {
 	class FunctionDecl final : public Declaration {
 	public:
 		bool differentiable = false,
-			kernal = false,
-			is_extern = false;
+			 kernal = false,
+			 is_extern = false;
+		int generic_return = -1;
+
 		std::wstring name;
+		std::string header_name;
 		std::string full_name;
-		llvm::StructType* self_type;
 		std::wstring return_type;
-        
+		llvm::StructType* self_type;
+
+		// std::vector<int>generic_arguments;
 		std::shared_ptr<GenericParam> generic;
 		std::shared_ptr<FuncParam> args;
 		std::shared_ptr<Statement> statements;
 
+		std::string GetInstanceName(GenericParam* g_param);
+		bool IsGenericArgument(std::wstring name);
 		void SetInternal(llvm::StructType* type);
-
 		void Gen() override;
 		void GenHeader() override;
 		static std::shared_ptr<FunctionDecl> Parse(bool ext = false);

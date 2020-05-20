@@ -27,15 +27,16 @@ namespace parser {
 	std::shared_ptr<Field> Field::ParsePostfix() {
 		auto name = Lexer::string_val;
 		Lexer::Next(); VERIFY
-			if (Lexer::token->type == '(' || Lexer::token->type == '[')
+			if (Lexer::Check('(') || Lexer::Check('<') || Lexer::Check('['))
 			{
 				std::shared_ptr<Field> field = nullptr;
 
 				while (true) {
 					bool br = false;
 					switch (Lexer::token->type) {
+					case '<': //TODO conflict with less than
 					case '(': {
-						auto child = field;
+                        const auto child = field;
 						field = FuncCall::Parse(name);
 						if (!name.empty())name = L"";
 						field->left = child;
@@ -87,12 +88,17 @@ namespace parser {
 		// If we want the constant, when load the pointer.
 		// This only done in entry node where parent is null.
 		if (parent == nullptr) {
+
+			if (CodeGen::current_function == nullptr)printf("%ws\n", name.c_str());
 			if (cmd == kConstantWanted && v->getType()->getTypeID() == llvm::Type::PointerTyID
-				&& !(child == nullptr && (name == L"this" || name == L"base")))
+				&& !(child == nullptr && (name == L"this" || name == L"base"))
+				// && (CodeGen::current_function==nullptr||!CodeGen::current_function->IsGenericArgument(name))
+				&& !(CodeGen::GetStructName(v->getType())=="void*")
+				)
 				// TODO load once is not safe, should loop untill it is constant.
 				return CodeGen::AlignLoad(CodeGen::builder.CreateLoad(v));
 		}
-
+         
 		return v;
 
 	}

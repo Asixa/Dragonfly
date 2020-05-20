@@ -23,7 +23,7 @@ namespace parser {
 					Lexer::Match('.');
 				VERIFY
 					param->size--;
-				param->isVarArg = true;
+				param->is_var_arg = true;
 				return param;
 			}
 			else {
@@ -71,8 +71,14 @@ namespace parser {
 				Debugger::Alert(L" function name expected");
             }
         if(Lexer::Check('<')) {
-            if(ext)Debugger::Alert(L" extern function cannot be generic");
-            else function->generic = GenericParam::Parse();
+            if(function->name == L"::init"|| function->name == L"::delete") {
+
+				Debugger::Alert(L"Constructor or Deconstructor cannot have generic type");
+            }
+			else {
+				if (ext)Debugger::Alert(L" extern function cannot be generic");
+				else function->generic = GenericParam::Parse();
+			}
         }
 		Lexer::Match('(');
 		VERIFY
@@ -118,6 +124,28 @@ namespace parser {
 			* Debugger::out << "[Parsed] Function end\n";
 		return function;
 	}
+
+    std::string FunctionDecl::GetInstanceName(GenericParam* g_param) {
+        auto instance_name = header_name+"(";
+		for (auto i = 0; i < generic->size; i++) {
+			printf("what");
+			instance_name += "#metadata";
+		    instance_name+=(i < generic->size - 1 && args->size == 0) ? "" : ", ";
+		}
+        for(auto i = self_type == nullptr ? 0 : 1;i<args->size;i++) {
+            const auto g_id = args->generic_id[i];
+           instance_name+=CodeGen::MangleStr(g_id >=0?g_param->names[g_id]:args->types[i])+(i == args->size - 1 ? "" : ", ");
+        }
+		instance_name += ")";
+		return instance_name;
+	}
+
+    bool FunctionDecl::IsGenericArgument(std::wstring name) {
+        for(auto i=0;i< args->size;i++)
+			return(args->names[i]==name&&args->generic_id[i]>=0);
+        return false;
+	}
+
 	void FunctionDecl::SetInternal(llvm::StructType* type) {
 		self_type = type;
 	}
@@ -125,45 +153,99 @@ namespace parser {
 	void FunctionDecl::GenHeader() {
         // function arguments types.
 		std::vector<llvm::Type*> arg_types;
+		std::vector<std::wstring> arg_names;
 		auto const is_member_function = self_type != nullptr;
+		header_name = CodeGen::MangleStr(name);
+
+		//////////////////////////////////////////////////////////////////////////////
+        /// State 1£¬ Check if is member function, and calculate header name.
+        //////////////////////////////////////////////////////////////////////////////
+
         // if the function is a member function. we add the hidden pointer.
 		if (is_member_function) {
 			arg_types.push_back(self_type->getPointerTo());
-			args->names.insert(args->names.begin(), L"this");
+			arg_names.push_back(L"this");
+
+			// added :: to Name specify name for constructor and destructor
+			const auto class_name = self_type->getStructName().str();
+			if (name == L"::init")          header_name = class_name + "::" + class_name;
+			else if (name == L"::delete")   header_name = class_name + "::~" + class_name;
+			else header_name = class_name + "::" + header_name;
 		}
+		CodeGen::generic_functions_table[header_name].push_back(this);
+		//////////////////////////////////////////////////////////////////////////////
+        /// State 2£¬ Check if is generic function
+        //////////////////////////////////////////////////////////////////////////////
+
+        // Add generic type's metadata to argument
+        if(generic!=nullptr) {
+
+			// Generic Type arguments
+
+            for(auto i=0;i<generic->size;i++) {
+				arg_types.push_back(CodeGen::metadata_type->getPointerTo());
+				arg_names.push_back(+L"$"+generic->names[i]);
+				CodeGen::func_generic_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
+            }
+			// Generic return argument
+			if (std::find(generic->names.begin(), generic->names.end(), return_type) != generic->names.end())
+			{
+				generic_return = arg_types.size();
+				arg_types.push_back(CodeGen::void_ptr);
+				arg_names.push_back(L"$return");
+			}
+        }
+
+		//////////////////////////////////////////////////////////////////////////////
+        /// State 3£¬ Add normal arguments
+        //////////////////////////////////////////////////////////////////////////////
+
         // add to the arguments' type.
-		for (auto i = 0; i < args->size; i++)
-			arg_types.push_back(CodeGen::GetTypeByName(args->types[i]));
+		for (auto i = 0; i < args->size; i++) {
+			auto g_result = CodeGen::TestIfGenericType(CodeGen::MangleStr(args->types[i]));
+			args->generic_id.push_back(g_result);
+            if(g_result>0)  arg_types.push_back(CodeGen::void_ptr);
+		    else            arg_types.push_back(CodeGen::GetTypeByName(args->types[i]));
+		}
 
-
-        // added :: if is a member function, specify name for constructor and destructor
-        const auto class_name = is_member_function ? self_type->getStructName().str():"";
-		if (name == L"::init")          full_name = class_name + "::" + class_name;
-		else if (name == L"::delete")   full_name = class_name + "::~" + class_name;
-		else if (is_member_function)    full_name = class_name + "::" + CodeGen::MangleStr(name);
-		else                            full_name = CodeGen::MangleStr(name);
+		////////////////////////////////////////////////////////////
+        /// State 4£¬ Name the function
+        ////////////////////////////////////////////////////////////
 
         // added arg types to name for overloading.
+		full_name = header_name;
         full_name+= "(";
 		for (int i = self_type == nullptr ? 0 : 1,types_size = arg_types.size(); i < types_size; i++)
-			full_name += CodeGen::GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ", ");
+			full_name += (arg_types[i]==CodeGen::void_ptr?"void*": CodeGen::GetStructName(arg_types[i])) + 
+			            (i == arg_types.size() - 1 ? "" : ", ");
 		full_name += ")";
 
+
+
+        ////////////////////////////////////////////////////////////
+        /// State 5£¬ Generate the function.
+		////////////////////////////////////////////////////////////
+
+
+		CodeGen::functions_table[full_name] = this;
 		// check if the fucntion already exist.
 		auto the_function = CodeGen::the_module->getFunction(full_name);
 		if (!the_function) {
             // create the function type.
-			const auto func_type = llvm::FunctionType::get(CodeGen::GetTypeByName(return_type), arg_types, args->isVarArg);
+            const auto return_ty = generic_return>=0 ? CodeGen::void_type: CodeGen::GetTypeByName(return_type);
+			const auto func_type = llvm::FunctionType::get(return_ty, arg_types, args->is_var_arg);
             // create the function
 			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, full_name,CodeGen::the_module.get());
             // add name for arguments.
+			std::move(args->names.begin(), args->names.end(), std::back_inserter(arg_names));
 			unsigned idx = 0;
 			for (auto& arg : the_function->args())
-				arg.setName(CodeGen::MangleStr(args->names[idx++]));
+				arg.setName(CodeGen::MangleStr(arg_names[idx++]));
 		}
 		else {
 			// *Debugger::out << "function " << std::wstring(full_name.begin(), full_name.end()) << " already defined\n";
 			CodeGen::LogErrorV((std::string("function ") + full_name + std::string(" already defined\n")).c_str());
+			// CodeGen::current_function = nullptr;
 		}
 	}
 
@@ -171,7 +253,7 @@ namespace parser {
 
 	void FunctionDecl::Gen() {
 		if (is_extern)return;
-
+		
 		auto function = CodeGen::the_module->getFunction(full_name);
 		if (!function) {
 			*Debugger::out << "function head not found\n";
@@ -181,20 +263,25 @@ namespace parser {
         //  create the basic block for the function.
 		const auto basic_block = CodeGen::CreateBasicBlock(function, CodeGen::MangleStr(name) + "_entry");
 		CodeGen::builder.SetInsertPoint(basic_block);
-
+		CodeGen::current_function = this;
 		for (auto& arg : function->args()) {
 			// store the argument to argument table.
 			// if argment is a struct passed by value. we store its alloca to local_fields.
 			const auto arg_type_name = CodeGen::GetStructName(arg.getType());
-			if (CodeGen::GetCustomTypeCategory(arg_type_name) == ClassDecl::kStruct) {
-				if (CodeGen::GetPtrDepth(&arg) == 0) {
-					const auto alloca = CodeGen::CreateEntryBlockAlloca(arg.getType(), arg.getName());
-					CodeGen::AlignStore(CodeGen::builder.CreateStore(&arg, alloca));
-					CodeGen::local_fields_table[arg.getName()] = alloca;
-					continue;
-				}
-			}
-			CodeGen::local_fields_table[arg.getName()] = &arg;
+
+            if(arg_type_name=="#metadata") {
+				CodeGen::func_generic_table[arg.getName()] = &arg;
+                continue;
+            }
+            if (CodeGen::GetCustomTypeCategory(arg_type_name) == ClassDecl::kStruct) {
+                if (CodeGen::GetPtrDepth(&arg) == 0) {
+                    const auto alloca = CodeGen::CreateEntryBlockAlloca(arg.getType(), arg.getName());
+                    CodeGen::AlignStore(CodeGen::builder.CreateStore(&arg, alloca));
+                    CodeGen::local_fields_table[arg.getName()] = alloca;
+                    continue;
+                }
+            }
+            CodeGen::local_fields_table[arg.getName()] = &arg;
 
 		}
 
@@ -214,6 +301,7 @@ namespace parser {
 		if (function->getReturnType()->getTypeID() == llvm::Type::VoidTyID)CodeGen::builder.CreateRetVoid();
         // clear the local scope.
 		CodeGen::local_fields_table.clear();
+		CodeGen::current_function = nullptr;
 		verifyFunction(*function);
 
 	}

@@ -32,30 +32,42 @@ public:
 	static llvm::LLVMContext the_context;
 	static std::unique_ptr<llvm::Module> the_module;
 	static llvm::IRBuilder<> builder;
-
+	static llvm::DataLayout data_layout;
 	static std::shared_ptr<parser::Program> program;
 	// static llvm::Function* the_function;
 	static std::map<std::string, llvm::Value*> local_fields_table;
 	static std::map<std::string, llvm::Value*> global_fields_table;
+	static std::map<std::string, llvm::Value*> func_generic_table;
+	static std::map<std::string, llvm::Value*> class_generic_table;
+
 	static std::map<std::string, parser::ClassDecl*> types_table;
+	static std::map<std::string, parser::FunctionDecl*> functions_table;
+	static std::map<std::string, std::vector<parser::FunctionDecl*>> generic_functions_table;
+
+	static std::vector<std::tuple<std::string, int, int>>metadata_init;
 
 	static llvm::Value* True;
 	static llvm::Value* False;
 
 	static llvm::Type* metadata_type;
+	static llvm::Type* void_ptr;
+	static llvm::Type* void_type;
+	static llvm::Type* int32;
 
     // True is in subblock like for or while
 	static bool is_sub_block;
     static llvm::BasicBlock* block_begin;
 	static llvm::BasicBlock* block_end;
 
+	static parser::FunctionDecl* current_function;
+
 
     static llvm::Value* LogErrorV(const char* str);
 
     static llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
 	static llvm::ConstantInt* CreateConstant(int value);
-	static llvm::GlobalVariable* CreateMetadata(const std::string name,int size,int align);
-
+	static llvm::GlobalVariable* CreateMetadata(const std::string name, int size, int align);
+	static llvm::GlobalVariable* CreateMetadata(llvm::Type* type);
 	static llvm::Function* CreateMainFunc();
 	static void DeclMetadataStruct();
 
@@ -89,7 +101,7 @@ public:
 	 * \param type Type should not be pointer, use the_module->getTypeByName instead of CodeGen::GetType
 	 * \return Value of the given type that created on heap
 	 */
-	static llvm::Value* Malloc(llvm::Type* type);
+	static llvm::Value* Malloc(llvm::Type* type,bool cast=true);
 
     /**
 	 * \brief Accpet a ptr value, and get it field'value by name.
@@ -112,7 +124,10 @@ public:
 
 
     // true if the name is a custom type.
-    static bool IsCustomType(std::string name);
+	static bool IsCustomType(std::string name);
+	static int TestIfGenericType(std::string name);
+	static llvm::Value* GetGenericMetaArgument(std::string name);
+	static llvm::Value* GetGenericMetaConstant(std::string name);
 
     /**
 	 * \brief find the category of a type 

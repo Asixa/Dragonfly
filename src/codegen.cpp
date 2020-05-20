@@ -24,19 +24,32 @@ std::shared_ptr<parser::Program>  CodeGen::program=nullptr;
 llvm::LLVMContext CodeGen::the_context;
 std::unique_ptr<llvm::Module> CodeGen::the_module = std::make_unique<llvm::Module>("Program", CodeGen::the_context);
 llvm::IRBuilder<> CodeGen::builder(CodeGen::the_context);
+llvm::DataLayout CodeGen::data_layout = llvm::DataLayout(the_module.get());
+
 // llvm::Function* CodeGen::the_function = nullptr;
 std::map<std::string, llvm::Value*> CodeGen::local_fields_table;
 std::map<std::string, llvm::Value*> CodeGen::global_fields_table;
+std::map<std::string, llvm::Value*> CodeGen::func_generic_table;
+std::map<std::string, llvm::Value*> CodeGen::class_generic_table;
 std::map<std::string, parser::ClassDecl*> CodeGen::types_table;
+std::map<std::string, parser::FunctionDecl*> CodeGen::functions_table;
+std::map<std::string, std::vector<parser::FunctionDecl*>> CodeGen::generic_functions_table;
+
+std::vector<std::tuple<std::string, int, int>>CodeGen::metadata_init;
+
 llvm::Value* CodeGen::True = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 1);
 llvm::Value* CodeGen::False = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 0);
+llvm::Type* CodeGen::void_ptr = llvm::Type::getInt8PtrTy(CodeGen::the_context);
+llvm::Type* CodeGen::void_type = llvm::Type::getVoidTy(CodeGen::the_context);
+llvm::Type* CodeGen::int32 = llvm::Type::getInt32Ty(CodeGen::the_context);
+
 
 bool CodeGen::is_sub_block = false;
 llvm::BasicBlock* CodeGen::block_begin = nullptr;
 llvm::BasicBlock* CodeGen::block_end = nullptr;
 
 llvm::Type* CodeGen::metadata_type = nullptr;
-
+parser::FunctionDecl* CodeGen::current_function = nullptr;
 
 llvm::Value* CodeGen::LogErrorV(const char* str) {
     *Debugger::out << str;
@@ -57,10 +70,16 @@ llvm::ConstantInt* CodeGen::CreateConstant(const int value) {
 }
 
 llvm::GlobalVariable* CodeGen::CreateMetadata(const std::string name, int size, int align) {
-	if (metadata_type == nullptr)metadata_type = the_module->getTypeByName("#metadata");
 	auto glob=CreateGlob(name + "::meta", metadata_type);
 	glob->setInitializer(llvm::ConstantAggregateZero::get(metadata_type));
+	metadata_init.emplace_back(name, size, align);
+	global_fields_table[name + "::meta"] = glob;
 	return glob;
+}
+
+llvm::GlobalVariable* CodeGen::CreateMetadata(llvm::Type* type) {
+    const int size = data_layout.getTypeStoreSize(type);
+	return CreateMetadata(type->getStructName(), size, 8);
 }
 
 llvm::Function* CodeGen::CreateMainFunc() {
@@ -94,7 +113,7 @@ void CodeGen::DeclMetadataStruct() {
 		CodeGen::builder.CreateStore(v, align);
 
 		CodeGen::builder.CreateRetVoid();
-
+		metadata_type = metadata;
 	}
 }
 
@@ -117,12 +136,17 @@ std::string CodeGen::MangleStr(const std::wstring str) {
 }
 
 llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
-	// if (type_name[0] == L'\0')printf("size %d %d\n", type_name.size(), type_name[0]);
 	if (type_name.size() != 1|| (type_name[0]>0&&type_name[0]<128)||Lexer::IsCjk(type_name[0])) {
         const auto mangled_name = MangleStr(type_name);
-        const auto ty = the_module->getTypeByName(mangled_name);
-		return types_table[mangled_name]->category== parser::ClassDecl::kClass?ty->getPointerTo():static_cast<llvm::Type*>(ty);
-	}
+		if (TestIfGenericType(mangled_name)>=0) 
+            return llvm::Type::getInt8PtrTy(CodeGen::the_context);
+        if(IsCustomType(mangled_name)) {
+            const auto ty = the_module->getTypeByName(mangled_name);
+            return types_table[mangled_name]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
+        }
+        LogErrorV("Unknown Type\n");
+        return nullptr;
+    }
 	    
     const int type = type_name[0];
     switch (type) {
@@ -191,6 +215,7 @@ std::string CodeGen::GetStructName(llvm::Value* value) {
 	return GetStructName(value->getType());
 }
 std::string CodeGen::GetStructName(llvm::Type* type) {
+	if (type == void_ptr)return "void*";
 	while (type->getTypeID() == llvm::Type::PointerTyID)
 		type = type->getPointerElementType();
     switch (type->getTypeID()) {
@@ -200,6 +225,8 @@ std::string CodeGen::GetStructName(llvm::Type* type) {
 		return "int";
 	case llvm::Type::FloatTyID:
 		return "float";
+	case llvm::Type::VoidTyID:
+		return "void";
 	default:
 		return type->getStructName();
     }
@@ -214,20 +241,10 @@ std::string CodeGen::DebugValue(llvm::Value* value) {
 	return ir;
 }
 
-llvm::Value* CodeGen::Malloc(llvm::Type* type) {
+llvm::Value* CodeGen::Malloc(llvm::Type* type,bool cast) {
 	const auto ptr = CodeGen::builder.CreateCall(CodeGen::the_module->getFunction("malloc"),
 		llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 32));
-    const auto value= CodeGen::builder.CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
-
-  //   const auto decl = types_table[type->getStructName()];
-  //   if(!decl->base_type_name.empty()) {
-  //       const auto base = CodeGen::FindMemberField(value,L"base");
-  //       const auto base_constructor = CodeGen::the_module->getFunction(CodeGen::MangleStr(decl->base_type_name));
-  //       const std::vector<llvm::Value*> args_v;
-		// auto obj = builder.CreateCall(base_constructor, args_v, "base");
-		// // CodeGen::builder.CreateStore(,base );
-  //   }
-    return value;
+	return CodeGen::builder.CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
 }
 
 
@@ -303,6 +320,32 @@ llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool war
 
 bool CodeGen::IsCustomType(std::string name) {
 	return types_table.find(name) != CodeGen::types_table.end();
+}
+
+int CodeGen::TestIfGenericType(const std::string name) {
+    //      0 1        2 3 4 5 ... else -1
+    // func<T,K> Class<M,N,X,Y>    
+
+	auto pos = func_generic_table.find("$" + name);
+	if (pos != CodeGen::func_generic_table.end())
+		return std::distance(func_generic_table.begin(), pos);
+	pos = class_generic_table.find("$" + name);
+	if (pos != CodeGen::class_generic_table.end())
+        return func_generic_table.size()+ std::distance(class_generic_table.begin(), pos);
+	return -1;
+}
+
+llvm::Value* CodeGen::GetGenericMetaArgument(std::string name) {
+	name = "$" + name;
+    if(func_generic_table.find(name) != CodeGen::func_generic_table.end()) 
+		return func_generic_table[name];
+	if (class_generic_table.find(name) != CodeGen::class_generic_table.end())
+		return class_generic_table[name];
+	return LogErrorV("Generic Type Not Fount\n");
+}
+
+llvm::Value* CodeGen::GetGenericMetaConstant(std::string name) {
+	return global_fields_table[name + "::meta"];
 }
 
 int CodeGen::GetCustomTypeCategory(llvm::Type* ty) {

@@ -9,7 +9,8 @@ namespace parser {
 		VERIFY
 			instance->name = Lexer::string_val;
 		Lexer::Match(Id);
-
+		if (Lexer::Check('<')) 
+			instance->generic = GenericParam::Parse();
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			instance->interfaces.push_back(Lexer::string_val);
@@ -118,16 +119,24 @@ namespace parser {
 				else  CodeGen::LogErrorV((std::string(mangled_name) + " is not defined").c_str());
 			}
 			if (baseType != nullptr) {
-
 				fields.insert(fields.begin(), L"base");
 				field_tys.insert(field_tys.begin(), baseType);
 			}
 		}
 
+        
+		if (generic) {
+			auto idx = 0;
+			for (auto i = 0; i < generic->size; i++) {
+				fields.insert(fields.begin() + idx, L"$" + generic->names[i]);
+				field_tys.insert(field_tys.begin()+idx++,CodeGen::metadata_type->getPointerTo());
+				CodeGen::class_generic_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
+			}
+		}
+
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
-
-
-	    // a->setAttributes()
+		CodeGen::CreateMetadata(the_struct);
+		CodeGen::class_generic_table.clear();
 	}
 }
