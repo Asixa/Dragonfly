@@ -51,11 +51,6 @@ llvm::BasicBlock* CodeGen::block_end = nullptr;
 llvm::Type* CodeGen::metadata_type = nullptr;
 parser::FunctionDecl* CodeGen::current_function = nullptr;
 
-llvm::Value* CodeGen::LogErrorV(const char* str) {
-    *Debugger::out << str;
-    system("PAUSE");
-    exit(-1);
-}
 
 llvm::GlobalVariable* CodeGen::CreateGlob(const std::string name, llvm::Type* ty) {
     the_module->getOrInsertGlobal(name, ty);
@@ -144,7 +139,7 @@ llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
             const auto ty = the_module->getTypeByName(mangled_name);
             return types_table[mangled_name]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
         }
-        LogErrorV("Unknown Type\n");
+		Debugger::ErrorV("Unknown Type\n",-1,-1);
         return nullptr;
     }
 	    
@@ -157,7 +152,7 @@ llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
     case K_bool: return llvm::Type::getInt1Ty(CodeGen::the_context);
     case K_string: return llvm::Type::getInt8PtrTy(CodeGen::the_context);
 	default:
-		CodeGen::LogErrorV("in CodeGen::GetType , unexpected typename");
+		Debugger::ErrorV("in CodeGen::GetType , unexpected typename",-1,-1);
         return nullptr;
     }
 }
@@ -282,7 +277,7 @@ llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name)
 				return  CodeGen::builder.CreateStructGEP(base, idx);     // after a load, we get A* and return it.
             }
         }
-        return CodeGen::LogErrorV("Cannot find field... \n");
+        return Debugger::ErrorV("Cannot find field... \n",-1,-1);
 	}
 
 	return  CodeGen::builder.CreateStructGEP(obj, idx);
@@ -320,7 +315,7 @@ llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool war
 	// TODO find v in public Enums
 	// TODO find v in namespaces
 
-	return  !v && warn ? CodeGen::LogErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str()) : v;
+	return  !v && warn ? Debugger::ErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str(),-1,-1) : v;
 }
 
 bool CodeGen::IsCustomType(std::string name) {
@@ -330,7 +325,6 @@ bool CodeGen::IsCustomType(std::string name) {
 int CodeGen::TestIfGenericType(const std::string name) {
     //      0 1        2 3 4 5 ... else -1
     // func<T,K> Class<M,N,X,Y>    
-
 	auto pos = func_generic_table.find("$" + name);
 	if (pos != CodeGen::func_generic_table.end())
 		return std::distance(func_generic_table.begin(), pos);
@@ -346,7 +340,7 @@ llvm::Value* CodeGen::GetGenericMetaArgument(std::string name) {
 		return func_generic_table[name];
 	if (class_generic_table.find(name) != CodeGen::class_generic_table.end())
 		return class_generic_table[name];
-	return LogErrorV("Generic Type Not Fount\n");
+	return Debugger::ErrorV("Generic Type Not Fount\n",-1,-1);
 }
 
 llvm::Value* CodeGen::GetGenericMetaConstant(std::string name) {

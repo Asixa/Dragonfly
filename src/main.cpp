@@ -27,7 +27,8 @@ int main(int argc, char** argv) {
     std::string filename;
     if (argc == 1) {
 		filename = "../tests/codes/default.df";
-		filename = "../tests/codes/generic.df";
+		filename = "../tests/codes/generic2.df";
+		// filename = "../tests/codes/b/input.df";
     }
     else if (argc > 1) {
         filename = argv[1];
@@ -46,10 +47,9 @@ int main(int argc, char** argv) {
    CodeGen::program = parser::Parse();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
-	
-
+	CodeGen::program->Gen();
     if (!Debugger::error_existed) {
-        CodeGen::program->Gen();
+        
         CodeGen::WriteReadableIr(CodeGen::the_module.get(), "ir.txt", true);
 		CodeGen::WriteBitCodeIr(CodeGen::the_module.get(), "a.ll");
         std::cout << "Compiled successfully, took a total of " << static_cast<double>(clock() - start) << "ms\n\n";

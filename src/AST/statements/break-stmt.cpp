@@ -10,7 +10,7 @@ namespace parser {
 
 	void Break::Gen() {
 		if (!CodeGen::is_sub_block) {
-			Debugger::AlertNonBreak(L"invalid break");
+			Debugger::ErrorNonBreak(L"invalid_token :break");
 			return;
 		}
 		CodeGen::builder.CreateBr(CodeGen::block_end);

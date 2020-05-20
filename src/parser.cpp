@@ -18,18 +18,21 @@ namespace parser {
 		case K_extension: declarations.push_back(Extension::Parse()); break;
         default: statements.push_back(Statement::Parse());
         }
-        while (Debugger::error_occurred) {
-            Debugger::error_occurred = false;
-            Lexer::MoveLine();
-            Lexer::Next();
-        }
     }
 
     std::shared_ptr<Program> Program::Parse() {
         auto program = std::make_shared<Program>();
 		while (Lexer::peek > 0 && Lexer::token != nullptr) {
-	
+			try {
 			program->ParseSingle();
+			}
+			catch (int error) {
+				while (Debugger::error_occurred) {
+					Debugger::error_occurred = false;
+					Lexer::MoveLine();
+					Lexer::Next();
+				}
+			}
 		}
         return program;
     }
@@ -59,10 +62,12 @@ namespace parser {
 
 		CodeGen::BuildInFunc("printf", CodeGen::void_type,std::vector<llvm::Type*>{CodeGen::void_ptr}, true);
 
-        for(auto i=0;i<declarations.size();i++)declarations[i]->GenHeader();
-		// for (auto& declaration : declarations)declaration->GenHeader();
-		for (auto& declaration : declarations)declaration->Gen();
-
+		for (auto i = 0; i < declarations.size(); i++) {
+			try {declarations[i]->GenHeader();}catch (int e) {}
+		}
+		for (auto& declaration : declarations) {
+			try { declaration->Gen(); }catch (int e) {}
+		}
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(CodeGen::void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", CodeGen::the_module.get());
 		CodeGen::builder.SetInsertPoint(CodeGen::CreateBasicBlock(__df_global_var_init, "entry"));
 		for (auto i : CodeGen::metadata_init) {
@@ -76,10 +81,12 @@ namespace parser {
 		const auto entry = CodeGen::CreateBasicBlock(main_func, "entry");
 		CodeGen::builder.SetInsertPoint(entry);
 
-        if(!CodeGen::metadata_init.empty()) {
+        if(!CodeGen::metadata_init.empty()) 
 			CodeGen::builder.CreateCall(__df_global_var_init, std::vector<llvm::Value*>{});
-        }
-		for (auto& statement : statements)if (statement != nullptr)statement->Gen();
+        
+		for (auto& statement : statements)
+			try {if (statement != nullptr)statement->Gen();}catch (int e){}
+
 		CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));
 		verifyFunction(*main_func);
 	}

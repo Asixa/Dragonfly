@@ -28,7 +28,7 @@ namespace parser {
 
 		auto val = value->Gen();
 		if (!val) {
-			CodeGen::LogErrorV("Error in return");
+			Debugger::ErrorV("Error in return",line,ch);
             return;
 		}
 
@@ -49,7 +49,7 @@ namespace parser {
 		else {
 			auto const expected = function->getReturnType();
 			if (CodeGen::GetStructName(expected) != CodeGen::GetStructName(val)) {
-				CodeGen::LogErrorV("return type not same");
+				Debugger::ErrorV("return type not same",line,ch);
 				return;
 			}
 			auto const expected_ptr_level = CodeGen::GetPtrDepth(expected);

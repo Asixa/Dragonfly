@@ -9,30 +9,30 @@ namespace parser {
 		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;
 		Lexer::Next();
-		VERIFY
+		
 			let->name = Lexer::string_val;
 		Lexer::Match(Id);
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			VERIFY
+			
 				if (Lexer::CheckType()) {
 					let->type = static_cast<wchar_t>(Lexer::token->type);
 					Lexer::Next();
-					VERIFY
+					
 				}
 				else {
 					let->type = Lexer::string_val;
 					Lexer::Match(Id);
-					VERIFY
+					
 				}
 		}
 		Lexer::Match('=');
-		VERIFY
+		
 			let->value = Binary::Parse();
-		VERIFY
+		
 
 			Lexer::MatchSemicolon();
-		VERIFY
+		
 			// PRINT("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->ToString();PRINT("\n");
 			return let;
 	}

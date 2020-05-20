@@ -26,7 +26,7 @@ namespace parser {
 
 	std::shared_ptr<Field> Field::ParsePostfix() {
 		auto name = Lexer::string_val;
-		Lexer::Next(); VERIFY
+		Lexer::Next(); 
 			if (Lexer::Check('(') || Lexer::Check('<') || Lexer::Check('['))
 			{
 				std::shared_ptr<Field> field = nullptr;
@@ -89,7 +89,7 @@ namespace parser {
 		// This only done in entry node where parent is null.
 		if (parent == nullptr) {
 
-			if (CodeGen::current_function == nullptr)printf("%ws\n", name.c_str());
+	
 			if (cmd == kConstantWanted && v->getType()->getTypeID() == llvm::Type::PointerTyID
 				&& !(child == nullptr && (name == L"this" || name == L"base"))
 				// && (CodeGen::current_function==nullptr||!CodeGen::current_function->IsGenericArgument(name))

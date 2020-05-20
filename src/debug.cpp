@@ -57,53 +57,87 @@ void Debugger::SetColor(const int c) {
     SetConsoleTextAttribute(handle, c);
 }
 
-void Debugger::PrintErrorInfo(const std::wstring type, const bool show_location) {
-    if (show_location)
-        *out << L"[" << Preprocessor::MapFileNumber(line) << L"," << ch << L"]: ";
+void Debugger::PrintErrorInfo(const std::wstring type, int l, const int c) {
+    if (l!=-1) {
+		*out << L"[" << Preprocessor::MapFileNumber(l) << " ";
+		SetColor(kYellow);
+		*out << l << L"," << c;
+		SetColor(kWhite);
+		*out << L"]: ";
+    }
     SetColor(log_color);
     *out << type << L": ";
     SetColor(kWhite);
 }
 
-void Debugger::PrintErrorPostfix() {
-    auto pt = lines[line];							//find the start pointer of this line.
+void Debugger::PrintErrorPostfix(int l, int c, int cp) {
+    if(l==-1) {
+		l = line;
+		c = ch;
+		cp = chp;
+    }
+    const auto roughly = c == -1;
+    auto pt = lines[l];							//find the start pointer of this line.
     std::wstring str;
     while (*pt != L'\n' && pt < Lexer::end)str += *pt++;		//push all the characters to str
 
     SetColor(kDarkTeal);
-    *out << str << std::endl;						// print error line of code
+	*out << str;
+    if(roughly) {
+		SetColor(log_color);
+		*out << L" ¡û";
+    }
+    *out << std::endl;						// print error line of code
     SetColor(log_color);
-
-    auto space = chp - 1;							// calculate red arrow location
-    auto error_token = ch - chp - 1;
-    space = space < 0 ? 0 : space;					// catch when location is negative
-    error_token = error_token < 0 ? 0 : error_token;
-    *out << std::wstring(space, L' ') << L"¡ü" << std::wstring(error_token, L'`') << std::endl;
+	if (!roughly) {
+		auto space = cp - 1;							// calculate red arrow location
+		auto error_token = c - cp - 1;
+		space = space < 0 ? 0 : space;					// catch when location is negative
+		error_token = error_token < 0 ? 0 : error_token;
+		*out << std::wstring(space, L' ') << L"¡ü" << std::wstring(error_token, L'`') << std::endl;
+	}
     SetColor(kWhite);
 }
 
-void Debugger::AlertNewline() {
+void Debugger::CatchNewline() {
     chp = ch = --Lexer::src - lines[--line];
     lines.pop_back();
     skip_line = false;
 }
 
-void Debugger::AlertNonBreak(const std::wstring info) {
-    error_existed = true;
-    log_color = kRed;
-    PrintErrorInfo(L"error");
-    *out << info << std::endl;
-    PrintErrorPostfix();
+llvm::Value* Debugger::ErrorV(const std::wstring info) {
+	Debugger::error_existed = true;
+	Debugger::log_color = Debugger::kRed;
+	*Debugger::out << info << std::endl;
+	throw(-1);
 }
 
-void Debugger::Alert(const std::wstring info) {
+
+void Debugger::ErrorNonBreak(const std::wstring info) {
+    error_existed = true;
+    log_color = kRed;
+    PrintErrorInfo(L"error",line,ch);
+    *out << info << std::endl;
+    PrintErrorPostfix();
+	throw (-1);
+}
+llvm::Value* Debugger::ErrorV(const char* str, int line, int ch) {
+	Debugger::error_existed = true;
+	Debugger::log_color = Debugger::kRed;
+	Debugger::PrintErrorInfo(L"error", line, ch);
+	*Debugger::out << str << std::endl;
+	if (line != -1)Debugger::PrintErrorPostfix(line, ch, ch);
+	throw(-1);
+}
+
+void Debugger::Error(const std::wstring info) {
     error_occurred = true;
-    AlertNonBreak(info);
+    ErrorNonBreak(info);
 }
 
 void Debugger::Warn(const std::wstring info) {
     log_color = kYellow;
-    PrintErrorInfo(L"warning");
+    PrintErrorInfo(L"warning", line, ch);
     *out << info << std::endl;
     PrintErrorPostfix();
 }

@@ -62,8 +62,6 @@ public:
 	static parser::FunctionDecl* current_function;
 
 
-    static llvm::Value* LogErrorV(const char* str);
-
     static llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
 	static llvm::ConstantInt* CreateConstant(int value);
 	static llvm::GlobalVariable* CreateMetadata(const std::string name, int size, int align);

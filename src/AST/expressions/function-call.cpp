@@ -19,19 +19,14 @@ namespace parser {
 
 	std::shared_ptr<FuncCall> FuncCall::Parse(std::wstring f) {
 		auto func_call = std::make_shared<FuncCall>(f);
-
-        if(Lexer::Check('<'))
+		if (Lexer::Check('<'))
 			func_call->generic = GenericParam::Parse();
-
-		Lexer::Match('('); VERIFY
-			while (Lexer::token->type != ')') {
-				func_call->args.push_back(Binary::Parse());
-				VERIFY
-					if (Lexer::Check(',')) Lexer::Match(',');
-				VERIFY
-			}
+		Lexer::Match('(');
+		while (Lexer::token->type != ')') {
+			func_call->args.push_back(Binary::Parse());
+			if (Lexer::Check(',')) Lexer::Match(',');
+		}
 		Lexer::Match(')');
-		VERIFY
 		return func_call;
 	}
 
@@ -55,64 +50,64 @@ namespace parser {
 		if (left != nullptr)
 			parent = left->GenField(parent);
 
-        // if is calling a constructor, eg: A(), A is any class or struct.
+		// if is calling a constructor, eg: A(), A is any class or struct.
 		auto is_constructor = false;
 		// if is calling a member function, eg: a.bar(), a is any object of custom class or struct.
-        // if true, parent is the value of a.
+		// if true, parent is the value of a.
 		auto is_member_func = parent != nullptr;
 
 		// if the function is a memeber function, for example for class A.
 		// then the name will be [A::name], otherwise the name is just [name]
 		auto callee_name = is_member_func
 			? CodeGen::GetStructName(parent) + "::" + CodeGen::MangleStr(name)
-		    : CodeGen::MangleStr(name);
+			: CodeGen::MangleStr(name);
 
 		////////////////////////////////////////////////////////////
-        /// State 2£¬ Generate the paramters.
-        ////////////////////////////////////////////////////////////
+		/// State 2£¬ Generate the paramters.
+		////////////////////////////////////////////////////////////
 
 		// Here we generate all the parameters for the Call, store the values into args_v
-        // hidden pointer for member func is not added here. will added later.
+		// hidden pointer for member func is not added here. will added later.
 		std::vector<llvm::Value*> args_v;
 
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
-            // val is the llvm::Value* of current argument experssion.
-		    auto val = args[i]->Gen();
-            // all Struct type will 'pass as value',
-		    // except hidden pointer for member func, which is not added yet.
-            if(CodeGen::GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
-                while (CodeGen::GetPtrDepth(val) != 0) 
+			// val is the llvm::Value* of current argument experssion.
+			auto val = args[i]->Gen();
+			// all Struct type will 'pass as value',
+			// except hidden pointer for member func, which is not added yet.
+			if (CodeGen::GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
+				while (CodeGen::GetPtrDepth(val) != 0)
 					val = CodeGen::builder.CreateLoad(val);
 			// here we catch if the val is null. 
-            if(!val)return CodeGen::LogErrorV("Incorrect # arguments passed with error");
+			if (!val)return Debugger::ErrorV("Incorrect # arguments passed with error",line,ch);
 			args_v.push_back(val);
 		}
 
 		////////////////////////////////////////////////////////////
-        /// State 3£¬ Check if is member function or constructor
-        ////////////////////////////////////////////////////////////
-        // here we check if the func is a constructor
+		/// State 3£¬ Check if is member function or constructor
+		////////////////////////////////////////////////////////////
+		// here we check if the func is a constructor
 		if (CodeGen::IsCustomType(callee_name)) {
 			switch (CodeGen::GetCustomTypeCategory(callee_name)) {
-			case ClassDecl::kClass: 
+			case ClassDecl::kClass:
 				parent = CodeGen::Malloc(CodeGen::the_module->getTypeByName(callee_name));
 				break;
-			case ClassDecl::kStruct: 
+			case ClassDecl::kStruct:
 				parent = CodeGen::CreateEntryBlockAlloca(CodeGen::the_module->getTypeByName(callee_name), callee_name);
-				break; 
+				break;
 			case ClassDecl::kInterface:
-				return CodeGen::LogErrorV("Cannot call a constructor of a interface type");
+				return Debugger::ErrorV("Cannot call a constructor of a interface type",line,ch);
 			default: //here the category should be -1
-				return CodeGen::LogErrorV("Cannot call a constructor of a basic type");
+				return Debugger::ErrorV("Cannot call a constructor of a basic type",line,ch);
 			}
-            // now the function is a construtor, which is a special type of member function.
-		    // we add back the  front name.
+			// now the function is a construtor, which is a special type of member function.
+			// we add back the  front name.
 			is_member_func = true;
 			callee_name = callee_name + "::" + callee_name;
 			is_constructor = true;
 		}
 
-        // now we add the hidden pointer to the args list if it is a member function. //TODO catch errors like pass a value
+		// now we add the hidden pointer to the args list if it is a member function. //TODO catch errors like pass a value
 		if (is_member_func) {
 			const auto ptr_depth = CodeGen::GetPtrDepth(parent);
 			auto this_arg = parent;
@@ -122,45 +117,45 @@ namespace parser {
 		}
 
 		// now, callee_name is the full function name, eg: "A::bar" or "foo"  etc.
-        // and we try get the fuction.
+		// and we try get the fuction.
 		auto callee = CodeGen::the_module->getFunction(callee_name);
 
 		////////////////////////////////////////////////////////////
-        /// State 3£¬ Find the function
-        ////////////////////////////////////////////////////////////
+		/// State 3£¬ Find the function
+		////////////////////////////////////////////////////////////
 
 		auto header_name = callee_name;
 
-        // if the function not exist, maybe because it is a overloaded function.
-        // then the name should be "A::bar()" or "foo(int)" etc.
-        // we ignore the hidden pointer
+		// if the function not exist, maybe because it is a overloaded function.
+		// then the name should be "A::bar()" or "foo(int)" etc.
+		// we ignore the hidden pointer
 		if (!callee) {
 			callee_name += "(";
 			if (generic) {
-				for (auto i=0;i<generic->size;i++) 
-					callee_name +=std::string("#metadata") + (i == generic->size - 1&& args_v.empty() ? "" : ", ");
+				for (auto i = 0; i < generic->size; i++)
+					callee_name += std::string("#metadata") + (i == generic->size - 1 && args_v.empty() ? "" : ", ");
 			}
-			for (int i = is_member_func?1:0, argv_size = args_v.size(); i < argv_size; i++)
+			for (int i = is_member_func ? 1 : 0, argv_size = args_v.size(); i < argv_size; i++)
 				callee_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ", ");
 			callee_name += ")";
-            // after fix the function name, we try to get it again.
+			// after fix the function name, we try to get it again.
 			callee = CodeGen::the_module->getFunction(callee_name);
 		}
 
 
 		////////////////////////////////////////////////////////////
-        /// State 3.2£¬Find Generic funcion
-        ////////////////////////////////////////////////////////////
+		/// State 3.2£¬Find Generic funcion
+		////////////////////////////////////////////////////////////
 		llvm::Value* generic_return_pointer = nullptr;
-        auto return_by_reference = false;
+		auto return_by_reference = false;
 		if (generic) {
-			
+
 			FunctionDecl* decl = nullptr;
 
 			if (CodeGen::generic_functions_table.find(header_name) == CodeGen::generic_functions_table.end())
-				return CodeGen::LogErrorV((std::string("Unknown generic function referenced :") + callee_name).c_str());
+				return Debugger::ErrorV((std::string("Unknown generic function referenced :") + callee_name).c_str(),line,ch);
 
-            // find the generic function declaration
+			// find the generic function declaration
 			auto funcs = CodeGen::generic_functions_table[header_name];
 			for (auto f : funcs) {
 				auto instance_name = f->GetInstanceName(generic.get());
@@ -169,23 +164,23 @@ namespace parser {
 					break;
 				}
 			}
-			if (decl == nullptr) 
-				return CodeGen::LogErrorV((std::string("Generic arguments not matched :") + callee_name).c_str());
+			if (decl == nullptr)
+				return Debugger::ErrorV((std::string("Generic arguments not matched :") + callee_name).c_str(),line,ch);
 
 			/////////////////////////////////////////////
 			// fix the arguments to void*
 			///////////////////////////////////////////////
 			for (auto i : decl->args->generic_id) {
 				if (i >= 0) {
-     //                if(args_v[i]->getType()->getTypeID()==llvm::Type::PointerTyID)
-					// args_v[i] = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, args_v[i], CodeGen::void_ptr);
-					// else {
-						auto alloca = CodeGen::CreateEntryBlockAlloca(args_v[i]->getType(), std::string(args_v[i]->getName())+"_ptr");
-						CodeGen::builder.CreateStore(args_v[i], alloca);
-						args_v[i] = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, alloca, CodeGen::void_ptr);
+					//                if(args_v[i]->getType()->getTypeID()==llvm::Type::PointerTyID)
+								   // args_v[i] = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, args_v[i], CodeGen::void_ptr);
+								   // else {
+					auto alloca = CodeGen::CreateEntryBlockAlloca(args_v[i]->getType(), std::string(args_v[i]->getName()) + "_ptr");
+					CodeGen::builder.CreateStore(args_v[i], alloca);
+					args_v[i] = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, alloca, CodeGen::void_ptr);
 					// }
 				}
-					
+
 			}
 			callee = CodeGen::the_module->getFunction(decl->full_name);
 
@@ -212,7 +207,7 @@ namespace parser {
 					generic_return_pointer = CodeGen::CreateEntryBlockAlloca(return_type, "generic_return_pointer");
 					break;
 				case ClassDecl::kInterface:
-					CodeGen::LogErrorV("Cannot Return a interface");
+					Debugger::ErrorV("Cannot Return a interface",line,ch);
 					break;
 				}
 
@@ -223,34 +218,34 @@ namespace parser {
 
 		// if we still cannot find the function, we could now throw a error.
 		if (!callee)
-			return CodeGen::LogErrorV((std::string("Unknown function referenced :") + callee_name).c_str());
-		
-        ////////////////////////////////////////////////////////////
-        /// State 4£¬ safety check before call
-        ////////////////////////////////////////////////////////////
+			return Debugger::ErrorV((std::string("Unknown function referenced :") + callee_name).c_str(),line,ch);
 
-        // here we found the callee!
+		////////////////////////////////////////////////////////////
+		/// State 4£¬ safety check before call
+		////////////////////////////////////////////////////////////
+
+		// here we found the callee!
 		// check if the function argument count matchs.
 		// some function could have varible arguments size when isVarArg is true.
-		if (callee->arg_size() != args_v.size()  && !callee->isVarArg())
-			return CodeGen::LogErrorV((std::string("Incorrect # arguments passed: ") + 
-				std::to_string(args.size() + (is_member_func ? 1 : 0)) + " / " + std::to_string(callee->arg_size())).c_str());
+		if (callee->arg_size() != args_v.size() && !callee->isVarArg())
+			return Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
+				std::to_string(args.size() + (is_member_func ? 1 : 0)) + " / " + std::to_string(callee->arg_size())).c_str(),line,ch);
 
-		
+
 		////////////////////////////////////////////////////////////
 		/// State 5£¬ Make the call
 		////////////////////////////////////////////////////////////
-		
+
 		llvm::Value* v = CodeGen::builder.CreateCall(callee, args_v);
-        // since constructor returns void, the value shoud be the initized 'parent'
+		// since constructor returns void, the value shoud be the initized 'parent'
 		v = is_constructor ? parent : v;
 		v = generic_return_pointer == nullptr ? v : generic_return_pointer;
-        if(return_by_reference) {
-			v =CodeGen::builder.CreateLoad(v);
+		if (return_by_reference) {
+			v = CodeGen::builder.CreateLoad(v);
 			CodeGen::Free(generic_return_pointer);
-        }
-		
-        // it the field is not done yet. continue.
+		}
+
+		// it the field is not done yet. continue.
 		if (child != nullptr)
 		{
 			child->cmd = cmd;
@@ -258,6 +253,5 @@ namespace parser {
 		}
 		return v;
 	}
-
 
 }

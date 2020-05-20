@@ -10,7 +10,7 @@ std::shared_ptr<parser::New> parser::New::Parse() {
 		instance->func = FuncCall::Parse(name);
 		return instance;
 	}
-	else Debugger::Alert(L"expected '('");
+	else Debugger::Error(L"expected '('");
     
 }
 
@@ -26,7 +26,7 @@ llvm::Value* parser::New::Gen(const int cmd) {
 		if (i.first == mangled_str)
 			decl = i.second;
 	if (decl == nullptr)
-		return CodeGen::LogErrorV((std::string("unknown type ") + mangled_str).c_str());
+		return Debugger::ErrorV((std::string("unknown type ") + mangled_str).c_str(),line,ch);
 	// const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();
 	auto value = CodeGen::Malloc(CodeGen::the_module->getTypeByName(mangled_str));
     // const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, CodeGen::GetType(func->name), mangled_str);

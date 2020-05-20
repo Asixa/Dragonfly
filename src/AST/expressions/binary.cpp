@@ -14,7 +14,7 @@ namespace parser {
 		const auto load_ptr = op == '=' || op >= AddAgn;
 		auto lhs = LHS->Gen(load_ptr);
 		auto rhs = RHS->Gen(load_ptr);
-		if (!lhs || !rhs)return CodeGen::LogErrorV("  operands is NULL \n");;
+		if (!lhs || !rhs)return Debugger::ErrorV("operands is NULL",line,ch);;
 
 
 		auto type = lhs->getType()->getTypeID();
@@ -51,10 +51,10 @@ namespace parser {
 				return CodeGen::builder.Create##f(lhs, rhs, #f"_tmp");                                  \
 			if (type == llvm::Type::IntegerTyID)                                                        \
 				return CodeGen::builder.Create##i(lhs, rhs, #i"_tmp");                                  \
-			return CodeGen::LogErrorV( std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Non-number operands\n")); }();
+			return Debugger::ErrorV( std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Non-number operands\n"),line,ch); }();
 #define BITWISE(f)[&](){                                                                                                                             \
 			if (type == llvm::Type::IntegerTyID)return CodeGen::builder.Create##f(lhs, rhs, "and_tmp");                                         \
-			return CodeGen::LogErrorV(std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Integer operands\n")); \
+			return Debugger::ErrorV(std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Integer operands\n"),line,ch); \
 		}();
 
 		case '+':return BASIC(FAdd, Add)
@@ -85,7 +85,7 @@ namespace parser {
 					CodeGen::builder.CreateCast(llvm::Instruction::SIToFP, lhs, llvm::Type::getDoubleTy(CodeGen::the_context)),
 					CodeGen::builder.CreateCast(llvm::Instruction::SIToFP, rhs, llvm::Type::getDoubleTy(CodeGen::the_context)),
 					"FDiv""_tmp");
-			return CodeGen::LogErrorV(" ""'/'"" operation cannot apply on Non-number operands\n");
+			return Debugger::ErrorV(" ""'/'"" operation cannot apply on Non-number operands\n", line, ch);
 		}
 		case BAndAgn: { }
 		case BXORAgn: { }
@@ -93,8 +93,7 @@ namespace parser {
 
 		case '=': {
 			if (lhs->getType()->getTypeID() != llvm::Type::PointerTyID)
-				return CodeGen::LogErrorV(
-					"cannot reassign a constant\n");
+				return Debugger::ErrorV("cannot reassign a constant\n",line,ch);
 			auto rhv = rhs;
 			if (rhs->getType()->getTypeID() != lhs->getType()->getPointerElementType()->getTypeID())
 				rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
@@ -112,7 +111,7 @@ namespace parser {
 					const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs,"lhs"));															\
 					return CodeGen::AlignStore(CodeGen::builder.CreateStore(x, lhs));						\
 				}																										\
-				return CodeGen::LogErrorV(" cannot reassign a constant\n");														\
+				return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);														\
 			}
 #define BASIC_ASSGIN(a,b,c,d)case a:																					\
 			{																											\
@@ -125,9 +124,9 @@ namespace parser {
 						return CodeGen::AlignStore(CodeGen::builder.CreateStore(CodeGen::builder.Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
 					if (type == llvm::Type::IntegerTyID)																		\
 						return CodeGen::AlignStore(CodeGen::builder.CreateStore(CodeGen::builder.Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
-					return CodeGen::LogErrorV(" "#d" operation cannot apply on Non-number variables\n");							\
+					return Debugger::ErrorV(" "#d" operation cannot apply on Non-number variables\n",line,ch);							\
 				}																										\
-				return CodeGen::LogErrorV(" cannot reassign a constant\n");														\
+				return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);														\
 			}
 
 				  // #define  BITWISE_ASSGIN(a,b,c,d)case a: {\
@@ -163,12 +162,12 @@ namespace parser {
 						  }
 
 
-						  return CodeGen::LogErrorV(" ""/="" operation cannot apply on Non-number variables\n");
+						  return Debugger::ErrorV(" ""/="" operation cannot apply on Non-number variables\n",line,ch);
 					  }
-					  return CodeGen::LogErrorV(" cannot reassign a constant\n");
+					  return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);
 				  }
 		default:
-			return CodeGen::LogErrorV("invalid binary operator");
+			return Debugger::ErrorV("invalid binary operator",line,ch);
 
 		}
 	}

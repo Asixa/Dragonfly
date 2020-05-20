@@ -23,7 +23,7 @@ namespace parser {
 	void Do::Gen() {
 		auto cond_v = condition->Gen();
 		if (!cond_v) {
-			Debugger::AlertNonBreak(L"Error in condititon");
+			Debugger::ErrorNonBreak(L"Error in condititon");
 			return;
 		}
 		cond_v = CodeGen::builder.CreateICmpEQ(cond_v, CodeGen::True, "cond");

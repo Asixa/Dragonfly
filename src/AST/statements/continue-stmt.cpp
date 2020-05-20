@@ -9,7 +9,7 @@ namespace parser {
 	}
 	void Continue::Gen() {
 		if (!CodeGen::is_sub_block) {
-			Debugger::AlertNonBreak(L"invalid continue");
+			Debugger::ErrorNonBreak(L"invalid_token :continue");
 			return;
 		}
 		CodeGen::builder.CreateBr(CodeGen::block_begin);

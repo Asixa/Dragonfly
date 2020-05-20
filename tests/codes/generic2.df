@@ -13,6 +13,6 @@ func foo<T>(T t):T
 
 
 var a = A(666)
-var f = foo<A>(a)
+var f = fooz<A>(a)
 a.some=233
 printf("%d %d\n",a.some,f.some)

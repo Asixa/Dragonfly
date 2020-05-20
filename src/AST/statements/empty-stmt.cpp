@@ -3,13 +3,9 @@
 
 namespace parser {
 	std::shared_ptr<Empty> Empty::Parse() {
-
 		auto instance = std::make_shared<Empty>();
 		instance->value = Binary::Parse();
-		VERIFY
 			Lexer::MatchSemicolon();
-		VERIFY
-			// PRINT("[Parsed] Expression \n");instance->value->ToString();
 			return instance;
 	}
 

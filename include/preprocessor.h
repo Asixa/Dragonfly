@@ -11,7 +11,7 @@ public:
 	static std::vector<int>file_numbers;
 	static std::vector<std::string>files;
 	static std::vector<std::wstring>lines;
-	static std::wstring MapFileNumber(int number);
+	static std::wstring MapFileNumber(int& number);
 	static void AddFile(std::string f);
 	static void Process();
 };

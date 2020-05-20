@@ -12,6 +12,7 @@ class B
 }
 
 
+
 class Pair<K,V>
 {
   a:K
@@ -20,10 +21,12 @@ class Pair<K,V>
 	a=x
 	b=y
   }
+
   func left():K
   {
 	return a
   }
+
   func right():V
   {
 	return b

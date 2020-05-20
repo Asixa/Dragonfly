@@ -19,7 +19,7 @@ namespace parser {
 		case K_float: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(static_cast<float>(value)));
 		case K_double: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(value));
 		case K_int: return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), static_cast<int>(value));
-		default: return CodeGen::LogErrorV("Unknown number type");
+		default: return Debugger::ErrorV("Unknown number type",line,ch);
 		}
 	}
 }

@@ -14,18 +14,21 @@ std::vector<std::wstring>Preprocessor::lines;
 
 std::wstring Preprocessor::LoadFile(const std::string file) {
 	std::wifstream wif(file);
-	if (wif.fail()) Debugger::PrintErrorInfo(L"No such file or directory", false);
+	if (wif.fail()) Debugger::PrintErrorInfo(L"No such file or directory");
 	wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
 	std::wstringstream wss;
 	wss << wif.rdbuf();
 	return wss.str();
 }
 
-std::wstring Preprocessor::MapFileNumber(int number) {
+std::wstring Preprocessor::MapFileNumber(int& number) {
 	auto  size = file_numbers.size();
     for (auto i=0;i < size;i++) {
-		if (file_numbers[i] > number ) 
-				return std::wstring(files[i].begin(), files[i].end()) + L" " + std::to_wstring(number - (i>0?file_numbers[i-1]:0) + 1);
+		if (file_numbers[i] > number ) {
+			number = number - (i > 0 ? file_numbers[i - 1] : 0) + 1;
+			return std::wstring(files[i].begin(), files[i].end());
+		}
+				
     }
 }
 

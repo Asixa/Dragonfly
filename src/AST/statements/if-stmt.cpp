@@ -35,7 +35,7 @@ namespace parser {
 	void If::Gen() {
 		auto cond_v = condition->Gen();
 		if (!cond_v) {
-			Debugger::AlertNonBreak(L"Error in condititon");
+			Debugger::ErrorNonBreak(L"Error in condititon");
 			return;
 		}
 

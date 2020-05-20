@@ -20,19 +20,18 @@ namespace parser {
 		// The order of operators is important. shown below as Sub1 ~ Sub7.
 #define PARSE(name,func,condition,check)                            \
         static std::shared_ptr<Expr> name() {                       \
-            auto left = func();VERIFY                               \
+            auto left = func();                                     \
             check(condition) {                                      \
                 auto op = Lexer::token->type;Lexer::Next();         \
                 if(Lexer::Check(NewLine)) {                         \
-                    Debugger::AlertNewline();                       \
-                    Debugger::Alert(L"unexpected EndOfLine");       \
+                    Debugger::CatchNewline();                       \
+                    Debugger::Error(L"unexpected EndOfLine");       \
                     return nullptr;                                 \
-                }   VERIFY                                          \
+                }                                                   \
                 left= std::make_shared<Binary>(left, func(), op);   \
             } return left;}
 
-		PARSE(Sub1, Unary::Parse, Lexer::Check('*') || Lexer::Check('/') || Lexer::Check('%'), while)
-
+		    PARSE(Sub1, Unary::Parse, Lexer::Check('*') || Lexer::Check('/') || Lexer::Check('%'), while)
 			PARSE(Sub2, Sub1, Lexer::Check('+') || Lexer::Check('-'), while)
 			PARSE(Sub3, Sub2, Lexer::Check(Shl) || Lexer::Check(Shr), while)
 			PARSE(Sub4, Sub3, Lexer::Check('>') || Lexer::Check('<') || Lexer::Check(Ge) || Lexer::Check(Le), if)

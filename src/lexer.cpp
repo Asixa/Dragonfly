@@ -47,7 +47,7 @@ const char* Lexer::Token::Name(const int type)
 
 void Lexer::LoadFile(const char* file) {
     std::wifstream wif(file);
-    if (wif.fail()) Debugger::PrintErrorInfo(L"No such file or directory", false);
+    if (wif.fail()) Debugger::PrintErrorInfo(L"No such file or directory");
     wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
     std::wstringstream wss;
     wss << wif.rdbuf();
@@ -186,7 +186,7 @@ void Lexer::NextOneToken() {
                     if (*src == '.') {
                         type = K_double;
                         if (decimal != 0) {
-                            Debugger::Alert(L"There are more than 1 dot in the number");
+                            Debugger::Error(L"There are more than 1 dot in the number");
                             token = nullptr;
                             return;
                         }
@@ -209,7 +209,7 @@ void Lexer::NextOneToken() {
                     Move();
                     while ((*src >= '0' && *src <= '9') || *src == '.') {
                         if (*src == '.') {
-                            Debugger::Alert(L"There are more than 1 dot in the number");
+                            Debugger::Error(L"There are more than 1 dot in the number");
                             token = nullptr;
                             return;
                         }
@@ -299,7 +299,7 @@ void Lexer::NextOneToken() {
         ASSGIN_OR_REPEAT_OP(D_SYMBOL)
         ASSGIN_AND_REPEAT_OP(T_SYMBOL)
 
-        Debugger::Alert((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
+        Debugger::Error((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
         token = nullptr;
         return;
     }
@@ -320,8 +320,8 @@ void Lexer::Find(const wchar_t start, const wchar_t end) {
 void Lexer::Match(const int ty) {
 
     if (token->type != ty) {
-        if (token->type == NewLine) { Debugger::AlertNewline(); }
-        Debugger::Alert(
+        if (token->type == NewLine) { Debugger::CatchNewline(); }
+        Debugger::Error(
             (std::wstringstream() << L"expected \"" << Token::Name(ty) << L"\" but got \"" << Token::Name(token->type)
                 << L"\" instead").str());
         return;

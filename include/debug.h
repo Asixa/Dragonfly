@@ -64,24 +64,36 @@ public:
 
     // this function is implemented in main.cpp,
     // because there are some issues with include<windows.h> before other headers.
-    static void PrintErrorInfo(const std::wstring type, const bool show_location = true);
+    static void PrintErrorInfo(const std::wstring type, int l=-1,int c = -1);
 
     //This function will print the current token and the line of code it belongs.
-    static void PrintErrorPostfix();
+    static void PrintErrorPostfix(int l = -1, int c = -1,int cp=-1);
 
-    static void AlertNewline();
+    static void CatchNewline();
 
-    static void AlertNonBreak(const std::wstring info);
-
-    static void Alert(const std::wstring info);
+	static llvm::Value* ErrorV(const std::wstring info);
+	static void Error(const std::wstring info);
+	static void ErrorNonBreak(const std::wstring info);
+	static llvm::Value* Debugger::ErrorV(const char* str, int line, int ch);
 
     static void Warn(const std::wstring info);
 
     // this micro should be called each time AST parsed a node, to stop immediately if there are error.
-    #define VERIFY {if(Debugger::error_occurred)return nullptr;}
+    // #define VERIFY {if(Debugger::error_occurred)return nullptr;}
 
 };
 
+class ErrorMsg {
+public:
+	static wchar_t* cannot_resolve_symbol;
+	static wchar_t* invalid_token;
+	static wchar_t* expected;
+	static wchar_t* expected_but;
+	static wchar_t* unexpected;
+
+	static std::wstring Format(wchar_t* format, ...);
+};
+	
 
 
 #endif
