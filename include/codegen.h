@@ -102,7 +102,7 @@ public:
 	 * \return Value of the given type that created on heap
 	 */
 	static llvm::Value* Malloc(llvm::Type* type,bool cast=true);
-
+	static void Free(llvm::Value* value);
     /**
 	 * \brief Accpet a ptr value, and get it field'value by name.
 	 * if you only have a value but not ptr. store it to an alloca.

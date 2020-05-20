@@ -243,8 +243,13 @@ std::string CodeGen::DebugValue(llvm::Value* value) {
 
 llvm::Value* CodeGen::Malloc(llvm::Type* type,bool cast) {
 	const auto ptr = CodeGen::builder.CreateCall(CodeGen::the_module->getFunction("malloc"),
-		llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 32));
+		llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), data_layout.getTypeStoreSize(type)));
 	return CodeGen::builder.CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
+}
+
+void CodeGen::Free(llvm::Value* value) {
+	CodeGen::builder.CreateCall(CodeGen::the_module->getFunction("free"), 
+		builder.CreateCast(llvm::Instruction::BitCast, value, void_ptr));
 }
 
 
