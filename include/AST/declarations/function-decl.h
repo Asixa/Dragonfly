@@ -28,7 +28,7 @@ namespace parser {
 		std::string header_name;
 		std::string full_name;
 		std::wstring return_type;
-		llvm::StructType* self_type;
+		llvm::StructType* parent_type;
 
 		// std::vector<int>generic_arguments;
 		std::shared_ptr<GenericParam> generic;

@@ -1,0 +1,18 @@
+
+class A
+{
+  some:int;
+  init(int x){ some =x;}
+}
+
+func foo<T>(T t):T
+{
+	return t
+}
+
+
+
+var a = A(666)
+var f = foo<A>(a)
+a.some=233
+printf("%d %d\n",a.some,f.some)

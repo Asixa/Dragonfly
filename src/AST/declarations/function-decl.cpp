@@ -110,16 +110,22 @@ namespace parser {
 		Lexer::SkipNewlines();
 
 		VERIFY
+		* Debugger::out << "[Parsed] Function declaration\n";
+        if(Lexer::Check(Arrow)) {
+			Lexer::Next();
+			function->statements = Statement::Parse();
+        }
+		else {
 
-		*Debugger::out << "[Parsed] Function declaration\n";
-		Lexer::Match('{');
-		VERIFY
+			Lexer::Match('{');
+			VERIFY
 
 			function->statements = Statements::Parse();
-		Lexer::SkipNewlines();
-		VERIFY
+			Lexer::SkipNewlines();
+			VERIFY
 
 			Lexer::Match('}');
+		}
 		VERIFY
 			* Debugger::out << "[Parsed] Function end\n";
 		return function;
@@ -132,7 +138,7 @@ namespace parser {
 			instance_name += "#metadata";
 		    instance_name+=(i < generic->size - 1 && args->size == 0) ? "" : ", ";
 		}
-        for(auto i = self_type == nullptr ? 0 : 1;i<args->size;i++) {
+        for(auto i = parent_type == nullptr ? 0 : 1;i<args->size;i++) {
             const auto g_id = args->generic_id[i];
            instance_name+=CodeGen::MangleStr(g_id >=0?g_param->names[g_id]:args->types[i])+(i == args->size - 1 ? "" : ", ");
         }
@@ -147,14 +153,14 @@ namespace parser {
 	}
 
 	void FunctionDecl::SetInternal(llvm::StructType* type) {
-		self_type = type;
+		parent_type = type;
 	}
 
 	void FunctionDecl::GenHeader() {
         // function arguments types.
 		std::vector<llvm::Type*> arg_types;
 		std::vector<std::wstring> arg_names;
-		auto const is_member_function = self_type != nullptr;
+		auto const is_member_function = parent_type != nullptr;
 		header_name = CodeGen::MangleStr(name);
 
 		//////////////////////////////////////////////////////////////////////////////
@@ -163,11 +169,11 @@ namespace parser {
 
         // if the function is a member function. we add the hidden pointer.
 		if (is_member_function) {
-			arg_types.push_back(self_type->getPointerTo());
+			arg_types.push_back(parent_type->getPointerTo());
 			arg_names.push_back(L"this");
 
 			// added :: to Name specify name for constructor and destructor
-			const auto class_name = self_type->getStructName().str();
+			const auto class_name = parent_type->getStructName().str();
 			if (name == L"::init")          header_name = class_name + "::" + class_name;
 			else if (name == L"::delete")   header_name = class_name + "::~" + class_name;
 			else header_name = class_name + "::" + header_name;
@@ -188,7 +194,12 @@ namespace parser {
 				CodeGen::func_generic_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
             }
 			// Generic return argument
-			if (std::find(generic->names.begin(), generic->names.end(), return_type) != generic->names.end())
+			std::shared_ptr<GenericParam> parentGeneric = nullptr;
+            if(parent_type)
+                parentGeneric = CodeGen::types_table[parent_type->getStructName()]->generic;
+            
+            if (std::find(generic->names.begin(), generic->names.end(), return_type) != generic->names.end()
+                ||(parentGeneric !=nullptr&& std::find(parentGeneric->names.begin(), parentGeneric->names.end(), return_type) != parentGeneric->names.end()) )
 			{
 				generic_return = arg_types.size();
 				arg_types.push_back(CodeGen::void_ptr);
@@ -215,7 +226,7 @@ namespace parser {
         // added arg types to name for overloading.
 		full_name = header_name;
         full_name+= "(";
-		for (int i = self_type == nullptr ? 0 : 1,types_size = arg_types.size(); i < types_size; i++)
+		for (int i = parent_type == nullptr ? 0 : 1,types_size = arg_types.size(); i < types_size; i++)
 			full_name += (arg_types[i]==CodeGen::void_ptr?"void*": CodeGen::GetStructName(arg_types[i])) + 
 			            (i == arg_types.size() - 1 ? "" : ", ");
 		full_name += ")";
@@ -286,8 +297,8 @@ namespace parser {
 		}
 
 		// if 'this' have a base. then we create an alloca for the base.
-		if (self_type != nullptr) {
-			const auto self_decl = CodeGen::types_table[self_type->getStructName()];
+		if (parent_type != nullptr) {
+			const auto self_decl = CodeGen::types_table[parent_type->getStructName()];
 			if (!self_decl->base_type_name.empty()) {
 				const auto alloca = CodeGen::CreateEntryBlockAlloca(CodeGen::GetTypeByName(self_decl->base_type_name), "base", function);
 				const auto base = CodeGen::FindMemberField(function->getArg(0), L"base");

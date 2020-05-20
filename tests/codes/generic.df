@@ -5,14 +5,30 @@ class A
   init(int x){ some =x;}
 }
 
-func foo<T>(T t):T
+class B
 {
-	return t
+  some:int;
+  init(int x)=> some =x;
 }
 
 
+class Pair<K,V>
+{
+  a:K
+  b:V
+  init(x:K,y:V){
+	a=x
+	b=y
+  }
+  func left():K
+  {
+	return a
+  }
+  func right():V
+  {
+	return b
+  }
 
-var a = A(666)
-var f = foo<A>(a)
-a.some=233
-printf("%d %d\n",a.some,f.some)
+
+
+}
