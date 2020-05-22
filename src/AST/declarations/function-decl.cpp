@@ -7,13 +7,7 @@ namespace parser {
 		auto param = std::make_shared<FuncParam>();
 		while (Lexer::token->type != ')') {
 			param->size++;
-			if (Lexer::CheckType()) {
-				std::wstring t;
-				t += static_cast<wchar_t>(Lexer::token->type);
-				param->types.push_back(t);
-				Lexer::Next();
-			}
-			else if (Lexer::token->type == '.')		// Parse three dots '...' for variable argument.
+			if (Lexer::Check('.'))		// Parse three dots '...' for variable argument.
 			{
 				Lexer::Next();
 				Lexer::Match('.');
@@ -22,13 +16,10 @@ namespace parser {
 				param->is_var_arg = true;
 				return param;
 			}
-			else {
-				param->types.push_back(Lexer::string_val);
-				Lexer::Match(Id);
-			}
-
 			param->names.push_back(Lexer::string_val);
 			Lexer::Match(Id);
+			Lexer::Match(':');
+			param->types.push_back(Lexer::MatchType());
 			if (Lexer::Check(',')) Lexer::Match(',');
 		}
 		return param;
@@ -77,15 +68,7 @@ namespace parser {
 		function->return_type = L'\0';
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			if (Lexer::CheckType()) {
-				function->return_type = static_cast<wchar_t>(Lexer::token->type);
-				Lexer::Next();
-			}
-			else {
-				function->return_type = Lexer::string_val;
-				Lexer::Match(Id);
-			}
-
+			function->return_type = Lexer::MatchType();
 		}
 		if (ext) {
 			*Debugger::out << "[Parsed] Extern function declaration\n";

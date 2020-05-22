@@ -50,16 +50,7 @@ namespace parser {
 				instance->fields.push_back(Lexer::string_val);
 				Lexer::Match(Id);
 				Lexer::Match(':');
-				if (Lexer::CheckType()) {
-					std::wstring t;
-					t += static_cast<wchar_t>(Lexer::token->type);
-					instance->types.push_back(t);
-					Lexer::Next();
-				}
-				else {
-					instance->types.push_back(Lexer::string_val);
-					Lexer::Match(Id);
-				}
+				instance->types.push_back(Lexer::MatchType());
 				Lexer::MatchSemicolon();
 				Lexer::SkipNewlines();
 			}

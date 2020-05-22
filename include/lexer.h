@@ -68,6 +68,8 @@ public:
 
 	static void NextOneToken();
 
+	static std::wstring MatchType();
+
 
     static void Find(wchar_t start, wchar_t end);
 	//If current token is in expected type, move to next token.
@@ -78,7 +80,7 @@ public:
 	//Check if current token's type belong to the given list of type.
     static bool Check(const std::vector<int> tys);
 	//Check if current token's type is basic type, eg: int double.
-    static bool CheckType();
+    static bool IsBasicType();
 
 	static void MatchSemicolon();
 	static void SkipNewlines();

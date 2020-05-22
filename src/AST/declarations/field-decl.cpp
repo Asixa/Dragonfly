@@ -15,7 +15,7 @@ namespace parser {
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			
-				if (Lexer::CheckType()) {
+				if (Lexer::IsBasicType()) {
 					let->type = static_cast<wchar_t>(Lexer::token->type);
 					Lexer::Next();
 					

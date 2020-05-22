@@ -110,12 +110,18 @@ llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
 	    
     const int type = type_name[0];
     switch (type) {
-    case L'\0': return llvm::Type::getVoidTy(CodeGen::the_context);
-    case K_int: return llvm::Type::getInt32Ty(CodeGen::the_context);
-    case K_float: return llvm::Type::getFloatTy(CodeGen::the_context);
-    case K_double: return llvm::Type::getDoubleTy(CodeGen::the_context);
-    case K_bool: return llvm::Type::getInt1Ty(CodeGen::the_context);
-    case K_string: return llvm::Type::getInt8PtrTy(CodeGen::the_context);
+    case L'\0':         return llvm::Type::getVoidTy(CodeGen::the_context);
+	case K_byte:        return llvm::Type::getInt8Ty(CodeGen::the_context);
+	case K_short:       return llvm::Type::getInt16Ty(CodeGen::the_context);
+	case K_int:         return llvm::Type::getInt32Ty(CodeGen::the_context);
+	case K_long:        return llvm::Type::getInt64Ty(CodeGen::the_context);
+	// case K_ushort:       return llvm::Type::getInt16Ty(CodeGen::the_context);
+	// case K_uint:         return llvm::Type::getInt32Ty(CodeGen::the_context);
+	// case K_ulong:        return llvm::Type::getInt64Ty(CodeGen::the_context);
+    case K_float:       return llvm::Type::getFloatTy(CodeGen::the_context);
+    case K_double:      return llvm::Type::getDoubleTy(CodeGen::the_context);
+    case K_bool:        return llvm::Type::getInt1Ty(CodeGen::the_context);
+    case K_string:      return llvm::Type::getInt8PtrTy(CodeGen::the_context);
 	default:
 		Debugger::ErrorV("in CodeGen::GetType , unexpected typename",-1,-1);
         return nullptr;

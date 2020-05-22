@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 	// return 0;
     std::string filename;
     if (argc == 1) {
-		filename = "../tests/codes/generic2.df";
+		filename = "../tests/codes/default.df";
 		// filename = "../tests/codes/generic2.df";
 		// filename = "../tests/codes/b/input.df";
     }
