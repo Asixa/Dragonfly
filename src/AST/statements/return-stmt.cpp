@@ -28,42 +28,27 @@ namespace parser {
 
 		auto val = value->Gen();
 		if (!val) {
-			Debugger::ErrorV("Error in return",line,ch);
-            return;
+			Debugger::ErrorV("Error in return", line, ch);
+			return;
 		}
-		
-		//////////////////////////////////////////////////////////////////////////////
-        /// State 2.a£¬ for generic function
-        //////////////////////////////////////////////////////////////////////////////
-		auto const function = CodeGen::builder.GetInsertBlock()->getParent();
-        if(CodeGen::current_function->generic_return>=0) {
-            const auto return_dest = function->getArg(CodeGen::current_function->generic_return);
-            const auto metadata = CodeGen::GetGenericMetaArgument(CodeGen::MangleStr(CodeGen::current_function->return_type));
 
-			auto size_ptr = CodeGen::builder.CreateStructGEP(metadata, 0);
-		
-            llvm::Value* size = CodeGen::builder.CreateLoad(CodeGen::builder.CreateStructGEP(metadata, 0), "generic_size");
-			
-            const auto mem_cpy = CodeGen::the_module->getFunction("memcpy");
-            CodeGen::builder.CreateCall(mem_cpy, std::vector<llvm::Value*>{return_dest, val, size});
-		
-        }
 		//////////////////////////////////////////////////////////////////////////////
-        /// State 2.b£¬ for normal function
-        //////////////////////////////////////////////////////////////////////////////
-		else {
-			auto const expected = function->getReturnType();
-			if (CodeGen::GetStructName(expected) != CodeGen::GetStructName(val)) {
-				Debugger::ErrorV("return type not same",line,ch);
-				return;
-			}
-			auto const expected_ptr_level = CodeGen::GetPtrDepth(expected);
-			auto val_ptr_level = CodeGen::GetPtrDepth(val);
-			while (val_ptr_level > expected_ptr_level) {
-				val = CodeGen::builder.CreateLoad(val);
-				val_ptr_level--;
-			}
-			CodeGen::builder.CreateRet(val);
+		/// State 2.a£¬ for generic function
+		//////////////////////////////////////////////////////////////////////////////
+		auto const function = CodeGen::builder.GetInsertBlock()->getParent();
+
+		auto const expected = function->getReturnType();
+		if (CodeGen::GetStructName(expected) != CodeGen::GetStructName(val)) {
+			Debugger::ErrorV("return type not same", line, ch);
+			return;
 		}
+		auto const expected_ptr_level = CodeGen::GetPtrDepth(expected);
+		auto val_ptr_level = CodeGen::GetPtrDepth(val);
+		while (val_ptr_level > expected_ptr_level) {
+			val = CodeGen::builder.CreateLoad(val);
+			val_ptr_level--;
+		}
+		CodeGen::builder.CreateRet(val);
+
 	}
 }

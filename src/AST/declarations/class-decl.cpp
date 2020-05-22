@@ -73,28 +73,13 @@ namespace parser {
 			return;
 		}
 		CodeGen::types_table[the_struct->getName().str()] = this;
-		uid = CodeGen::types_list.size();
-		CodeGen::types_list.push_back(this);
-
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);
 			CodeGen::program->declarations.push_back(function);
 		}
 	}
 
-    void ClassDecl::SetGenericTable() {
-		if (generic) {
-			auto idx = 0;
-			for (auto i = 0; i < generic->size; i++) {
-				// fields.insert(fields.begin() + idx, L"$" + generic->names[i]);
-				// field_tys.insert(field_tys.begin() + idx++, CodeGen::metadata_type->getPointerTo());
-				CodeGen::class_generic_variable_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
-			}
-		}
-	}
-
-
-    void ClassDecl::Gen() {
+	void ClassDecl::Gen() {
 		const auto mangled_name = CodeGen::MangleStr(name);
 		auto the_struct = CodeGen::the_module->getTypeByName(mangled_name);
 		std::vector<llvm::Type*> field_tys;
@@ -113,27 +98,19 @@ namespace parser {
 						else Debugger::ErrorV("Inherit multiple classes is not allowed",line,ch);
 					}
 				}
-				else  Debugger::ErrorV((std::string(mangled_name) + " is not defined").c_str(),line,ch);
+				else  Debugger::ErrorV((std::string(mangled_name) + " is not defined").c_str(), line, ch);
 			}
 			if (baseType != nullptr) {
+
 				fields.insert(fields.begin(), L"base");
 				field_tys.insert(field_tys.begin(), baseType);
 			}
 		}
 
-
-		if (generic) {
-			auto idx = 0;
-			for (auto i = 0; i < generic->size; i++) {
-				fields.insert(fields.begin() + idx, L"$" + generic->names[i]);
-				field_tys.insert(field_tys.begin() + idx++, CodeGen::metadata_type->getPointerTo());
-				CodeGen::class_generic_variable_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
-			}
-		}
-
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
-		CodeGen::CreateMetadata(the_struct);
-		CodeGen::class_generic_variable_table.clear();
+
+
+		// a->setAttributes()
 	}
 }

@@ -51,7 +51,6 @@ namespace parser {
 
 	void Program::Gen() {
 
-		CodeGen::DeclMetadataStruct();
 
 		CodeGen::BuildInFunc("malloc", CodeGen::void_ptr,std::vector<llvm::Type*>{CodeGen::int32});
 
@@ -70,19 +69,12 @@ namespace parser {
 		}
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(CodeGen::void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", CodeGen::the_module.get());
 		CodeGen::builder.SetInsertPoint(CodeGen::CreateBasicBlock(__df_global_var_init, "entry"));
-		for (auto i : CodeGen::metadata_init) {
-			const auto metadata = CodeGen::GetGenericMetaConstant(std::get<0>(i));
-		    CodeGen::builder.CreateStore(llvm::ConstantInt::get(CodeGen::int32, std::get<1>(i)),CodeGen::builder.CreateStructGEP(metadata, 0));
-			CodeGen::builder.CreateStore(llvm::ConstantInt::get(CodeGen::int32, std::get<2>(i)), CodeGen::builder.CreateStructGEP(metadata, 1));
-		}
 		CodeGen::builder.CreateRetVoid();
 
 		const auto main_func = CodeGen::CreateMainFunc();
 		const auto entry = CodeGen::CreateBasicBlock(main_func, "entry");
 		CodeGen::builder.SetInsertPoint(entry);
 
-        if(!CodeGen::metadata_init.empty()) 
-			CodeGen::builder.CreateCall(__df_global_var_init, std::vector<llvm::Value*>{});
         
 		for (auto& statement : statements)
 			try {if (statement != nullptr)statement->Gen();}catch (int e){}

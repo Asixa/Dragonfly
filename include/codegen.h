@@ -37,21 +37,12 @@ public:
 	// static llvm::Function* the_function;
 	static std::map<std::string, llvm::Value*> local_fields_table;
 	static std::map<std::string, llvm::Value*> global_fields_table;
-	static std::map<std::string, llvm::Value*> func_generic_variable_table;
-	static std::map<std::string, llvm::Value*> class_generic_variable_table;
 
 	static std::map<std::string, parser::ClassDecl*> types_table;
-	static std::vector<parser::ClassDecl*> types_list;
-	static std::map<std::string, parser::FunctionDecl*> functions_table;
-
-	static std::map<std::string, std::vector<parser::FunctionDecl*>> generic_functions_table;
-
-	static std::vector<std::tuple<std::string, int, int>>metadata_init;
 
 	static llvm::Value* True;
 	static llvm::Value* False;
 
-	static llvm::Type* metadata_type;
 	static llvm::Type* void_ptr;
 	static llvm::Type* void_type;
 	static llvm::Type* int32;
@@ -66,10 +57,8 @@ public:
 
     static llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
 	static llvm::ConstantInt* CreateConstant(int value);
-	static llvm::GlobalVariable* CreateMetadata(const std::string name, int size, int align);
-	static llvm::GlobalVariable* CreateMetadata(llvm::Type* type);
+
 	static llvm::Function* CreateMainFunc();
-	static void DeclMetadataStruct();
 
     static llvm::BasicBlock* CreateBasicBlock(llvm::Function* func, const std::string name);
 
@@ -125,9 +114,6 @@ public:
 
     // true if the name is a custom type.
 	static bool IsCustomType(std::string name);
-	static int TestIfGenericType(std::string name);
-	static llvm::Value* GetGenericMetaArgument(std::string name);
-	static llvm::Value* GetGenericMetaConstant(std::string name);
 
     /**
 	 * \brief find the category of a type 
