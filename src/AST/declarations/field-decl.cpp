@@ -9,22 +9,11 @@ namespace parser {
 		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;
 		Lexer::Next();
-		
-			let->name = Lexer::string_val;
+		let->name = CodeGen::MangleStr(Lexer::string_val);
 		Lexer::Match(Id);
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			
-				if (Lexer::IsBasicType()) {
-					let->type = static_cast<wchar_t>(Lexer::token->type);
-					Lexer::Next();
-					
-				}
-				else {
-					let->type = Lexer::string_val;
-					Lexer::Match(Id);
-					
-				}
+			let->type = Lexer::MatchType2();
 		}
 		Lexer::Match('=');
 		
@@ -38,31 +27,31 @@ namespace parser {
 	}
 
 	void FieldDecl::Gen() {
-		const auto mangled_name = CodeGen::MangleStr(name);
+
 		const auto val = value->Gen();
 
-		const auto ty = type.empty() ? val->getType() : CodeGen::GetTypeByName(type);
+		const auto ty = type.empty() ? val->getType() : CodeGen::GetTypeByName2(type);
 		if (!val) return;
 
 		if (constant) {
             // TODO ERROR, constant not supported yet!
-			const auto v = CodeGen::CreateGlob(mangled_name, ty);
+			const auto v = CodeGen::CreateGlob(name, ty);
 			// v->setInitializer(val);
-			CodeGen::local_fields_table[mangled_name] = v;
+			CodeGen::local_fields_table[name] = v;
 		}
 		else {
 			const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();
 			if (the_function->getName() == "main") {
 				// All fields in main function are stored in heap.
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, mangled_name, the_function);
+				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, name, the_function);
 				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
-				CodeGen::global_fields_table[mangled_name] = alloca;
+				CodeGen::global_fields_table[name] = alloca;
 			}
 			else {
 				// otherwise the local field store on stack.
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, mangled_name,the_function);
+				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, name,the_function);
 				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
-				CodeGen::local_fields_table[mangled_name] = alloca;
+				CodeGen::local_fields_table[name] = alloca;
 			}
 		}
 	}

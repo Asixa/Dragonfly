@@ -72,7 +72,8 @@ public:
 
     static std::string MangleStr(const std::wstring str);
 
-    static llvm::Type* GetTypeByName(std::wstring type_name);
+	static llvm::Type* GetTypeByName(std::wstring type_name);
+	static llvm::Type* GetTypeByName2(parser::Type type);
 
     static llvm::StoreInst* AlignStore(llvm::StoreInst* a);
     static llvm::LoadInst* AlignLoad(llvm::LoadInst* a);

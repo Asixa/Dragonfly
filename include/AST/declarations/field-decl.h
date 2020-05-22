@@ -7,7 +7,8 @@ namespace parser {
 	// class for matching variable declaration.
 	class FieldDecl : public Statement {
 		bool constant;
-		std::wstring name, type;
+		std::string name;
+	    parser::Type type;
 		std::shared_ptr<Expr> value;
 	public:
 		void Gen() override;

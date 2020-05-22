@@ -91,4 +91,41 @@ namespace parser {
 
 		verifyFunction(*main_func);
 	}
-} 
+}
+
+
+parser::Type Lexer::MatchType2() {
+	parser::Type type;
+    
+
+	if (Lexer::IsBasicType()) {
+		type.ty = token->type;
+		Lexer::Next();
+	}
+	else {
+		type.ty = 0;
+		type.str = CodeGen::MangleStr(Lexer::string_val);
+		Lexer::Match(Id);
+		while (Check('.')) {
+			Next();
+			type.str += CodeGen::MangleStr(L"." + Lexer::string_val);
+			Lexer::Match(Id);
+		}
+		if (Check('<')) {
+			Next();
+			type.str += "<";
+			if (Lexer::Check(Id)) {
+				Lexer::Next();
+				type.str += CodeGen::MangleStr(Lexer::string_val);
+				while (Lexer::Check(',')) {
+					Lexer::Next();
+					Lexer::Match(Id);
+					type.str += CodeGen::MangleStr(L"," + Lexer::string_val);
+				}
+			}
+			Lexer::Match('>');
+			type.str += ">";
+		}
+	}
+	return type;
+}

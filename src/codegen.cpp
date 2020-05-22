@@ -128,6 +128,41 @@ llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
     }
 }
 
+llvm::Type* CodeGen::GetTypeByName2(parser::Type  type) {
+
+	llvm::Type* llvm_type = nullptr;
+	if (type.ty > 0) {
+		switch (type.ty) {
+		case L'\0':         llvm_type = llvm::Type::getVoidTy(CodeGen::the_context); break;
+		case K_byte:        llvm_type = llvm::Type::getInt8Ty(CodeGen::the_context); break;
+		case K_short:       llvm_type = llvm::Type::getInt16Ty(CodeGen::the_context); break;
+		case K_int:         llvm_type = llvm::Type::getInt32Ty(CodeGen::the_context); break;
+		case K_long:        llvm_type = llvm::Type::getInt64Ty(CodeGen::the_context); break;
+			// case K_ushort:       return llvm::Type::getInt16Ty(CodeGen::the_context);break;
+			// case K_uint:         return llvm::Type::getInt32Ty(CodeGen::the_context);break;
+			// case K_ulong:        return llvm::Type::getInt64Ty(CodeGen::the_context);break;
+		case K_float:       llvm_type = llvm::Type::getFloatTy(CodeGen::the_context); break;
+		case K_double:      llvm_type = llvm::Type::getDoubleTy(CodeGen::the_context); break;
+		case K_bool:        llvm_type = llvm::Type::getInt1Ty(CodeGen::the_context); break;
+		case K_string:      llvm_type = llvm::Type::getInt8PtrTy(CodeGen::the_context); break;
+		default:
+			Debugger::ErrorV("in CodeGen::GetType , unexpected typename", -1, -1);
+			return nullptr;
+		}
+	}
+	else {
+		if (IsCustomType(type.str)) {
+			const auto ty = the_module->getTypeByName(type.str);
+			llvm_type = types_table[type.str]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
+		}
+		Debugger::ErrorV((std::string("Unknown Type: ") + type.str + "\n").c_str(), -1, -1);
+		return nullptr;
+	}
+
+	if (type.array == -1)return llvm_type;
+	return llvm::ArrayType::get(llvm_type, type.array);
+}
+
 llvm::StoreInst* CodeGen::AlignStore(llvm::StoreInst* a) {
     // a->setAlignment(MaybeAlign(8));
     return a;
@@ -238,7 +273,7 @@ llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name)
 			for (int id = 0, n = decl->fields.size(); id < n; id++) {
 				if (base_decl->fields[id] == name) {
 					idx = id;
-					break;
+					break; 
 				}
 			}
             if(idx!=-1) {

@@ -20,6 +20,24 @@
 
 #include <vector>
 #include <string>
+namespace parser {
+	struct Type {
+	public:
+		int ty = -1;
+		int array = -1;
+		std::string str;
+		explicit Type() :array(-1), ty(-1) { }
+		explicit Type(const std::string s) :str(s), ty(0), array(-1) { }
+		explicit Type(const int t) :ty(t), array(-1) {};
+		bool empty() const {
+			return ty == -1;
+		}
+		bool operator==(const Type& rhs)
+		{
+			return ty == rhs.ty&&str==rhs.str&&array==rhs.array;
+		}
+	};
+}
 
 class Lexer {
 public:
@@ -69,6 +87,7 @@ public:
 	static void NextOneToken();
 
 	static std::wstring MatchType();
+	static parser::Type MatchType2();
 
 
     static void Find(wchar_t start, wchar_t end);
