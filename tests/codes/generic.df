@@ -2,21 +2,21 @@
 class A
 {
   some:int;
-  init(int x){ some =x;}
+  init(x:int){ some =x;}
 }
 struct B
 {
   some:int;
-  init(int x){ some =x;}
+  init(x:int){ some =x;}
 }
 
 
-func bar(A a):A
+func bar(a:A):A
 {
    return a;
  }
 
-func foo<T>(T t):T
+func foo<T>(t:T):T
 {
    return t;
 }

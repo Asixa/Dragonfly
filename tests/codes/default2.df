@@ -15,7 +15,7 @@ class A
 struct B
 {
   a:int
-  init(A a)
+  init(a:A)
   {
 	this.a=a.a
   }

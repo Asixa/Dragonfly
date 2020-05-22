@@ -10,7 +10,7 @@ class A:B
 {
 	a:int;
 	b:int;
-	func foo(int c):int
+	func foo(c:int):int
 	{
 		return a+c+z
 	}
@@ -25,14 +25,14 @@ class A:B
 		b=100
 		z=100
 	}
-	init(int a,int b,int z)
+	init(a:int,b:int,z:int)
 	{
 		this.a=a
 		this.b=b
 		this.z=z
 		base.z=z
 	}
-	init(A a)
+	init(a:A)
 	{
 	 this.a=a.a
 	 this.b=a.b
@@ -46,7 +46,7 @@ extension A
 	{
 		return 666;
 	}
-	func foo(int a,int b):int
+	func foo(a:int,b:int):int
 	{
 		return a+b;
 	}
@@ -61,11 +61,11 @@ struct D
 {
 	a:int;
 	b:int;
-	func foo(int c):int
+	func foo(c:int):int
 	{
 		return a+b+c
 	}
-	func foo(int x,int y):int
+	func foo(x:int,y:int):int
 	{
 		return x+y;
 	}
@@ -79,13 +79,13 @@ struct D
 		b=0
 	}
    
-    init(D d)
+    init(d:D )
 	{ 
 	  a=d.a
 	  b=d.b
 	}
 
-	init(int x,int y)
+	init(x:int,y:int)
 	{
 	    a=x
 		b=y

@@ -2,22 +2,22 @@
 class A
 {
   some:int;
-  init(int x){ some =x;}
+  init(x:int){ some =x;}
 }
 
 class B
 {
   thing:int;
-  init(int x){ thing =x;}
+  init(x:int){ thing =x;}
 }
 
 struct C
 {
   thing:int;
-  init(int x){ thing =x;}
+  init(x:int){ thing =x;}
 }
-
-func foo<T>(T t):T
+ 
+func foo<T>(t:T):T
 {
 	return t
 }
@@ -27,14 +27,14 @@ class Pair<K,V>
 {
    a:K
    b:V
-   init(K x,V y)
+   init(x:K,y:V)
    {
     a=x
 	b=y
    }
    func left():K => return a
    func right():V => return b
-   func foo<T>(T t):T=>return t
+   func foo<T>(t:T):T=>return t
 }
 
 var a = A(1)
