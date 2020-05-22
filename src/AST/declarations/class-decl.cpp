@@ -8,8 +8,11 @@ namespace parser {
 		Lexer::Next();
 		instance->name = Lexer::string_val;
 		Lexer::Match(Id);
-		if (Lexer::Check('<'))
+		if (Lexer::Check('<')) {
+			instance->is_template = true;
 			instance->generic = GenericParam::Parse();
+		}
+			
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			instance->interfaces.push_back(Lexer::string_val);
@@ -65,9 +68,57 @@ namespace parser {
 		return instance;
 	}
 
+	void ClassDecl::Instantiate(std::shared_ptr<GenericParam> param) {
+		const auto instance = new ClassDecl();
+		instance->fields = fields;
+		instance->is_template = false;
+		instance->category = category;
+		instance->name = name;
+		instance->base_type_name = base_type_name;
+		instance->interfaces = interfaces;
+		instance->constructor = constructor;
+		instance->generic = generic;
+		instance->destructor = destructor;
+		for (const auto& i : types)instance->types.push_back(i);
+		for (int i = 0, size = instance->types.size(); i < size; ++i) {
+			auto pos = std::find(generic->names.begin(), generic->names.end(), instance->types[i]);
+			if (pos != generic->names.end())
+				instance->types[i] = param->names[i];
+		}
+        const auto posfix = param->ToString();
+		const auto full_name = CodeGen::MangleStr(name) + posfix;
+		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
+		if (the_struct) {
+			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
+			return;
+		}
+
+		the_struct = llvm::StructType::create(CodeGen::the_context, full_name);
+		CodeGen::types_table[full_name] = instance;
+		instance->full_name = full_name;
+		instance->Gen();
+        for(auto i=0;i<functions.size();i++) {
+			instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
+        }
+
+		for (auto& function : instance->functions) {
+			function->SetInternal(the_struct);
+			function->PassGeneric(param,generic);
+			function->GenHeader();
+			CodeGen::program->late_gen.push_back(function);
+		}
+	}
+
 	void ClassDecl::GenHeader() {
-		auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
-		if (!the_struct) the_struct = llvm::StructType::create(CodeGen::the_context, CodeGen::MangleStr(name));
+		full_name = CodeGen::MangleStr(name);
+		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
+		if (!the_struct) {
+            if(is_template) {
+				CodeGen::template_types_table[full_name] = this;
+                return;
+            }
+		    the_struct = llvm::StructType::create(CodeGen::the_context, CodeGen::MangleStr(name));
+		}
 		else {
 			*Debugger::out << "Type " << name << " already defined" << std::endl;
 			return;
@@ -79,38 +130,41 @@ namespace parser {
 		}
 	}
 
-	void ClassDecl::Gen() {
-		const auto mangled_name = CodeGen::MangleStr(name);
-		auto the_struct = CodeGen::the_module->getTypeByName(mangled_name);
+
+
+    void ClassDecl::Gen() {
+		if (is_template)return;
+		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
+        if(!the_struct) {
+			Debugger::ErrorV((std::string("type") + full_name + " is not defined").c_str(), line, ch);
+            return;
+        }
 		std::vector<llvm::Type*> field_tys;
 
 		if (!interfaces.empty()) {
-			llvm::Type* baseType = nullptr;
+			llvm::Type* base_type = nullptr;
 			for (const auto& interface : interfaces) {
-				auto mangled_name = CodeGen::MangleStr(interface);
-				if (CodeGen::IsCustomType(mangled_name)) {
-					const auto decl = CodeGen::types_table[mangled_name];
+				auto mangled_interface_name = CodeGen::MangleStr(interface);
+				if (CodeGen::IsCustomType(mangled_interface_name)) {
+					const auto decl = CodeGen::types_table[mangled_interface_name];
 					if (!decl->category == kInterface) {
-						if (baseType == nullptr) {
-							baseType = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(interface));
+						if (base_type == nullptr) {
+							base_type = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(interface));
 							base_type_name = interface;
 						}
 						else Debugger::ErrorV("Inherit multiple classes is not allowed",line,ch);
 					}
 				}
-				else  Debugger::ErrorV((std::string(mangled_name) + " is not defined").c_str(), line, ch);
+				else  Debugger::ErrorV((std::string(mangled_interface_name) + " is not defined").c_str(), line, ch);
 			}
-			if (baseType != nullptr) {
+			if (base_type != nullptr) {
 
 				fields.insert(fields.begin(), L"base");
-				field_tys.insert(field_tys.begin(), baseType);
+				field_tys.insert(field_tys.begin(), base_type);
 			}
 		}
 
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
-
-
-		// a->setAttributes()
 	}
 }

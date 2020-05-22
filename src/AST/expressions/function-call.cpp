@@ -36,7 +36,7 @@ namespace parser {
 
 	llvm::Value* FuncCall::GenField(llvm::Value* parent) {
 		// TODO function call like a()()
-
+        
 		// the data structure of Field for exmaple: a.B().C().d is
 		//  [a]
 		//     \child
@@ -62,6 +62,23 @@ namespace parser {
 			? CodeGen::GetStructName(parent) + "::" + CodeGen::MangleStr(name)
 			: CodeGen::MangleStr(name);
 
+        if(generic) {
+			
+			const auto template_class_decl = CodeGen::GetTemplateClass(callee_name);
+            if (template_class_decl != nullptr) {
+			    template_class_decl->Instantiate(generic);
+			}
+            else {
+				const auto template_decl = CodeGen::GetTemplateFunc(callee_name);
+				if (template_decl == nullptr)
+					return Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
+				template_decl->Instantiate(generic);
+            }
+            
+			
+			callee_name += generic->ToString();
+        }
+
 		// Here we generate all the parameters for the Call, store the values into args_v
 		// hidden pointer for member func is not added here. will added later.
 		std::vector<llvm::Value*> args_v;
@@ -84,9 +101,11 @@ namespace parser {
 		// here we check if the func is a constructor
 		if (CodeGen::IsCustomType(callee_name)) {
 			switch (CodeGen::GetCustomTypeCategory(callee_name)) {
-			case ClassDecl::kClass:
-				parent = CodeGen::Malloc(CodeGen::the_module->getTypeByName(callee_name));
+			case ClassDecl::kClass: {
+				auto ty = CodeGen::the_module->getTypeByName(callee_name);
+				parent = CodeGen::Malloc(ty);
 				break;
+			}
 			case ClassDecl::kStruct:
 				parent = CodeGen::CreateEntryBlockAlloca(CodeGen::the_module->getTypeByName(callee_name), callee_name);
 				break;
@@ -101,7 +120,7 @@ namespace parser {
 			callee_name = callee_name + "::" + callee_name;
 			is_constructor = true;
 		}
-
+	
 		// now we add the hidden pointer to the args list if it is a member function. //TODO catch errors like pass a value
 		if (is_member_func) {
 			const auto ptr_depth = CodeGen::GetPtrDepth(parent);
@@ -121,7 +140,7 @@ namespace parser {
 		if (!callee) {
 			callee_name += "(";
 			for (int i = is_member_func ? 1 : 0, argv_size = args_v.size(); i < argv_size; i++)
-				callee_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ", ");
+				callee_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ",");
 			callee_name += ")";
 			// after fix the function name, we try to get it again.
 			callee = CodeGen::the_module->getFunction(callee_name);

@@ -38,6 +38,9 @@ public:
 	static std::map<std::string, llvm::Value*> local_fields_table;
 	static std::map<std::string, llvm::Value*> global_fields_table;
 
+	static std::map<std::string, parser::ClassDecl*> template_types_table;
+	static std::map<std::string, parser::FunctionDecl*> template_function_table;
+
 	static std::map<std::string, parser::ClassDecl*> types_table;
 
 	static llvm::Value* True;
@@ -54,6 +57,9 @@ public:
 
 	static parser::FunctionDecl* current_function;
 
+
+	static parser::ClassDecl* GetTemplateClass(std::string name);
+	static parser::FunctionDecl* GetTemplateFunc(std::string name);
 
     static llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
 	static llvm::ConstantInt* CreateConstant(int value);

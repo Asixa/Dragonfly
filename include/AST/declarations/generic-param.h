@@ -6,7 +6,9 @@ namespace parser {
 	public:
 		int size;
 		std::vector<std::wstring> names;
-		static std::shared_ptr<GenericParam> Parse();
+		std::string ToString();
+	    static std::shared_ptr<GenericParam> Parse();
+        
 	};
 }
 

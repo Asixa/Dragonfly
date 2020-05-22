@@ -61,12 +61,17 @@ namespace parser {
 
 		CodeGen::BuildInFunc("printf", CodeGen::void_type,std::vector<llvm::Type*>{CodeGen::void_ptr}, true);
 
-		for (auto i = 0; i < declarations.size(); i++) {
+		for (auto i = 0; i < declarations.size(); i++) 
 			try {declarations[i]->GenHeader();}catch (int e) {}
-		}
-		for (auto& declaration : declarations) {
+		
+		for (auto& declaration : declarations) 
 			try { declaration->Gen(); }catch (int e) {}
-		}
+
+		// for (auto i = 0; i < late_declarations.size(); i++)
+		// 	try { late_declarations[i]->GenHeader(); } catch (int e) {}
+        
+
+
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(CodeGen::void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", CodeGen::the_module.get());
 		CodeGen::builder.SetInsertPoint(CodeGen::CreateBasicBlock(__df_global_var_init, "entry"));
 		CodeGen::builder.CreateRetVoid();
@@ -78,8 +83,12 @@ namespace parser {
         
 		for (auto& statement : statements)
 			try {if (statement != nullptr)statement->Gen();}catch (int e){}
-
 		CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));
+
+		for (auto i = 0; i < late_gen.size(); i++)
+			try { late_gen[i]->Gen(); }catch (int e) {}
+
+
 		verifyFunction(*main_func);
 	}
 } 

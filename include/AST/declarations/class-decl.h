@@ -11,8 +11,11 @@ namespace parser {
 	public:
         enum {kInterface,kClass,kStruct};
 		int category=kClass;
-		int uid = -1;
+	
+		bool is_template = false;
+		std::string full_name;
 		std::wstring name;
+		
 		std::wstring base_type_name;
 		std::vector<std::wstring> fields;
 		std::vector<std::wstring> types;
@@ -24,7 +27,7 @@ namespace parser {
 		static std::shared_ptr<ClassDecl> Parse(int type = kClass);
 		void Gen() override;
 		void GenHeader() override;
-		void SetGenericTable();
+		void Instantiate(std::shared_ptr<GenericParam> param);
 	};
 }
 #endif

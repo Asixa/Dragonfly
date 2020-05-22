@@ -59,6 +59,7 @@ namespace parser {
 		void ParseSingle();
     public:
 		std::vector<std::shared_ptr<Declaration>> declarations;
+		std::vector<std::shared_ptr<Declaration>> late_gen;
 		static std::shared_ptr<Program> Parse();
         void Gen();
     };

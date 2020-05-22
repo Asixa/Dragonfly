@@ -61,6 +61,7 @@ namespace parser {
 			Debugger::Error(L" function name expected");
 		}
 		if (Lexer::Check('<')) {
+			function->is_template = true;
 			if (function->name == L"::init" || function->name == L"::delete") {
 				Debugger::Error(L"Constructor or Deconstructor cannot have generic type");
 			}
@@ -107,23 +108,13 @@ namespace parser {
 		return function;
 	}
 
-	std::string FunctionDecl::GetInstanceName(GenericParam* g_param) {
-		auto instance_name = header_name + "(";
-		for (auto i = 0; i < generic->size; i++) { 
-			instance_name += "$";
-			instance_name += (i < generic->size - 1 && args->size == 0) ? "" : ",";
-		}
-		// printf("   %ws::%s  %d-size%d\n",name.c_str(), instance_name.c_str(), parent_type == nullptr, args->size);
-		// for (auto i = parent_type == nullptr ? 0 : 1; i < args->size; i++) {
-		for (auto i = 0; i < args->size; i++) {
-			const auto g_id = args->generic_id[i];
-			instance_name += CodeGen::MangleStr(g_id >= 0 ? g_param->names[g_id] : args->types[i]) + (i == args->size - 1 ? "" : ",");
-		}
-		instance_name += ")";
-		return instance_name;
+
+	FunctionDecl::FunctionDecl(std::shared_ptr < FunctionDecl>  copy) {
+		*this = *copy;
+		args = std::make_shared<FuncParam>(copy->args);
 	}
 
-	bool FunctionDecl::IsGenericArgument(std::wstring name) {
+    bool FunctionDecl::IsGenericArgument(std::wstring name) {
 		for (auto i = 0; i < args->size; i++)
 			return(args->names[i] == name && args->generic_id[i] >= 0);
 		return false;
@@ -132,11 +123,58 @@ namespace parser {
 	void FunctionDecl::SetInternal(llvm::StructType* type) {
 		parent_type = type;
 	}
+	void FunctionDecl::Instantiate(std::shared_ptr <GenericParam> param) {
+		if (!generic)return;
+		const auto func_instance_name = param->ToString();
+		const auto function = CodeGen::the_module->getFunction(full_name + func_instance_name);
+		if (function)return;
+		const auto instance = std::make_shared<FunctionDecl>();
+		*instance = *this;
+		instance->args.swap(std::make_shared<FuncParam>(args));
+		instance->PassGeneric(param);
+		instance->is_template = false;
+		instance->func_postfix = func_instance_name;
+		instance->GenHeader();
+		CodeGen::program->late_gen.push_back(instance);
+	}
+	void FunctionDecl::PassGeneric(std::shared_ptr<GenericParam> val, std::shared_ptr<GenericParam> key) {
+		if (val == nullptr)return;
+		if (key == nullptr)key = generic;
+        if(!key)return;
+		for (auto i = 0, size = args->size; i < size; ++i) {
+				auto pos = std::find(key->names.begin(), key->names.end(), args->types[i]);
+				if (pos != key->names.end())
+					args->types[i] = val->names[std::distance(key->names.begin(), pos)];
+		}
+		const auto pos = std::find(key->names.begin(), key->names.end(), return_type);
+		if (pos != key->names.end())
+			return_type = val->names[std::distance(key->names.begin(), pos)];
+	}
 
 	void FunctionDecl::GenHeader() {
-		// function arguments types.
 		std::vector<llvm::Type*> arg_types;
 		auto const is_member_function = parent_type != nullptr;
+		
+		// added :: if is a member function, specify name for constructor and destructor
+		const auto class_name = is_member_function ? parent_type->getStructName().str() : "";
+		if (name == L"::init")          full_name = class_name  + "::" + class_name;
+		else if (name == L"::delete")   full_name = class_name  + "::~" + class_name;
+		else if (is_member_function)    full_name = class_name + "::" + CodeGen::MangleStr(name);
+		else                            full_name = CodeGen::MangleStr(name);
+		full_name += func_postfix;
+        if(is_template) {
+            for(auto i=0;i<args->size;i++) {
+				auto pos = std::find(generic->names.begin(), generic->names.end(), args->types[i]);
+				if (pos != generic->names.end()) 
+					args->generic_id.push_back(std::distance(generic->names.begin(), pos));
+				else  args->generic_id.push_back(-1);
+            }
+			CodeGen::template_function_table[full_name] = this;
+            return;
+        }
+	
+		// function arguments types.
+
 		// if the function is a member function. we add the hidden pointer.
 		if (is_member_function) {
 			arg_types.push_back(parent_type->getPointerTo());
@@ -146,23 +184,16 @@ namespace parser {
 		for (auto i = 0; i < args->size; i++)
 			arg_types.push_back(CodeGen::GetTypeByName(args->types[i]));
 
-
-		// added :: if is a member function, specify name for constructor and destructor
-		const auto class_name = is_member_function ? parent_type->getStructName().str() : "";
-		if (name == L"::init")          full_name = class_name + "::" + class_name;
-		else if (name == L"::delete")   full_name = class_name + "::~" + class_name;
-		else if (is_member_function)    full_name = class_name + "::" + CodeGen::MangleStr(name);
-		else                            full_name = CodeGen::MangleStr(name);
-
+		
 		// added arg types to name for overloading.
 		full_name += "(";
 		for (int i = parent_type == nullptr ? 0 : 1, types_size = arg_types.size(); i < types_size; i++)
-			full_name += CodeGen::GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ", ");
+			full_name += CodeGen::GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
 		full_name += ")";
-
 		// check if the fucntion already exist.
 		auto the_function = CodeGen::the_module->getFunction(full_name);
 		if (!the_function) {
+			
 			// create the function type.
 			const auto func_type = llvm::FunctionType::get(CodeGen::GetTypeByName(return_type), arg_types, args->is_var_arg);
 			// create the function
@@ -172,28 +203,29 @@ namespace parser {
 			for (auto& arg : the_function->args())
 				arg.setName(CodeGen::MangleStr(args->names[idx++]));
 		}
-		else {
-			// *Debugger::out << "function " << std::wstring(full_name.begin(), full_name.end()) << " already defined\n";
-			Debugger::ErrorV((std::string("function ") + full_name + std::string(" already defined\n")).c_str(), line, ch);
-		}
+		else  Debugger::ErrorV((std::string("function ") + full_name + std::string(" already defined\n")).c_str(), line, ch);
+		
 	}
 
 
 
-	void FunctionDecl::Gen() {
-		if (is_extern)return;
 
+    void FunctionDecl::Gen() {
+		if (is_extern)return;
+        if(is_template)return;
+
+		
 		auto function = CodeGen::the_module->getFunction(full_name);
 		if (!function) {
-			*Debugger::out << "function head not found\n";
+			Debugger::ErrorV((std::string("function head not found?: ") + full_name).c_str(),line,ch);
 			return;
 		}
-
 		//  create the basic block for the function.
 		const auto basic_block = CodeGen::CreateBasicBlock(function, CodeGen::MangleStr(name) + "_entry");
 		CodeGen::builder.SetInsertPoint(basic_block);
 
 		for (auto& arg : function->args()) {
+			
 			// store the argument to argument table.
 			// if argment is a struct passed by value. we store its alloca to local_fields.
 			const auto arg_type_name = CodeGen::GetStructName(arg.getType());
@@ -219,11 +251,14 @@ namespace parser {
 				CodeGen::local_fields_table["base"] = alloca;
 			}
 		}
+       
+		CodeGen::current_function = this;
 		// generate the statements in the function.
 		if (statements != nullptr)statements->Gen();
 		// return void by default.
 		if (function->getReturnType()->getTypeID() == llvm::Type::VoidTyID)CodeGen::builder.CreateRetVoid();
 		// clear the local scope.
+		CodeGen::current_function = nullptr;
 		CodeGen::local_fields_table.clear();
 		verifyFunction(*function);
 

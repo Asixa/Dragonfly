@@ -26,7 +26,7 @@ namespace parser {
 			return;
 		}
 
-		auto val = value->Gen();
+		auto val = value->Gen(1);
 		if (!val) {
 			Debugger::ErrorV("Error in return", line, ch);
 			return;
@@ -36,7 +36,7 @@ namespace parser {
 		/// State 2.a£¬ for generic function
 		//////////////////////////////////////////////////////////////////////////////
 		auto const function = CodeGen::builder.GetInsertBlock()->getParent();
-
+	
 		auto const expected = function->getReturnType();
 		if (CodeGen::GetStructName(expected) != CodeGen::GetStructName(val)) {
 			Debugger::ErrorV("return type not same", line, ch);

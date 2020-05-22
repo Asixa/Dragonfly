@@ -1,4 +1,12 @@
 #include "AST/declarations/generic-param.h"
+#include "codegen.h"
+
+std::string parser::GenericParam::ToString() {
+	std::string name = "<";
+    for (auto i=0;i<size;i++) 
+		name += CodeGen::MangleStr(names[i]) + (i == size - 1 ? "" : ",");
+	return name+">";
+}
 
 std::shared_ptr<parser::GenericParam> parser::GenericParam::Parse() {
 	auto instance = std::make_shared<GenericParam>();

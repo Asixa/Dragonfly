@@ -4,34 +4,23 @@ class A
   some:int;
   init(int x){ some =x;}
 }
-
-class B
+struct B
 {
   some:int;
-  init(int x)=> some =x;
+  init(int x){ some =x;}
 }
 
 
-
-class Pair<K,V>
+func bar(A a):A
 {
-  a:K
-  b:V
-  init(x:K,y:V){
-	a=x
-	b=y
-  }
+   return a;
+ }
 
-  func left():K
-  {
-	return a
-  }
-
-  func right():V
-  {
-	return b
-  }
-
-
-
+func foo<T>(T t):T
+{
+   return t;
 }
+
+var a=A(233)
+var b=foo<A>(a)
+var c=foo<B>(B(666))

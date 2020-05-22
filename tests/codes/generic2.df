@@ -11,35 +11,50 @@ class B
   init(int x){ thing =x;}
 }
 
+struct C
+{
+  thing:int;
+  init(int x){ thing =x;}
+}
+
 func foo<T>(T t):T
 {
 	return t
 }
 
+
 class Pair<K,V>
 {
    a:K
    b:V
-
-   func left():K=>return a
-   func right():V=>return b
-
    init(K x,V y)
    {
-	   a=x
-	   b=y
+    a=x
+	b=y
    }
-
+   func left():K => return a
+   func right():V => return b
+   func foo<T>(T t):T=>return t
 }
 
-var a = A(666)
+var a = A(1)
 var f = foo<A>(a)
-a.some=233
-var b = B(666)
+a.some=11
+var b = B(2)
+var c = C(3)
+var p=Pair<A,B>(a,b)
+var p2=Pair<B,A>(b,a)
 
-var pair=Pair<A,B>(a,b)
+printf("a: %d f: %d b:%d \n",a.some,f.some,b.thing)
+printf("pair.a: %d pair.b: %d \n",p.left(),p.right())
+printf("pair2.b: %d pair2.a: %d \n",p2.left(),p2.right())
+a.some=111
+b.thing=222
+printf("pair.a: %d pair.b: %d \n",p.left(),p.right())
+printf("pair2.b: %d pair2.a: %d \n",p2.left(),p2.right())
 
-var m=pair.left()
-var n=pair.right()
-
-printf("%d %d\n",a.some,f.some)
+var p3=Pair<B,C>(b,c)
+printf("pair3.b: %d pair3.c: %d \n",p3.left(),p3.right())
+c.thing=333
+printf("pair3.b: %d pair3.c: %d \n",p3.left(),p3.right())
+printf("p3 . a :%d \n",p3.foo<A>(a).some)

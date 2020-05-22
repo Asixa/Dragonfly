@@ -31,15 +31,14 @@ std::map<std::string, llvm::Value*> CodeGen::local_fields_table;
 std::map<std::string, llvm::Value*> CodeGen::global_fields_table;
 std::map<std::string, parser::ClassDecl*> CodeGen::types_table;
 
-
-
+std::map<std::string, parser::ClassDecl*> CodeGen::template_types_table;
+std::map<std::string, parser::FunctionDecl*> CodeGen::template_function_table;
 
 llvm::Value* CodeGen::True = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 1);
 llvm::Value* CodeGen::False = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 0);
 llvm::Type* CodeGen::void_ptr = llvm::Type::getInt8PtrTy(CodeGen::the_context);
 llvm::Type* CodeGen::void_type = llvm::Type::getVoidTy(CodeGen::the_context);
 llvm::Type* CodeGen::int32 = llvm::Type::getInt32Ty(CodeGen::the_context);
-llvm::Type* CodeGen::metadata_type = nullptr;
 
 bool CodeGen::is_sub_block = false;
 llvm::BasicBlock* CodeGen::block_begin = nullptr;
@@ -47,6 +46,16 @@ llvm::BasicBlock* CodeGen::block_end = nullptr;
 
 parser::FunctionDecl* CodeGen::current_function = nullptr;
 
+
+parser::ClassDecl* CodeGen::GetTemplateClass(const std::string name) {
+    if(template_types_table.find(name)==template_types_table.end())return nullptr;
+	return template_types_table[name];
+}
+
+parser::FunctionDecl* CodeGen::GetTemplateFunc(std::string name) {
+	if (template_function_table.find(name) == template_function_table.end())return nullptr;
+	return template_function_table[name];
+}
 
 llvm::GlobalVariable* CodeGen::CreateGlob(const std::string name, llvm::Type* ty) {
     the_module->getOrInsertGlobal(name, ty);
@@ -203,10 +212,8 @@ void CodeGen::Free(llvm::Value* value) {
 		builder.CreateCast(llvm::Instruction::BitCast, value, void_ptr));
 }
 
-
 llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name) {
 	const auto obj_type_name = CodeGen::GetStructName(obj);
-
 
 	// get the this's type and check if it contains the field
     auto decl = CodeGen::types_table[obj_type_name];
@@ -235,7 +242,6 @@ llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name)
         }
         return Debugger::ErrorV("Cannot find field... \n",-1,-1);
 	}
-
 	return  CodeGen::builder.CreateStructGEP(obj, idx);
 }
 
@@ -277,9 +283,6 @@ llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool war
 bool CodeGen::IsCustomType(std::string name) {
 	return types_table.find(name) != CodeGen::types_table.end();
 }
-
-
-
 
 int CodeGen::GetCustomTypeCategory(llvm::Type* ty) {
 	return GetCustomTypeCategory(GetStructName(ty));
