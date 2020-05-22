@@ -11,6 +11,7 @@ namespace parser {
 	public:
         enum {kInterface,kClass,kStruct};
 		int category=kClass;
+		int uid = -1;
 		std::wstring name;
 		std::wstring base_type_name;
 		std::vector<std::wstring> fields;
@@ -23,6 +24,7 @@ namespace parser {
 		static std::shared_ptr<ClassDecl> Parse(int type = kClass);
 		void Gen() override;
 		void GenHeader() override;
+		void SetGenericTable();
 	};
 }
 #endif

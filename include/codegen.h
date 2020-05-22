@@ -37,11 +37,13 @@ public:
 	// static llvm::Function* the_function;
 	static std::map<std::string, llvm::Value*> local_fields_table;
 	static std::map<std::string, llvm::Value*> global_fields_table;
-	static std::map<std::string, llvm::Value*> func_generic_table;
-	static std::map<std::string, llvm::Value*> class_generic_table;
+	static std::map<std::string, llvm::Value*> func_generic_variable_table;
+	static std::map<std::string, llvm::Value*> class_generic_variable_table;
 
 	static std::map<std::string, parser::ClassDecl*> types_table;
+	static std::vector<parser::ClassDecl*> types_list;
 	static std::map<std::string, parser::FunctionDecl*> functions_table;
+
 	static std::map<std::string, std::vector<parser::FunctionDecl*>> generic_functions_table;
 
 	static std::vector<std::tuple<std::string, int, int>>metadata_init;

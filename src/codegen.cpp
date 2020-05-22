@@ -29,9 +29,11 @@ llvm::DataLayout CodeGen::data_layout = llvm::DataLayout(the_module.get());
 // llvm::Function* CodeGen::the_function = nullptr;
 std::map<std::string, llvm::Value*> CodeGen::local_fields_table;
 std::map<std::string, llvm::Value*> CodeGen::global_fields_table;
-std::map<std::string, llvm::Value*> CodeGen::func_generic_table;
-std::map<std::string, llvm::Value*> CodeGen::class_generic_table;
+std::map<std::string, llvm::Value*> CodeGen::func_generic_variable_table;
+std::map<std::string, llvm::Value*> CodeGen::class_generic_variable_table;
 std::map<std::string, parser::ClassDecl*> CodeGen::types_table;
+std::vector<parser::ClassDecl*> CodeGen::types_list;
+
 std::map<std::string, parser::FunctionDecl*> CodeGen::functions_table;
 std::map<std::string, std::vector<parser::FunctionDecl*>> CodeGen::generic_functions_table;
 
@@ -65,10 +67,10 @@ llvm::ConstantInt* CodeGen::CreateConstant(const int value) {
 }
 
 llvm::GlobalVariable* CodeGen::CreateMetadata(const std::string name, int size, int align) {
-	auto glob=CreateGlob(name + "::meta", metadata_type);
+	auto glob=CreateGlob("$" + name, metadata_type);
 	glob->setInitializer(llvm::ConstantAggregateZero::get(metadata_type));
 	metadata_init.emplace_back(name, size, align);
-	global_fields_table[name + "::meta"] = glob;
+	global_fields_table["$"+name ] = glob;
 	return glob;
 }
 
@@ -84,17 +86,17 @@ llvm::Function* CodeGen::CreateMainFunc() {
 }
 
 void CodeGen::DeclMetadataStruct() {
-	auto metadata = CodeGen::the_module->getTypeByName("#metadata");
+	auto metadata = CodeGen::the_module->getTypeByName("$");
 	if (!metadata) {
 
-		metadata = llvm::StructType::create(CodeGen::the_context, "#metadata");
+		metadata = llvm::StructType::create(CodeGen::the_context, "$");
 		const auto int32 = llvm::Type::getInt32Ty(CodeGen::the_context);
 		metadata->setBody(std::vector<llvm::Type*>{int32, int32});
 		//Create metadata Constructor function
         const auto i32 = llvm::Type::getInt32Ty(CodeGen::the_context);
         const auto func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(CodeGen::the_context), std::vector<llvm::Type*>{metadata->getPointerTo()}, false);
 		auto function = llvm::Function::Create(func_type,
-			llvm::Function::ExternalLinkage,  + "#metadata()",CodeGen::the_module.get());
+			llvm::Function::ExternalLinkage,  + "$()",CodeGen::the_module.get());
         const auto bb = llvm::BasicBlock::Create(CodeGen::the_context,  + "metadata_entry", function);
 		function->setCallingConv(llvm::CallingConv::C);
 		CodeGen::builder.SetInsertPoint(bb);
@@ -139,7 +141,7 @@ llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
             const auto ty = the_module->getTypeByName(mangled_name);
             return types_table[mangled_name]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
         }
-		Debugger::ErrorV("Unknown Type\n",-1,-1);
+		Debugger::ErrorV((std::string("Unknown Type: ")+ mangled_name +"\n").c_str(),-1,-1);
         return nullptr;
     }
 	    
@@ -325,26 +327,31 @@ bool CodeGen::IsCustomType(std::string name) {
 int CodeGen::TestIfGenericType(const std::string name) {
     //      0 1        2 3 4 5 ... else -1
     // func<T,K> Class<M,N,X,Y>    
-	auto pos = func_generic_table.find("$" + name);
-	if (pos != CodeGen::func_generic_table.end())
-		return std::distance(func_generic_table.begin(), pos);
-	pos = class_generic_table.find("$" + name);
-	if (pos != CodeGen::class_generic_table.end())
-        return func_generic_table.size()+ std::distance(class_generic_table.begin(), pos);
+	auto pos = func_generic_variable_table.find("$" + name);
+	if (pos != CodeGen::func_generic_variable_table.end())
+		return std::distance(func_generic_variable_table.begin(), pos);
+	pos = class_generic_variable_table.find("$" + name);
+	if (pos != CodeGen::class_generic_variable_table.end())
+        return func_generic_variable_table.size()+ std::distance(class_generic_variable_table.begin(), pos);
 	return -1;
 }
 
 llvm::Value* CodeGen::GetGenericMetaArgument(std::string name) {
 	name = "$" + name;
-    if(func_generic_table.find(name) != CodeGen::func_generic_table.end()) 
-		return func_generic_table[name];
-	if (class_generic_table.find(name) != CodeGen::class_generic_table.end())
-		return class_generic_table[name];
-	return Debugger::ErrorV("Generic Type Not Fount\n",-1,-1);
+    if(func_generic_variable_table.find(name) != CodeGen::func_generic_variable_table.end()) 
+		return func_generic_variable_table[name];
+	if (class_generic_variable_table.find(name) != CodeGen::class_generic_variable_table.end())
+		return class_generic_variable_table[name];
+
+	printf("[%d,%d]", func_generic_variable_table.size(), class_generic_variable_table.size());
+	for (auto i : class_generic_variable_table)printf("%s,", i.first.c_str());
+	for (auto i : func_generic_variable_table)printf("%s,", i.first.c_str());
+
+	return Debugger::ErrorV((std::string("Generic type not found: ")+name+"\n").c_str(),-1,-1);
 }
 
 llvm::Value* CodeGen::GetGenericMetaConstant(std::string name) {
-	return global_fields_table[name + "::meta"];
+	return global_fields_table["$"+name];
 }
 
 int CodeGen::GetCustomTypeCategory(llvm::Type* ty) {

@@ -5,14 +5,41 @@ class A
   init(int x){ some =x;}
 }
 
+class B
+{
+  thing:int;
+  init(int x){ thing =x;}
+}
+
 func foo<T>(T t):T
 {
 	return t
 }
 
+class Pair<K,V>
+{
+   a:K
+   b:V
 
+   func left():K=>return a
+   func right():V=>return b
+
+   init(K x,V y)
+   {
+	   a=x
+	   b=y
+   }
+
+}
 
 var a = A(666)
-var f = fooz<A>(a)
+var f = foo<A>(a)
 a.some=233
+var b = B(666)
+
+var pair=Pair<A,B>(a,b)
+
+var m=pair.left()
+var n=pair.right()
+
 printf("%d %d\n",a.some,f.some)

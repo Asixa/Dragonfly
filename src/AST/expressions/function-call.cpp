@@ -133,10 +133,10 @@ namespace parser {
 			callee_name += "(";
 			if (generic) {
 				for (auto i = 0; i < generic->size; i++)
-					callee_name += std::string("#metadata") + (i == generic->size - 1 && args_v.empty() ? "" : ", ");
+					callee_name += std::string("$") + (i == generic->size - 1 && args_v.empty() ? "" : ",");
 			}
 			for (int i = is_member_func ? 1 : 0, argv_size = args_v.size(); i < argv_size; i++)
-				callee_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ", ");
+				callee_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ",");
 			callee_name += ")";
 			// after fix the function name, we try to get it again.
 			callee = CodeGen::the_module->getFunction(callee_name);
@@ -157,6 +157,7 @@ namespace parser {
 
 			// find the generic function declaration
 			auto funcs = CodeGen::generic_functions_table[header_name];
+			for (auto i : funcs)printf("   overload: %s\n", i->GetInstanceName(generic.get()).c_str());
 			for (auto f : funcs) {
 				auto instance_name = f->GetInstanceName(generic.get());
 				if (instance_name == callee_name) {
@@ -164,38 +165,43 @@ namespace parser {
 					break;
 				}
 			}
-			if (decl == nullptr)
-				return Debugger::ErrorV((std::string("Generic arguments not matched :") + callee_name).c_str(),line,ch);
-
+			if (decl == nullptr) {
+				
+				return Debugger::ErrorV((std::string("Generic arguments not matched :") + callee_name).c_str(), line, ch);
+			}
 			/////////////////////////////////////////////
 			// fix the arguments to void*
 			///////////////////////////////////////////////
-			for (auto i : decl->args->generic_id) {
-				if (i >= 0) {
+			auto idx = is_member_func ? 1 : 0;
+
+
+			for (auto i = 0; i < decl->args->size;i++) {
+				if (decl->args->generic_id[i] >= 0) {
+					auto p = i + idx;
+
 					//                if(args_v[i]->getType()->getTypeID()==llvm::Type::PointerTyID)
 								   // args_v[i] = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, args_v[i], CodeGen::void_ptr);
 								   // else {
-					auto alloca = CodeGen::CreateEntryBlockAlloca(args_v[i]->getType(), std::string(args_v[i]->getName()) + "_ptr");
-					CodeGen::builder.CreateStore(args_v[i], alloca);
-					args_v[i] = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, alloca, CodeGen::void_ptr);
+					auto alloca = CodeGen::CreateEntryBlockAlloca(args_v[p]->getType(), std::string(args_v[p]->getName()) + "_ptr");
+					CodeGen::builder.CreateStore(args_v[p], alloca);
+					args_v[p] = CodeGen::builder.CreateCast(llvm::Instruction::BitCast, alloca, CodeGen::void_ptr);
 					// }
 				}
-
 			}
+
 			callee = CodeGen::the_module->getFunction(decl->full_name);
-
-
-			auto idx = is_member_func ? 1 : 0;
 			for (auto i = 0; i < generic->size; i++) {
 				const auto metadata = CodeGen::GetGenericMetaConstant(CodeGen::MangleStr(generic->names[i]));
 				args_v.insert(args_v.begin() + idx++, metadata);
 			}
+
 			if (decl->generic_return >= 0) {
 				const auto return_generic_index =
 					std::distance(decl->generic->names.begin(),
 						std::find(decl->generic->names.begin(), decl->generic->names.end(), decl->return_type));
 				const auto return_type_name = generic->names[return_generic_index];
 				const auto return_type_decl = CodeGen::types_table[CodeGen::MangleStr(return_type_name)];
+				
 				const auto return_type = CodeGen::GetTypeByName(return_type_name);
 				switch (return_type_decl->category) {
 				case ClassDecl::kClass:
@@ -237,6 +243,7 @@ namespace parser {
 		////////////////////////////////////////////////////////////
 
 		llvm::Value* v = CodeGen::builder.CreateCall(callee, args_v);
+
 		// since constructor returns void, the value shoud be the initized 'parent'
 		v = is_constructor ? parent : v;
 		v = generic_return_pointer == nullptr ? v : generic_return_pointer;

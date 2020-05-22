@@ -31,7 +31,7 @@ namespace parser {
 			Debugger::ErrorV("Error in return",line,ch);
             return;
 		}
-
+		
 		//////////////////////////////////////////////////////////////////////////////
         /// State 2.a£¬ for generic function
         //////////////////////////////////////////////////////////////////////////////
@@ -39,9 +39,14 @@ namespace parser {
         if(CodeGen::current_function->generic_return>=0) {
             const auto return_dest = function->getArg(CodeGen::current_function->generic_return);
             const auto metadata = CodeGen::GetGenericMetaArgument(CodeGen::MangleStr(CodeGen::current_function->return_type));
+
+			auto size_ptr = CodeGen::builder.CreateStructGEP(metadata, 0);
+		
             llvm::Value* size = CodeGen::builder.CreateLoad(CodeGen::builder.CreateStructGEP(metadata, 0), "generic_size");
+			
             const auto mem_cpy = CodeGen::the_module->getFunction("memcpy");
             CodeGen::builder.CreateCall(mem_cpy, std::vector<llvm::Value*>{return_dest, val, size});
+		
         }
 		//////////////////////////////////////////////////////////////////////////////
         /// State 2.b£¬ for normal function

@@ -73,13 +73,28 @@ namespace parser {
 			return;
 		}
 		CodeGen::types_table[the_struct->getName().str()] = this;
+		uid = CodeGen::types_list.size();
+		CodeGen::types_list.push_back(this);
+
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);
 			CodeGen::program->declarations.push_back(function);
 		}
 	}
 
-	void ClassDecl::Gen() {
+    void ClassDecl::SetGenericTable() {
+		if (generic) {
+			auto idx = 0;
+			for (auto i = 0; i < generic->size; i++) {
+				// fields.insert(fields.begin() + idx, L"$" + generic->names[i]);
+				// field_tys.insert(field_tys.begin() + idx++, CodeGen::metadata_type->getPointerTo());
+				CodeGen::class_generic_variable_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
+			}
+		}
+	}
+
+
+    void ClassDecl::Gen() {
 		const auto mangled_name = CodeGen::MangleStr(name);
 		auto the_struct = CodeGen::the_module->getTypeByName(mangled_name);
 		std::vector<llvm::Type*> field_tys;
@@ -112,13 +127,13 @@ namespace parser {
 			for (auto i = 0; i < generic->size; i++) {
 				fields.insert(fields.begin() + idx, L"$" + generic->names[i]);
 				field_tys.insert(field_tys.begin() + idx++, CodeGen::metadata_type->getPointerTo());
-				CodeGen::class_generic_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
+				CodeGen::class_generic_variable_table["$" + CodeGen::MangleStr(generic->names[i])] = nullptr;
 			}
 		}
 
 		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
 		the_struct->setBody(field_tys);
 		CodeGen::CreateMetadata(the_struct);
-		CodeGen::class_generic_table.clear();
+		CodeGen::class_generic_variable_table.clear();
 	}
 }

@@ -40,6 +40,7 @@ namespace parser {
 		void SetInternal(llvm::StructType* type);
 		void Gen() override;
 		void GenHeader() override;
+	
 		static std::shared_ptr<FunctionDecl> Parse(bool ext = false);
 	};
 }
