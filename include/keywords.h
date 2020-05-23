@@ -17,15 +17,15 @@
 
 #define KEYWORDS(F)\
 	F(string) F(number) F(bool)									\
-	F(int) F(short) F(long) F(float) F(byte)					\
+	F(int) F(short) F(long) F(float) F(byte) F(void)			\
 	F(uint) F(ushort) F(ulong) F(double)						\
-	F(true) F(false) 											\
-	F(if) F(else) F(elif) F(for) F(while)  F(do)			\
+	F(true) F(false) F(null)									\
+	F(if) F(else) F(elif) F(for) F(while)  F(do)			    \
 	F(switch) F(case) F(default)								\
 	F(let) F(var) F(func) F(dfunc) F(kernal)					\
 	F(return) F(continue) F(break) F(try) F(catch) F(throw)		\
 	F(import) F(typedef) F(extension) F(operator) F(extern)		\
-	F(struct) F(class) F(enum) F(interface)						\
+	F(struct) F(class) F(enum) F(interface) F(namespace)						\
 	F(new) F(get) F(set) F(init) F(delete)						\
 	F(sizeof) 											\
 	F(in) F(from) F(to) 

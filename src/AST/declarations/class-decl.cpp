@@ -1,6 +1,8 @@
 #include "AST/declarations/class-decl.h"
 #include "codegen.h"
 #include <sstream>
+#include "declarations/enum-decl.h"
+
 namespace parser {
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
@@ -38,13 +40,13 @@ namespace parser {
 				break;
 			}
 			case K_init:
-				// instance->constructor.push_back(FunctionDecl::Parse());
-				// break;
 			case K_func:
 			case K_dfunc:
-			case K_kernal:
-				instance->functions.push_back(FunctionDecl::Parse());
-				break;
+			case K_kernal:      instance->functions.push_back(FunctionDecl::Parse());break;
+			case K_class:       instance->declarations.push_back(ClassDecl::Parse(ClassDecl::kClass)); break;
+			case K_interface:   instance->declarations.push_back(ClassDecl::Parse(ClassDecl::kInterface)); break;
+			case K_struct:      instance->declarations.push_back(ClassDecl::Parse(ClassDecl::kStruct)); break;
+			case K_enum:        instance->declarations.push_back(EnumDecl::Parse()); break;
 			default:
 				if (instance->category == kInterface)break;
 				instance->fields.push_back(Lexer::string_val);

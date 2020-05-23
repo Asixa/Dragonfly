@@ -4,8 +4,11 @@
 
 namespace parser {
 	class EnumDecl final : public Declaration {
+	public:
 		bool anonymous = false;
-
+        void GenHeader() override;
+        void Gen() override;
+		static std::shared_ptr<EnumDecl>Parse();
 	};
 }
 #endif

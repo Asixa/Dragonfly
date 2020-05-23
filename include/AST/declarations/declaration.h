@@ -6,6 +6,7 @@ namespace parser {
 	// Base Class for Declaration, which will generate codes before Statments
 	class Declaration : public Statement {
 	public:
+		std::shared_ptr<Declaration>parent();
 		virtual void GenHeader() = 0;
 	};
 }

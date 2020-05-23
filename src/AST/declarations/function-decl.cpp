@@ -28,24 +28,25 @@ namespace parser {
 	std::shared_ptr<FunctionDecl> FunctionDecl::Parse(const bool ext) {
 		auto has_name = true;
 		auto function = std::make_shared<FunctionDecl>();
+		function->name = std::make_shared<Name>();
+		function->name->type = Name::kFunction;
 		function->is_extern = ext;
 		if (Lexer::Check(K_dfunc))function->differentiable = true;
 		else if (Lexer::Check(K_kernal))function->kernal = true;
 		else if (Lexer::Check(K_init)) {
 			has_name = false;
-			function->name = "::init";
+			function->name->Set("::init");
 		}
 		else if (Lexer::Check(K_delete))
 		{
 			has_name = false;
-			function->name = "::delete";
+			function->name->Set("::delete");
 		}
 		Lexer::Next();
 
 		if (has_name == false || Lexer::Check(Id)) {
 			if (has_name) {
-				function->name = Lexer::string_val;
-				Lexer::Match(Id);
+				function->name = Name::Parse(Name::kFunction);
 			}
 		}
 		else {
@@ -53,7 +54,7 @@ namespace parser {
 		}
 		if (Lexer::Check('<')) {
 			function->is_template = true;
-			if (function->name == "::init" || function->name == "::delete") {
+			if (function->name->GetFunctionName() == "::init" || function->name->GetFunctionName() == "::delete") {
 				Debugger::Error(L"Constructor or Deconstructor cannot have generic type");
 			}
 			else {
@@ -133,13 +134,22 @@ namespace parser {
 	void FunctionDecl::GenHeader() {
 		std::vector<llvm::Type*> arg_types;
 		auto const is_member_function = parent_type != nullptr;
-		
+
+        if(parent_type==nullptr) {
+            const auto class_name = name->GetClassName();
+            if(!class_name.empty()) {
+				extension = true;
+				parent_type = CodeGen::the_module->getTypeByName(class_name);
+				return;
+            }
+        }
+
 		// added :: if is a member function, specify name for constructor and destructor
 		const auto class_name = is_member_function ? parent_type->getStructName().str() : "";
-		if (name == "::init")          full_name = class_name  + "::" + class_name;
-		else if (name == "::delete")   full_name = class_name  + "::~" + class_name;
-		else if (is_member_function)    full_name = class_name + "::" + name;
-		else                            full_name = name;
+		if (name->GetFunctionName() == "::init")          full_name = class_name  + "::" + class_name;
+		else if (name->GetFunctionName() == "::delete")   full_name = class_name  + "::~" + class_name;
+		else if (is_member_function)    full_name = class_name + "::" + name->GetFunctionName();
+		else                            full_name = name->GetFullName();
 		full_name += func_postfix;
         if(is_template) {
             for(auto i=0;i<args->size;i++) {
@@ -192,7 +202,10 @@ namespace parser {
     void FunctionDecl::Gen() {
 		if (is_extern)return;
         if(is_template)return;
-
+        if(extension) {
+			extension = false;
+			GenHeader();
+        }
 		
 		auto function = CodeGen::the_module->getFunction(full_name);
 		if (!function) {
@@ -200,7 +213,7 @@ namespace parser {
 			return;
 		}
 		//  create the basic block for the function.
-		const auto basic_block = CodeGen::CreateBasicBlock(function, name + "_entry");
+		const auto basic_block = CodeGen::CreateBasicBlock(function, name->GetFunctionName() + "_entry");
 		CodeGen::builder.SetInsertPoint(basic_block);
 
 		for (auto& arg : function->args()) {

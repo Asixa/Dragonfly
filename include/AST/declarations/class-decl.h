@@ -20,6 +20,7 @@ namespace parser {
 		std::vector<std::string> fields;
 		std::vector<parser::Type> types;
 		std::vector<parser::Type> interfaces;
+		std::vector<std::shared_ptr<Declaration>> declarations;
 		std::vector<std::shared_ptr<FunctionDecl>> functions;
 		std::vector<std::shared_ptr<FunctionDecl>> constructor;
 		std::shared_ptr<GenericParam> generic;

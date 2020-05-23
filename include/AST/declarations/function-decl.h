@@ -4,6 +4,8 @@
 #include "lexer.h"
 #include "AST/declarations/declaration.h"
 #include "generic-param.h"
+#include "namespace-decl.h"
+
 namespace parser {
 	// class for matching function declaration parameters; 
 	class FuncParam {
@@ -28,11 +30,12 @@ namespace parser {
 	public:
 		bool differentiable = false,
 			 kernal = false,
-			 is_extern = false;
+			 is_extern = false,
+	         extension=false;
 		int generic_return = -1;
 
 		bool is_template = false;
-		std::string name;
+		std::shared_ptr<Name> name;
 		std::string func_postfix; 
 		std::string header_name;
 		std::string full_name;
