@@ -6,7 +6,7 @@ namespace parser {
 	std::shared_ptr<Extension> Extension::Parse() {
 		auto instance = std::make_shared<Extension>();
 		Lexer::Next();
-		instance->name = CodeGen::MangleStr(Lexer::string_val);
+		instance->name = Lexer::string_val;
 		Lexer::Match(Id);
 		Lexer::SkipNewlines();
 		const auto brackets = Lexer::Check('{');

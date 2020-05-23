@@ -25,7 +25,7 @@ namespace parser {
 
 
 	std::shared_ptr<Field> Field::ParsePostfix() {
-		auto name = CodeGen::MangleStr(Lexer::string_val);
+		auto name = Lexer::string_val;
 		Lexer::Next(); 
 			if (Lexer::Check('(') || Lexer::Check('<') || Lexer::Check('['))
 			{

@@ -62,7 +62,7 @@ void Preprocessor::Process() {
 				
 				const auto package = PackageManager::GetPackage(line);
 				if (package == nullptr) {
-					std::cout << "no package named " << CodeGen::MangleStr(line) << std::endl;
+					std::cout << "no package named " << Lexer::MangleStr(line) << std::endl;
 					return;
 				}
 				else  PackageManager::Import(package);

@@ -6,7 +6,7 @@ namespace parser {
 		auto instance = std::make_shared<ClassDecl>();
 		instance->category = ty;
 		Lexer::Next();
-		instance->name = CodeGen::MangleStr(Lexer::string_val);
+		instance->name =Lexer::string_val;
 		Lexer::Match(Id);
 		if (Lexer::Check('<')) {
 			instance->is_template = true;
@@ -15,11 +15,11 @@ namespace parser {
 			
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			instance->interfaces.push_back(Type(CodeGen::MangleStr(Lexer::string_val)));
+			instance->interfaces.push_back(Type(Lexer::string_val));
 			Lexer::Next();
 			while (Lexer::Check(',')) {
 				Lexer::Next();
-				instance->interfaces.push_back(Type(CodeGen::MangleStr(Lexer::string_val)));
+				instance->interfaces.push_back(Type(Lexer::string_val));
 				Lexer::Match(Id);
 			}
 		}
@@ -47,7 +47,7 @@ namespace parser {
 				break;
 			default:
 				if (instance->category == kInterface)break;
-				instance->fields.push_back(CodeGen::MangleStr(Lexer::string_val));
+				instance->fields.push_back(Lexer::string_val);
 				Lexer::Match(Id);
 				Lexer::Match(':');
 				instance->types.push_back(Lexer::MatchType());
@@ -146,7 +146,7 @@ namespace parser {
 						else Debugger::ErrorV("Inherit multiple classes is not allowed",line,ch);
 					}
 				}
-				else  Debugger::ErrorV((std::string(mangled_interface_name) + " is not defined").c_str(), line, ch);
+				else  Debugger::ErrorV((Lexer::Str2W(mangled_interface_name) + L" is not defined"),line,ch);
 			}
 			if (base_type != nullptr) {
 

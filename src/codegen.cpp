@@ -92,10 +92,7 @@ llvm::AllocaInst* CodeGen::CreateEntryBlockAlloca(llvm::Type* type,const std::st
     return alloca;
 }
 
-std::string CodeGen::MangleStr(const std::wstring str) {
-    return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>().
-        to_bytes(str);
-}
+
 
 
 llvm::Type* CodeGen::GetType(parser::Type  type) {

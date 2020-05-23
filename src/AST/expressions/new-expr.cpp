@@ -4,7 +4,7 @@
 std::shared_ptr<parser::New> parser::New::Parse() {
 	Lexer::Next();
 	auto instance = std::make_shared<New>();
-	auto name = CodeGen::MangleStr(Lexer::string_val);
+	auto name = Lexer::string_val;
 	Lexer::Match(Id);
 	if (Lexer::Check('(')) {
 		instance->func = FuncCall::Parse(name);
@@ -26,7 +26,7 @@ llvm::Value* parser::New::Gen(const int cmd) {
 		if (i.first == mangled_str)
 			decl = i.second;
 	if (decl == nullptr)
-		return Debugger::ErrorV((std::string("unknown type ") + mangled_str).c_str(),line,ch);
+		return Debugger::ErrorV((std::string("unknown type A") + mangled_str).c_str(),line,ch);
 	// const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();
 	auto value = CodeGen::Malloc(CodeGen::the_module->getTypeByName(mangled_str));
     // const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, CodeGen::GetType(func->name), mangled_str);

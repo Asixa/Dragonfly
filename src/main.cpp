@@ -21,12 +21,14 @@
 #include "preprocessor.h"
 
 int main(int argc, char** argv) {
+
+
 	PackageManager::QueryPackages();
 	// system("pause");
 	// return 0;
     std::string filename;
     if (argc == 1) {
-		filename = "../tests/codes/default3.df";
+		filename = "../tests/codes/default.df";
 		// filename = "../tests/codes/generic2.df";
 		// filename = "../tests/codes/b/input.df";
     }

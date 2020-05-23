@@ -16,7 +16,7 @@ namespace parser {
 				param->is_var_arg = true;
 				return param;
 			}
-			param->names.push_back(CodeGen::MangleStr(Lexer::string_val));
+			param->names.push_back(Lexer::string_val);
 			Lexer::Match(Id);
 			Lexer::Match(':');
 			param->types.push_back(Lexer::MatchType());
@@ -44,7 +44,7 @@ namespace parser {
 
 		if (has_name == false || Lexer::Check(Id)) {
 			if (has_name) {
-				function->name = CodeGen::MangleStr(Lexer::string_val);
+				function->name = Lexer::string_val;
 				Lexer::Match(Id);
 			}
 		}

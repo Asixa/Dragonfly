@@ -7,6 +7,6 @@ namespace parser {
 	    *Debugger::out << "[\"" << value << "\"]";
 	}
 	llvm::Value* String::Gen(int cmd) {
-		return CodeGen::builder.CreateGlobalStringPtr(llvm::StringRef(CodeGen::MangleStr(value)));
+		return CodeGen::builder.CreateGlobalStringPtr(llvm::StringRef(Lexer::MangleStr(value)));
 	}
 }

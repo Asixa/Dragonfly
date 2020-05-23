@@ -76,7 +76,8 @@ public:
 	// The current token.
     static Token* token;
 	// Last encountered string literals.
-    static std::wstring string_val;
+	static std::string string_val;
+	static std::wstring wstring_val;
 	// Last encountered number literals.
     static double number_val;
 
@@ -94,8 +95,9 @@ public:
 	static void Next();
 
 	static void NextOneToken();
+	static std::string MangleStr(const std::wstring str);
 
-
+    static std::wstring Str2W(const std::string& str);
 	static parser::Type MatchType();
 
 

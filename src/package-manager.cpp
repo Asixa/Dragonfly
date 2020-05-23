@@ -56,7 +56,7 @@ void PackageManager::QueryPackages() {
 
 PackageManager::Package* PackageManager::GetPackage(std::wstring name) {
     for (auto package : packages) {
-		if (package->name == CodeGen::MangleStr(name))
+		if (package->name == Lexer::MangleStr(name))
 			return package;
     }
     return nullptr;

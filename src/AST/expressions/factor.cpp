@@ -37,7 +37,7 @@ namespace parser {
 			// }
 		}
 		case Str: {
-			auto str = std::make_shared<String>(Lexer::string_val);
+			auto str = std::make_shared<String>(Lexer::wstring_val);
 			Lexer::Next();
 			return str;
 		}

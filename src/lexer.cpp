@@ -26,7 +26,8 @@ wchar_t* Lexer::end = nullptr;
 wchar_t Lexer::peek;
 long Lexer::size = 0;
 Lexer::Token* Lexer::token = nullptr;
-std::wstring Lexer::string_val;
+std::string Lexer::string_val;
+std::wstring Lexer::wstring_val;
 double Lexer::number_val = 0;
 
 const char* Lexer::Token::Name(const int type)
@@ -157,14 +158,16 @@ void Lexer::NextOneToken() {
         else if (IsChar() || (peek == '_') || IsCjk(peek)) {
             last_pos = src - 1;
             hash = peek;
-            string_val = L"";
-            string_val += peek;
+			string_val = "";
+			wstring_val = L"";
+            wstring_val += peek;
             while ((*src >= 'a' && *src <= 'z') || (*src >= 'A' && *src <= 'Z') || (*src >= '0' && *src <= '9') || (*src
                 == '_') || IsCjk(*src)) {
                 hash = hash * 147 + *src;
-                string_val += *src;
+                wstring_val += *src;
                 Move();
             }
+            string_val=MangleStr(wstring_val);
             // reserved keywords
             if constexpr (false);
 #define MATCH(a)else if(!wmemcmp(L#a,last_pos,src-last_pos)&&wcslen(L#a)==src-last_pos){token = new Token(K_##a);return;}
@@ -245,7 +248,8 @@ void Lexer::NextOneToken() {
 
         else if (peek == '"' || peek == '\'') {
             wchar_t value;
-            string_val = L"";
+			string_val = "";
+            wstring_val = L"";
             while (*src != 0 && *src != peek) {
                 value = *Move();
                 if (value == '\\') {
@@ -263,11 +267,13 @@ void Lexer::NextOneToken() {
                     // else if (value == 'u'){}
                 }
                 if (peek == '"') {
-                    string_val += value;
+					wstring_val += value;
                 }
             }
+			string_val = MangleStr(wstring_val);
             Move();
             token = new Token(Str);
+            
             return;
         }
 
@@ -304,6 +310,16 @@ void Lexer::NextOneToken() {
         return;
     }
 }
+
+std::string Lexer::MangleStr(const std::wstring str) {
+	return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>().to_bytes(str);
+}
+
+std::wstring Lexer::Str2W(const std::string& str) {
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+	return myconv.from_bytes(str);
+}
+
 
 void Lexer::Find(const wchar_t start, const wchar_t end) {
     auto i = 1;

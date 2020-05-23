@@ -103,11 +103,11 @@ parser::Type Lexer::MatchType() {
 	}
 	else {
 		type.ty = 0;
-		type.str = CodeGen::MangleStr(Lexer::string_val);
+		type.str = Lexer::string_val;
 		Lexer::Match(Id);
 		while (Check('.')) {
 			Next();
-			type.str += CodeGen::MangleStr(L"." + Lexer::string_val);
+			type.str +="." + Lexer::string_val;
 			Lexer::Match(Id);
 		}
 		if (Check('<')) {
@@ -115,11 +115,11 @@ parser::Type Lexer::MatchType() {
 			type.str += "<";
 			if (Lexer::Check(Id)) {
 				Lexer::Next();
-				type.str += CodeGen::MangleStr(Lexer::string_val);
+				type.str += Lexer::string_val;
 				while (Lexer::Check(',')) {
 					Lexer::Next();
 					Lexer::Match(Id);
-					type.str += CodeGen::MangleStr(L"," + Lexer::string_val);
+					type.str += "," + Lexer::string_val;
 				}
 			}
 			Lexer::Match('>');

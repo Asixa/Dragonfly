@@ -71,9 +71,10 @@ public:
 
     static void CatchNewline();
 
-	static llvm::Value* ErrorV(const std::wstring info);
+	
 	static void Error(const std::wstring info);
 	static void ErrorNonBreak(const std::wstring info);
+	static llvm::Value* ErrorV(const std::wstring info, int line, int ch);
 	static llvm::Value* Debugger::ErrorV(const char* str, int line, int ch);
 
     static void Warn(const std::wstring info);

@@ -9,7 +9,7 @@ namespace parser {
 		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;
 		Lexer::Next();
-		let->name = CodeGen::MangleStr(Lexer::string_val);
+		let->name = Lexer::string_val;
 		Lexer::Match(Id);
 		if (Lexer::Check(':')) {
 			Lexer::Next();

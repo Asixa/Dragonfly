@@ -70,7 +70,7 @@ public:
 
     static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Type* type,const std::string& var_name, llvm::Function* the_function = nullptr);
 
-    static std::string MangleStr(const std::wstring str);
+
 
 	static llvm::Type* GetType(parser::Type type);
 
