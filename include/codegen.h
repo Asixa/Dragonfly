@@ -49,7 +49,7 @@ public:
 	static llvm::Type* void_ptr;
 	static llvm::Type* void_type;
 	static llvm::Type* int32;
-
+     
     // True is in subblock like for or while
 	static bool is_sub_block;
     static llvm::BasicBlock* block_begin;
@@ -72,8 +72,7 @@ public:
 
     static std::string MangleStr(const std::wstring str);
 
-	static llvm::Type* GetTypeByName(std::wstring type_name);
-	static llvm::Type* GetTypeByName2(parser::Type type);
+	static llvm::Type* GetType(parser::Type type);
 
     static llvm::StoreInst* AlignStore(llvm::StoreInst* a);
     static llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
@@ -106,7 +105,7 @@ public:
 	 * \param name the name of its field
 	 * \return The value of the field, in...
 	 */
-	static llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name);
+	static llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::string name);
 
     /**
 	 * \brief Find the field in current scope.
@@ -116,7 +115,7 @@ public:
 	 * \param warn throw a error in not found.
 	 * \return The value of the field. in wanted type
 	 */
-	static llvm::Value* CodeGen::FindField(const std::wstring name, int cmd = parser::Field::kConstantWanted, bool warn = true);
+	static llvm::Value* CodeGen::FindField(const std::string name, int cmd = parser::Field::kConstantWanted, bool warn = true);
 
 
     // true if the name is a custom type.

@@ -5,7 +5,7 @@
 namespace parser {
 	void FuncCall::ToString() {
 		if (left != nullptr)left->ToString();
-		*Debugger::out << name << "(";
+		*Debugger::out << name.c_str() << "(";
 		for (auto& arg : args) {
 			arg->ToString();
 			*Debugger::out << ",";
@@ -17,7 +17,7 @@ namespace parser {
 		}
 	}
 
-	std::shared_ptr<FuncCall> FuncCall::Parse(std::wstring f) {
+	std::shared_ptr<FuncCall> FuncCall::Parse(std::string f) {
 		auto func_call = std::make_shared<FuncCall>(f);
 		if (Lexer::Check('<'))
 			func_call->generic = GenericParam::Parse();
@@ -59,8 +59,8 @@ namespace parser {
 		// if the function is a memeber function, for example for class A.
 		// then the name will be [A::name], otherwise the name is just [name]
 		auto callee_name = is_member_func
-			? CodeGen::GetStructName(parent) + "::" + CodeGen::MangleStr(name)
-			: CodeGen::MangleStr(name);
+			? CodeGen::GetStructName(parent) + "::" + name
+			: name;
 
         if(generic) {
 			

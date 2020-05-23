@@ -6,7 +6,7 @@ namespace parser {
 	std::shared_ptr<Extension> Extension::Parse() {
 		auto instance = std::make_shared<Extension>();
 		Lexer::Next();
-		instance->name = Lexer::string_val;
+		instance->name = CodeGen::MangleStr(Lexer::string_val);
 		Lexer::Match(Id);
 		Lexer::SkipNewlines();
 		const auto brackets = Lexer::Check('{');
@@ -33,7 +33,7 @@ namespace parser {
 	}
 
 	void Extension::Gen() {
-		const auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
+		const auto the_struct = CodeGen::the_module->getTypeByName(name);
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);
 			function->GenHeader();
@@ -41,8 +41,8 @@ namespace parser {
 		}
 	}
 	void Extension::GenHeader() {
-		const auto the_struct = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(name));
-		if (!the_struct)* Debugger::out << "Type " << name << " is not defined" << std::endl;
+		const auto the_struct = CodeGen::the_module->getTypeByName(name);
+		if (!the_struct)* Debugger::out << "Type " << name.c_str() << " is not defined" << std::endl;
 	}
 
 }

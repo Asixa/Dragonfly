@@ -5,7 +5,7 @@ namespace parser {
 	class GenericParam {
 	public:
 		int size;
-		std::vector<std::wstring> names;
+		std::vector<std::string> names;
 		std::string ToString();
 	    static std::shared_ptr<GenericParam> Parse();
         

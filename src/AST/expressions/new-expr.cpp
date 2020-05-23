@@ -4,7 +4,7 @@
 std::shared_ptr<parser::New> parser::New::Parse() {
 	Lexer::Next();
 	auto instance = std::make_shared<New>();
-	auto name = Lexer::string_val;
+	auto name = CodeGen::MangleStr(Lexer::string_val);
 	Lexer::Match(Id);
 	if (Lexer::Check('(')) {
 		instance->func = FuncCall::Parse(name);
@@ -21,7 +21,7 @@ void parser::New::ToString() {
 llvm::Value* parser::New::Gen(const int cmd) {
 
 	ClassDecl* decl = nullptr;
-	const auto mangled_str = CodeGen::MangleStr(func->name);
+	const auto mangled_str = func->name;
 	for (auto i : CodeGen::types_table)
 		if (i.first == mangled_str)
 			decl = i.second;

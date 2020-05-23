@@ -5,7 +5,7 @@
 
 namespace parser {
 	void Field::ToString() {
-		*Debugger::out << name;
+		*Debugger::out << name.c_str();
 		if (child != nullptr) {
 			*Debugger::out << ".";
 			child->ToString();
@@ -25,7 +25,7 @@ namespace parser {
 
 
 	std::shared_ptr<Field> Field::ParsePostfix() {
-		auto name = Lexer::string_val;
+		auto name = CodeGen::MangleStr(Lexer::string_val);
 		Lexer::Next(); 
 			if (Lexer::Check('(') || Lexer::Check('<') || Lexer::Check('['))
 			{
@@ -38,7 +38,7 @@ namespace parser {
 					case '(': {
                         const auto child = field;
 						field = FuncCall::Parse(name);
-						if (!name.empty())name = L"";
+						if (!name.empty())name = "";
 						field->left = child;
 						break;
 					}
@@ -91,7 +91,7 @@ namespace parser {
 
 	
 			if (cmd == kConstantWanted && v->getType()->getTypeID() == llvm::Type::PointerTyID
-				&& !(child == nullptr && (name == L"this" || name == L"base"))
+				&& !(child == nullptr && (name == "this" || name == "base"))
 				// && (CodeGen::current_function==nullptr||!CodeGen::current_function->IsGenericArgument(name))
 				&& !(CodeGen::GetStructName(v->getType())=="void*")
 				)

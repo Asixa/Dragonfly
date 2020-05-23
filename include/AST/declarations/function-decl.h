@@ -10,7 +10,8 @@ namespace parser {
 	public:
 		int size = 0;
 		bool is_var_arg = false;
-		std::vector<std::wstring> names, types;
+		std::vector<std::string> names;
+		std::vector<parser::Type> types;
 		std::vector<int>generic_id;
 		static std::shared_ptr<FuncParam> Parse();
 		FuncParam() {
@@ -31,11 +32,11 @@ namespace parser {
 		int generic_return = -1;
 
 		bool is_template = false;
-		std::wstring name;
+		std::string name;
 		std::string func_postfix; 
 		std::string header_name;
 		std::string full_name;
-		std::wstring return_type;
+		Type return_type;
 		llvm::StructType* parent_type=nullptr;
 
 		// std::vector<int>generic_arguments;
@@ -47,7 +48,7 @@ namespace parser {
         FunctionDecl(std::shared_ptr < FunctionDecl> copy);
 
 
-		bool IsGenericArgument(std::wstring name);
+	
 		void SetInternal(llvm::StructType* type);
 		void Gen() override;
 		void GenHeader() override;

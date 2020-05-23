@@ -97,54 +97,24 @@ std::string CodeGen::MangleStr(const std::wstring str) {
         to_bytes(str);
 }
 
-llvm::Type* CodeGen::GetTypeByName(std::wstring type_name) {
-	if (type_name.size() != 1|| (type_name[0]>0&&type_name[0]<128)||Lexer::IsCjk(type_name[0])) {
-        const auto mangled_name = MangleStr(type_name);
-        if(IsCustomType(mangled_name)) {
-            const auto ty = the_module->getTypeByName(mangled_name);
-            return types_table[mangled_name]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
-        }
-		Debugger::ErrorV((std::string("Unknown Type: ")+ mangled_name +"\n").c_str(),-1,-1);
-        return nullptr;
-    }
-	    
-    const int type = type_name[0];
-    switch (type) {
-    case L'\0':         return llvm::Type::getVoidTy(CodeGen::the_context);
-	case K_byte:        return llvm::Type::getInt8Ty(CodeGen::the_context);
-	case K_short:       return llvm::Type::getInt16Ty(CodeGen::the_context);
-	case K_int:         return llvm::Type::getInt32Ty(CodeGen::the_context);
-	case K_long:        return llvm::Type::getInt64Ty(CodeGen::the_context);
-	// case K_ushort:       return llvm::Type::getInt16Ty(CodeGen::the_context);
-	// case K_uint:         return llvm::Type::getInt32Ty(CodeGen::the_context);
-	// case K_ulong:        return llvm::Type::getInt64Ty(CodeGen::the_context);
-    case K_float:       return llvm::Type::getFloatTy(CodeGen::the_context);
-    case K_double:      return llvm::Type::getDoubleTy(CodeGen::the_context);
-    case K_bool:        return llvm::Type::getInt1Ty(CodeGen::the_context);
-    case K_string:      return llvm::Type::getInt8PtrTy(CodeGen::the_context);
-	default:
-		Debugger::ErrorV("in CodeGen::GetType , unexpected typename",-1,-1);
-        return nullptr;
-    }
-}
 
-llvm::Type* CodeGen::GetTypeByName2(parser::Type  type) {
+llvm::Type* CodeGen::GetType(parser::Type  type) {
 
 	llvm::Type* llvm_type = nullptr;
 	if (type.ty > 0) {
 		switch (type.ty) {
-		case L'\0':         llvm_type = llvm::Type::getVoidTy(CodeGen::the_context); break;
+		case 1:             llvm_type = llvm::Type::getVoidTy(CodeGen::the_context); break;
 		case K_byte:        llvm_type = llvm::Type::getInt8Ty(CodeGen::the_context); break;
 		case K_short:       llvm_type = llvm::Type::getInt16Ty(CodeGen::the_context); break;
 		case K_int:         llvm_type = llvm::Type::getInt32Ty(CodeGen::the_context); break;
 		case K_long:        llvm_type = llvm::Type::getInt64Ty(CodeGen::the_context); break;
-			// case K_ushort:       return llvm::Type::getInt16Ty(CodeGen::the_context);break;
-			// case K_uint:         return llvm::Type::getInt32Ty(CodeGen::the_context);break;
-			// case K_ulong:        return llvm::Type::getInt64Ty(CodeGen::the_context);break;
 		case K_float:       llvm_type = llvm::Type::getFloatTy(CodeGen::the_context); break;
 		case K_double:      llvm_type = llvm::Type::getDoubleTy(CodeGen::the_context); break;
 		case K_bool:        llvm_type = llvm::Type::getInt1Ty(CodeGen::the_context); break;
 		case K_string:      llvm_type = llvm::Type::getInt8PtrTy(CodeGen::the_context); break;
+		// case K_ushort:       return llvm::Type::getInt16Ty(CodeGen::the_context);break;
+        // case K_uint:         return llvm::Type::getInt32Ty(CodeGen::the_context);break;
+        // case K_ulong:        return llvm::Type::getInt64Ty(CodeGen::the_context);break;
 		default:
 			Debugger::ErrorV("in CodeGen::GetType , unexpected typename", -1, -1);
 			return nullptr;
@@ -155,11 +125,14 @@ llvm::Type* CodeGen::GetTypeByName2(parser::Type  type) {
 			const auto ty = the_module->getTypeByName(type.str);
 			llvm_type = types_table[type.str]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 		}
-		Debugger::ErrorV((std::string("Unknown Type: ") + type.str + "\n").c_str(), -1, -1);
-		return nullptr;
+		else {
+			Debugger::ErrorV((std::string("Unknown Type: ") + type.str + "\n").c_str(), -1, -1);
+			return nullptr;
+		}
 	}
 
 	if (type.array == -1)return llvm_type;
+	if (type.array == -2)return llvm_type->getPointerTo();
 	return llvm::ArrayType::get(llvm_type, type.array);
 }
 
@@ -253,7 +226,8 @@ void CodeGen::Free(llvm::Value* value) {
 		builder.CreateCast(llvm::Instruction::BitCast, value, void_ptr));
 }
 
-llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name) {
+llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::string name) {
+   
 	const auto obj_type_name = CodeGen::GetStructName(obj);
 
 	// get the this's type and check if it contains the field
@@ -269,7 +243,7 @@ llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name)
     // get the base's type and check if it contains the field
 	if (idx == -1) {
         if(!decl->base_type_name.empty()) {
-			auto base_decl = CodeGen::types_table[CodeGen::MangleStr(decl->base_type_name)];
+			auto base_decl = CodeGen::types_table[decl->base_type_name.str];
 			for (int id = 0, n = decl->fields.size(); id < n; id++) {
 				if (base_decl->fields[id] == name) {
 					idx = id;
@@ -286,9 +260,9 @@ llvm::Value* CodeGen::FindMemberField(llvm::Value* obj, const std::wstring name)
 	return  CodeGen::builder.CreateStructGEP(obj, idx);
 }
 
-llvm::Value* CodeGen::FindField(const std::wstring name, int cmd, const bool warn) {
+llvm::Value* CodeGen::FindField(const std::string name, int cmd, const bool warn) {
 	llvm::Value* v = nullptr;
-	const auto mangle_name = CodeGen::MangleStr(name);
+	const auto mangle_name = name;
 
 	// find this field in local like function argument
 	if (!v && CodeGen::local_fields_table.find(mangle_name) != CodeGen::local_fields_table.end())

@@ -305,40 +305,6 @@ void Lexer::NextOneToken() {
     }
 }
 
-std::wstring Lexer::MatchType() {
-	std::wstring t;
-	if (Lexer::IsBasicType()) {
-		t += static_cast<wchar_t>(Lexer::token->type);
-		Lexer::Next();
-	}
-	else {
-		t = Lexer::string_val;
-		Lexer::Match(Id);
-        while (Check('.')) {
-			Next();
-			t += L"."+Lexer::string_val;
-			Lexer::Match(Id);
-        }
-        if(Check('<')) {
-			Next();
-			t += L"<";
-			if (Lexer::Check(Id)) {
-				Lexer::Next();
-				t += Lexer::string_val;
-				while (Lexer::Check(',')) {
-					Lexer::Next();
-					Lexer::Match(Id);
-					t+=L","+Lexer::string_val;
-				}
-			}
-			Lexer::Match('>');
-			t += L">";
-        }
-	}
-    return t;
-}
-
-
 void Lexer::Find(const wchar_t start, const wchar_t end) {
     auto i = 1;
     wchar_t t;

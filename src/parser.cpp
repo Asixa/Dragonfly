@@ -94,12 +94,11 @@ namespace parser {
 }
 
 
-parser::Type Lexer::MatchType2() {
+parser::Type Lexer::MatchType() {
 	parser::Type type;
-    
-
 	if (Lexer::IsBasicType()) {
 		type.ty = token->type;
+		type.str = "";
 		Lexer::Next();
 	}
 	else {
@@ -126,6 +125,21 @@ parser::Type Lexer::MatchType2() {
 			Lexer::Match('>');
 			type.str += ">";
 		}
+	}
+	if (Check('[')) {
+		Next();
+        if(Check(Num)) {
+            if(token->value!=K_int) {
+				Debugger::Error(L"Value in side a array operator shoule be integer.");
+                return type;
+            }
+			type.array = number_val;
+            Next();
+        }
+        else {
+			type.array = -2;
+        }
+		Match(']');
 	}
 	return type;
 }

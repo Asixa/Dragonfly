@@ -14,8 +14,8 @@ namespace parser {
 		std::shared_ptr<GenericParam> generic;
 		std::vector<std::shared_ptr<Expr>> args;
 		llvm::Value* GenField(llvm::Value* parent) override;
-		explicit FuncCall(std::wstring d) : Field(d) {}
-		static std::shared_ptr<FuncCall> Parse(std::wstring f);
+		explicit FuncCall(std::string d) : Field(d) {}
+		static std::shared_ptr<FuncCall> Parse(std::string f);
 	};
 
 }

@@ -13,7 +13,7 @@ namespace parser {
 		Lexer::Match(Id);
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			let->type = Lexer::MatchType2();
+			let->type = Lexer::MatchType();
 		}
 		Lexer::Match('=');
 		
@@ -30,7 +30,7 @@ namespace parser {
 
 		const auto val = value->Gen();
 
-		const auto ty = type.empty() ? val->getType() : CodeGen::GetTypeByName2(type);
+		const auto ty = type.empty() ? val->getType() : CodeGen::GetType(type);
 		if (!val) return;
 
 		if (constant) {

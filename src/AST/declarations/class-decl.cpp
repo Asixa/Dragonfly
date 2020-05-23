@@ -1,12 +1,12 @@
 #include "AST/declarations/class-decl.h"
 #include "codegen.h"
-
+#include <sstream>
 namespace parser {
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
 		instance->category = ty;
 		Lexer::Next();
-		instance->name = Lexer::string_val;
+		instance->name = CodeGen::MangleStr(Lexer::string_val);
 		Lexer::Match(Id);
 		if (Lexer::Check('<')) {
 			instance->is_template = true;
@@ -15,11 +15,11 @@ namespace parser {
 			
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			instance->interfaces.push_back(Lexer::string_val);
+			instance->interfaces.push_back(Type(CodeGen::MangleStr(Lexer::string_val)));
 			Lexer::Next();
 			while (Lexer::Check(',')) {
 				Lexer::Next();
-				instance->interfaces.push_back(Lexer::string_val);
+				instance->interfaces.push_back(Type(CodeGen::MangleStr(Lexer::string_val)));
 				Lexer::Match(Id);
 			}
 		}
@@ -47,7 +47,7 @@ namespace parser {
 				break;
 			default:
 				if (instance->category == kInterface)break;
-				instance->fields.push_back(Lexer::string_val);
+				instance->fields.push_back(CodeGen::MangleStr(Lexer::string_val));
 				Lexer::Match(Id);
 				Lexer::Match(':');
 				instance->types.push_back(Lexer::MatchType());
@@ -72,12 +72,12 @@ namespace parser {
 		instance->destructor = destructor;
 		for (const auto& i : types)instance->types.push_back(i);
 		for (int i = 0, size = instance->types.size(); i < size; ++i) {
-			auto pos = std::find(generic->names.begin(), generic->names.end(), instance->types[i]);
+			auto pos = std::find(generic->names.begin(), generic->names.end(), instance->types[i].str);
 			if (pos != generic->names.end())
-				instance->types[i] = param->names[i];
+				instance->types[i] = Type(param->names[i]);//TODO
 		}
         const auto posfix = param->ToString();
-		const auto full_name = CodeGen::MangleStr(name) + posfix;
+		const auto full_name = name + posfix;
 		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
 		if (the_struct) {
 			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
@@ -101,17 +101,17 @@ namespace parser {
 	}
 
 	void ClassDecl::GenHeader() {
-		full_name = CodeGen::MangleStr(name);
+		full_name = name;
 		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
 		if (!the_struct) {
             if(is_template) {
 				CodeGen::template_types_table[full_name] = this;
                 return;
             }
-		    the_struct = llvm::StructType::create(CodeGen::the_context, CodeGen::MangleStr(name));
+		    the_struct = llvm::StructType::create(CodeGen::the_context, name);
 		}
 		else {
-			*Debugger::out << "Type " << name << " already defined" << std::endl;
+			*Debugger::out << "Type " << name.c_str() << " already defined" << std::endl;
 			return;
 		}
 		CodeGen::types_table[the_struct->getName().str()] = this;
@@ -134,13 +134,13 @@ namespace parser {
 
 		if (!interfaces.empty()) {
 			llvm::Type* base_type = nullptr;
-			for (const auto& interface : interfaces) {
-				auto mangled_interface_name = CodeGen::MangleStr(interface);
+			for (auto interface : interfaces) {
+				auto mangled_interface_name =interface.str;
 				if (CodeGen::IsCustomType(mangled_interface_name)) {
 					const auto decl = CodeGen::types_table[mangled_interface_name];
 					if (!decl->category == kInterface) {
 						if (base_type == nullptr) {
-							base_type = CodeGen::the_module->getTypeByName(CodeGen::MangleStr(interface));
+							base_type = CodeGen::the_module->getTypeByName(interface.str);
 							base_type_name = interface;
 						}
 						else Debugger::ErrorV("Inherit multiple classes is not allowed",line,ch);
@@ -150,12 +150,12 @@ namespace parser {
 			}
 			if (base_type != nullptr) {
 
-				fields.insert(fields.begin(), L"base");
+				fields.insert(fields.begin(), "base");
 				field_tys.insert(field_tys.begin(), base_type);
 			}
 		}
 
-		for (const auto& type : types)field_tys.push_back(CodeGen::GetTypeByName(type));
+		for (const auto& type : types)field_tys.push_back(CodeGen::GetType(type));
 		the_struct->setBody(field_tys);
 	}
 }

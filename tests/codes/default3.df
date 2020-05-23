@@ -1,0 +1,135 @@
+class B
+{
+	z:int
+}
+
+interface C{}
+
+
+class A:B
+{
+	a:int;
+	b:int;
+	func foo(c:int):int
+	{
+		return a+c+z
+	}
+
+	func bar():int
+	{
+		return 666;
+	}
+	init()
+	{
+		a=100
+		b=100
+		z=100
+	}
+	init(a:int,b:int,z:int)
+	{
+		this.a=a
+		this.b=b
+		this.z=z
+		base.z=z
+	}
+	init(a:A)
+	{
+	 this.a=a.a
+	 this.b=a.b
+	 this.z=a.z
+	}
+}
+
+extension A
+{
+	func baz():int
+	{
+		return 666;
+	}
+	func foo(a:int,b:int):int
+	{
+		return a+b;
+	}
+}
+
+extension A => func smt():int
+{
+	return a+666;
+}
+
+struct D
+{
+	a:int;
+	b:int;
+	func foo(c:int):int
+	{
+		return a+b+c
+	}
+	func foo(x:int,y:int):int
+	{
+		return x+y;
+	}
+	func bar():int
+	{
+		return 666;
+	}
+	init()
+	{
+		a=0
+		b=0
+	}
+   
+    init(d:D )
+	{ 
+	  a=d.a
+	  b=d.b
+	}
+
+	init(x:int,y:int)
+	{
+	    a=x
+		b=y
+	}
+	delete()
+	{
+	}
+}
+
+
+
+printf("OOP test cases\n")
+
+var struct_a= D(233,666)
+printf("struct_a's values:         %d,%d \n",struct_a.a,struct_a.b)
+struct_a.a=23300
+struct_a.b=66600
+printf("struct_a's values:         %d,%d \n",struct_a.a,struct_a.b)
+var cpy_struct=D(struct_a)
+printf("copied struct_a's values:  %d,%d \n\n",cpy_struct.a,cpy_struct.b)
+
+var class_a = A(996,251,375)
+printf("class_a's values:          %d,%d,%d \n",class_a.a,class_a.b,class_a.z)
+class_a.a=99600
+class_a.b=25100
+class_a.z=37500
+printf("class_a's values:          %d,%d,%d \n",class_a.a,class_a.b,class_a.z)
+var cpy_class=A(class_a)
+printf("copied class_a's values:   %d,%d,%d \n\n",cpy_class.a,cpy_class.b,cpy_class.z)
+
+
+var n = 600
+printf("overload class_a.foo(n):        %d\n",class_a.foo(n))
+printf("overload class_a.foo(n,200):    %d\n",class_a.foo(n,200))
+
+printf("overload struct_a.foo(n):       %d\n",struct_a.foo(n))
+printf("overload struct_a.foo(n,200):   %d\n",struct_a.foo(n,200))
+
+
+
+var e1=A().bar()
+var e2=D().bar()
+
+printf("A().bar: %d\nD().bar(): %d\n",e1,e2)
+
+
+

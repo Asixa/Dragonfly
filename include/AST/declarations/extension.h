@@ -7,7 +7,7 @@
 namespace parser {
 	class Extension final :public Declaration {
 	public:
-		std::wstring name;
+		std::string name;
 		std::vector<std::shared_ptr<FunctionDecl>> functions;
 		static std::shared_ptr<Extension> Parse();
 		void Gen() override;

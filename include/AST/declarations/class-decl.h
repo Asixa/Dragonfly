@@ -14,12 +14,12 @@ namespace parser {
 	
 		bool is_template = false;
 		std::string full_name;
-		std::wstring name;
+		std::string name;
 		
-		std::wstring base_type_name;
-		std::vector<std::wstring> fields;
-		std::vector<std::wstring> types;
-		std::vector<std::wstring> interfaces;
+		parser::Type base_type_name;
+		std::vector<std::string> fields;
+		std::vector<parser::Type> types;
+		std::vector<parser::Type> interfaces;
 		std::vector<std::shared_ptr<FunctionDecl>> functions;
 		std::vector<std::shared_ptr<FunctionDecl>> constructor;
 		std::shared_ptr<GenericParam> generic;
