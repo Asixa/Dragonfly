@@ -13,6 +13,7 @@ namespace parser {
 		int category=kClass;
 	
 		bool is_template = false;
+		bool one_line = false;
 		std::string full_name;
 		std::string name;
 		

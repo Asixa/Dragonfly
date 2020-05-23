@@ -14,7 +14,16 @@ namespace parser {
 			instance->is_template = true;
 			instance->generic = GenericParam::Parse();
 		}
-			
+		if (Lexer::Check('(')) {
+			Lexer::Next();
+            const auto param = FuncParam::Parse();
+			instance->one_line = true;
+			instance->fields = param->names;
+			instance->types = param->types;
+			instance->functions.push_back(FunctionDecl::CreateInit(param));
+			Lexer::Match(')');
+		}
+
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			instance->interfaces.push_back(Type(Lexer::string_val));
@@ -25,6 +34,10 @@ namespace parser {
 				Lexer::Match(Id);
 			}
 		}
+        if(instance->one_line) {
+			Lexer::MatchSemicolon();
+			return instance;
+        }
 		Lexer::SkipNewlines();
 		Lexer::Match('{');
 
@@ -121,6 +134,7 @@ namespace parser {
 			function->SetInternal(the_struct);
 			CodeGen::program->declarations.push_back(function);
 		}
+
 	}
 
 

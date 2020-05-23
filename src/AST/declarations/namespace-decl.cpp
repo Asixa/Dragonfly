@@ -85,6 +85,17 @@ std::string parser::Name::GetFullName() {
 	return str;
 }
 
+std::string parser::Name::GetFullNameWithoutFunc() {
+	if (type == kFunction) {
+		if (names.size() <= 1)return "ERROR";
+		std::string ret;
+		for (auto i = 0; i < names.size() - 1; i++)
+			ret += names[i] + "::";
+		return  ret;
+	}
+	return "ERROR";
+}
+
 void parser::Name::Set(std::string s) {
 	names.clear();
 	names.push_back(s);

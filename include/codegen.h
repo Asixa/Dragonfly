@@ -37,6 +37,7 @@ public:
 	// static llvm::Function* the_function;
 	static std::map<std::string, llvm::Value*> local_fields_table;
 	static std::map<std::string, llvm::Value*> global_fields_table;
+	static std::map<std::string, std::string> func_alias_table;
 
 	static std::map<std::string, parser::ClassDecl*> template_types_table;
 	static std::map<std::string, parser::FunctionDecl*> template_function_table;
@@ -83,6 +84,7 @@ public:
 	static std::string GetStructName(llvm::Value* value);
 	static std::string GetStructName(llvm::Type* type);
 
+	static llvm::Function* GetFunction(std::string name);
 
     /**
 	 * \brief Get the ir code for this value.

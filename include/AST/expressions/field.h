@@ -21,6 +21,7 @@ namespace parser {
 		virtual llvm::Value* GenField(llvm::Value* parent);
 		static std::shared_ptr<Field>Parse();
 		static std::shared_ptr<Field>ParsePostfix();
+
 	};
 }
 #endif

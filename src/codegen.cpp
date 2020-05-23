@@ -30,6 +30,7 @@ llvm::DataLayout CodeGen::data_layout = llvm::DataLayout(the_module.get());
 std::map<std::string, llvm::Value*> CodeGen::local_fields_table;
 std::map<std::string, llvm::Value*> CodeGen::global_fields_table;
 std::map<std::string, parser::ClassDecl*> CodeGen::types_table;
+std::map<std::string, std::string> CodeGen::func_alias_table;
 
 std::map<std::string, parser::ClassDecl*> CodeGen::template_types_table;
 std::map<std::string, parser::FunctionDecl*> CodeGen::template_function_table;
@@ -100,6 +101,7 @@ llvm::Type* CodeGen::GetType(parser::Type  type) {
 	llvm::Type* llvm_type = nullptr;
 	if (type.ty > 0) {
 		switch (type.ty) {
+		case K_void:
 		case 1:             llvm_type = llvm::Type::getVoidTy(CodeGen::the_context); break;
 		case K_byte:        llvm_type = llvm::Type::getInt8Ty(CodeGen::the_context); break;
 		case K_short:       llvm_type = llvm::Type::getInt16Ty(CodeGen::the_context); break;
@@ -203,6 +205,12 @@ std::string CodeGen::GetStructName(llvm::Type* type) {
     }
 
 	
+}
+
+llvm::Function* CodeGen::GetFunction(std::string name) {
+	if (func_alias_table.find(name) != func_alias_table.end())
+		name = func_alias_table[name];
+	return the_module->getFunction(name);
 }
 
 std::string CodeGen::DebugValue(llvm::Value* value) {

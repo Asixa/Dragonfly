@@ -4,6 +4,8 @@
 #include "lexer.h"
 #include "AST/expressions/unary.h"
 #include "AST/expressions/ternary.h"
+#include "field.h"
+
 namespace parser {
 	// Expression node for all binary expressions
 	class Binary final : public Expr {
@@ -13,7 +15,8 @@ namespace parser {
 		Binary(std::shared_ptr<Expr> lhs, std::shared_ptr<Expr> rhs, int op) : op(op), LHS(lhs), RHS(rhs) {}
 		void ToString() override;
 		llvm::Value* Gen(const int cmd = 0) override;
-
+		Binary(){}
+		Binary(const std::string lhs, const std::string rhs, const int o) :LHS(std::make_shared<Field>(lhs)), RHS(std::make_shared<Field>(rhs)), op(o){}
 		// This part might be hard to understand.
 		// PARSE is a Macro to generate functions.
 		// When parsing binary Expressions, This start from top to bottom.

@@ -9,6 +9,9 @@ namespace parser {
 	public:
 		static std::shared_ptr<Empty> Parse();
 		void Gen() override;
+		Empty(){}
+        explicit Empty(const std::shared_ptr<Expr> v):value(v){}
+
 	};
 
 }

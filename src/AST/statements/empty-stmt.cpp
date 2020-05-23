@@ -12,4 +12,6 @@ namespace parser {
 	void Empty::Gen() {
 		value->Gen();
 	}
+
+
 }

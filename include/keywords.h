@@ -28,7 +28,7 @@
 	F(struct) F(class) F(enum) F(interface) F(namespace)						\
 	F(new) F(get) F(set) F(init) F(delete)						\
 	F(sizeof) 											\
-	F(in) F(from) F(to) 
+	F(in) F(from) F(to) F(as)
 
 #define OPERATORS(F)\
 	F(Or, "||") F(And, "&&") 															\

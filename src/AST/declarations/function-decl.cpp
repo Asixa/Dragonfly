@@ -98,9 +98,34 @@ namespace parser {
 		args = std::make_shared<FuncParam>(copy->args);
 	}
 
+    std::shared_ptr<FunctionDecl> FunctionDecl::CreateInit(std::shared_ptr<FuncParam> param) {
+		auto instance = std::make_shared<FunctionDecl>();
+		instance->name = std::make_shared<Name>();
+		instance->name->Set("::init");
+		instance->name->type = Name::kFunction;
+		auto func_param = std::make_shared<FuncParam>();
+		
+		std::vector<std::shared_ptr<Statement>>statements;
+        for(auto i=0;i<param->size;i++) {
+			func_param->names.push_back("_"+param->names[i]);
+			func_param->types.push_back(param->types[i]);
+			statements.push_back(std::make_shared<Empty>(std::make_shared<Binary>( param->names[i], func_param->names[i], '=')));
+        }
+		
+		if (statements.size() > 0) {
+			instance->statements = statements[0];
+			for (auto i = 1; i < statements.size(); i++)
+				instance->statements = std::make_shared<Statements>(instance->statements, statements[i]);
+		}
+
+		func_param->size = param->size;
+		instance->args = func_param;
+		instance->return_type.ty = 1;
+		return instance;
+	}
 
 
-	void FunctionDecl::SetInternal(llvm::StructType* type) {
+    void FunctionDecl::SetInternal(llvm::StructType* type) {
 		parent_type = type;
 	}
 	void FunctionDecl::Instantiate(std::shared_ptr <GenericParam> param) {
@@ -180,7 +205,7 @@ namespace parser {
 			full_name += CodeGen::GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
 		full_name += ")";
 		// check if the fucntion already exist.
-		auto the_function = CodeGen::the_module->getFunction(full_name);
+		auto the_function = CodeGen::GetFunction(full_name);
 		if (!the_function) {
 			
 			// create the function type.
@@ -207,9 +232,9 @@ namespace parser {
 			GenHeader();
         }
 		
-		auto function = CodeGen::the_module->getFunction(full_name);
+		auto function = CodeGen::GetFunction(full_name);
 		if (!function) {
-			Debugger::ErrorV((std::string("function head not found?: ") + full_name).c_str(),line,ch);
+			Debugger::ErrorV((std::string("function head not found: ") + full_name).c_str(),line,ch);
 			return;
 		}
 		//  create the basic block for the function.

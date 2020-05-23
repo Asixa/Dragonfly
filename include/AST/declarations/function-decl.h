@@ -51,6 +51,7 @@ namespace parser {
         FunctionDecl(std::shared_ptr < FunctionDecl> copy);
 
 
+		static std::shared_ptr<FunctionDecl> CreateInit(std::shared_ptr<FuncParam> param);
 	
 		void SetInternal(llvm::StructType* type);
 		void Gen() override;

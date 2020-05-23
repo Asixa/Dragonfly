@@ -26,6 +26,7 @@ namespace parser {
 		std::string GetClassName();
 		std::string GetNamespace();
 		std::string GetFullName();
+		std::string GetFullNameWithoutFunc();
 		void Set(std::string s);
 		void Verify();
     };

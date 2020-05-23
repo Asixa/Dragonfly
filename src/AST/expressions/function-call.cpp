@@ -132,7 +132,7 @@ namespace parser {
 
 		// now, callee_name is the full function name, eg: "A::bar" or "foo"  etc.
 		// and we try get the fuction.
-		auto callee = CodeGen::the_module->getFunction(callee_name);
+		auto callee = CodeGen::GetFunction(callee_name);
 
 		// if the function not exist, maybe because it is a overloaded function.
 		// then the name should be "A::bar()" or "foo(int)" etc.
@@ -143,7 +143,7 @@ namespace parser {
 				callee_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ",");
 			callee_name += ")";
 			// after fix the function name, we try to get it again.
-			callee = CodeGen::the_module->getFunction(callee_name);
+			callee = CodeGen::GetFunction(callee_name);
 		}
 
 		// if we still cannot find the function, we could now throw a error.
