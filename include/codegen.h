@@ -33,6 +33,9 @@ public:
 	static std::unique_ptr<llvm::Module> the_module;
 	static llvm::IRBuilder<> builder;
 	static llvm::DataLayout data_layout;
+
+
+
 	static std::shared_ptr<parser::Program> program;
 	// static llvm::Function* the_function;
 	static std::map<std::string, llvm::Value*> local_fields_table;
@@ -46,6 +49,7 @@ public:
 
 	static llvm::Value* True;
 	static llvm::Value* False;
+	// static llvm::Value* Null;
 
 	static llvm::Type* void_ptr;
 	static llvm::Type* void_type;
@@ -142,7 +146,7 @@ public:
 	static void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
 	// Write compilable ir to file , for further compilation.
 	static void WriteBitCodeIr(llvm::Module* module, const char* file);
-
+	static int DEBUGNUM;
 };
 
 

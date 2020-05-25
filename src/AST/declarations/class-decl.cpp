@@ -140,6 +140,7 @@ namespace parser {
 
 
     void ClassDecl::Gen() {
+       
 		if (is_template)return;
 		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
         if(!the_struct) {

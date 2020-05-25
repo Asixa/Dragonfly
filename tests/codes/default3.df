@@ -1,9 +1,8 @@
-extern func rand():int as random
+extern class Canvas;
 
-class B(z:int)
-func B.boo(a:int)=>printf("b.z: %d,%d\n",z,a);
-var b=B(233)
-b.boo(666)
+extern func CanvasInit(t:Canvas,w:int,h:int):void as Canvas::init
+extern func CanvasShow(t:Canvas):void as Canvas.show
 
 
-printf("%d\n",random())
+var canvas = Canvas(512,512)
+canvas.show()

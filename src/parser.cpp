@@ -13,13 +13,13 @@ namespace parser {
         case K_dfunc:
         case K_kernal: declarations.push_back(FunctionDecl::Parse()); break;
         // case K_extern: declarations.push_back(FunctionDecl::Parse(true)); break;
-        case K_import: Import::Parse(); break;
-		case K_class: declarations.push_back(ClassDecl::Parse(ClassDecl::kClass)); break;
-		case K_interface: declarations.push_back(ClassDecl::Parse(ClassDecl::kInterface)); break;
-		case K_struct: declarations.push_back(ClassDecl::Parse(ClassDecl::kStruct)); break;
-		case K_namespace: declarations.push_back(Namespace::Parse()); break;
-		case K_enum:      declarations.push_back(EnumDecl::Parse()); break;
-		case K_extern: declarations.push_back(Extern::Parse()); break;
+        case K_import:      Import::Parse(); break;
+		case K_class:       declarations.push_back(ClassDecl::Parse(ClassDecl::kClass)); break;
+		case K_interface:   declarations.push_back(ClassDecl::Parse(ClassDecl::kInterface)); break;
+		case K_struct:      declarations.push_back(ClassDecl::Parse(ClassDecl::kStruct)); break;
+		case K_namespace:   declarations.push_back(Namespace::Parse()); break;
+		case K_enum:        declarations.push_back(EnumDecl::Parse()); break;
+		case K_extern:      declarations.push_back(Extern::Parse()); break;
         default: statements.push_back(Statement::Parse());
         }
     }

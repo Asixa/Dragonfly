@@ -25,7 +25,7 @@ llvm::LLVMContext CodeGen::the_context;
 std::unique_ptr<llvm::Module> CodeGen::the_module = std::make_unique<llvm::Module>("Program", CodeGen::the_context);
 llvm::IRBuilder<> CodeGen::builder(CodeGen::the_context);
 llvm::DataLayout CodeGen::data_layout = llvm::DataLayout(the_module.get());
-
+int CodeGen::DEBUGNUM = 0;
 // llvm::Function* CodeGen::the_function = nullptr;
 std::map<std::string, llvm::Value*> CodeGen::local_fields_table;
 std::map<std::string, llvm::Value*> CodeGen::global_fields_table;
@@ -37,6 +37,7 @@ std::map<std::string, parser::FunctionDecl*> CodeGen::template_function_table;
 
 llvm::Value* CodeGen::True = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 1);
 llvm::Value* CodeGen::False = llvm::ConstantInt::get(llvm::IntegerType::get(CodeGen::the_context, 1), 0);
+// llvm::Value* CodeGen::Null = llvm::Constant::getNullValue();
 llvm::Type* CodeGen::void_ptr = llvm::Type::getInt8PtrTy(CodeGen::the_context);
 llvm::Type* CodeGen::void_type = llvm::Type::getVoidTy(CodeGen::the_context);
 llvm::Type* CodeGen::int32 = llvm::Type::getInt32Ty(CodeGen::the_context);
@@ -125,8 +126,12 @@ llvm::Type* CodeGen::GetType(parser::Type  type) {
 			llvm_type = types_table[type.str]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 		}
 		else {
-			Debugger::ErrorV((std::string("Unknown Type: ") + type.str + "\n").c_str(), -1, -1);
-			return nullptr;
+
+            llvm_type= CodeGen::the_module->getTypeByName(type.str);
+			if (llvm_type == nullptr) {
+				Debugger::ErrorV((std::string("Unknown Type: ") + type.str + "\n").c_str(), -1, -1);
+				return nullptr;
+			}
 		}
 	}
 
@@ -208,8 +213,16 @@ std::string CodeGen::GetStructName(llvm::Type* type) {
 }
 
 llvm::Function* CodeGen::GetFunction(std::string name) {
-	if (func_alias_table.find(name) != func_alias_table.end())
-		name = func_alias_table[name];
+	printf("find %s in [", name.c_str());
+    for (auto i : func_alias_table)printf("%s,", i.first.c_str());
+	printf("]\n");
+	if (func_alias_table.find(name) != func_alias_table.end()) {
+		
+		printf("find!  %s now named to %s\n", name.c_str(), func_alias_table[name].c_str());
+			name = func_alias_table[name];
+			printf("find real func: %d\n", the_module->getFunction(name) != nullptr);
+	}
+		
 	return the_module->getFunction(name);
 }
 

@@ -129,33 +129,62 @@ namespace parser {
 				this_arg = CodeGen::builder.CreateLoad(parent);
 			args_v.insert(args_v.begin(), this_arg);
 		}
-
+		std::string param_name;
+		param_name += "(";
+		for (int i = is_member_func ? 1 : 0, argv_size = args_v.size(); i < argv_size; i++)
+			param_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ",");
+		param_name += ")";
+		// after fix the function name, we try to get it again.
+		
 		// now, callee_name is the full function name, eg: "A::bar" or "foo"  etc.
 		// and we try get the fuction.
+	
+		if (!CodeGen::IsCustomType(callee_name)) {
+			auto ty = CodeGen::the_module->getTypeByName(name);
+			printf("%s\n", name.c_str());
+			if (ty) {
+				printf("try get callee %s\n", (name + "::" + callee_name + param_name).c_str());
+				if (CodeGen::GetFunction(name + "::" + callee_name + param_name) != nullptr) {
+					is_member_func = true;
+					callee_name = name + "::" + callee_name+param_name;
+					is_constructor = true;
+					
+					printf("---------------");
+                    //HACK
+					parent = CodeGen::Malloc(ty->getPointerTo());
+					const auto ptr_depth = CodeGen::GetPtrDepth(parent);
+					auto this_arg = parent;
+					if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
+						this_arg = CodeGen::builder.CreateLoad(parent);
+					args_v.insert(args_v.begin(), this_arg);
+				}
+			}
+		}
 		auto callee = CodeGen::GetFunction(callee_name);
-
+		
 		// if the function not exist, maybe because it is a overloaded function.
 		// then the name should be "A::bar()" or "foo(int)" etc.
 		// we ignore the hidden pointer
 		if (!callee) {
-			callee_name += "(";
-			for (int i = is_member_func ? 1 : 0, argv_size = args_v.size(); i < argv_size; i++)
-				callee_name += CodeGen::GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ",");
-			callee_name += ")";
-			// after fix the function name, we try to get it again.
+			callee_name += param_name;
 			callee = CodeGen::GetFunction(callee_name);
 		}
 
 		// if we still cannot find the function, we could now throw a error.
 		if (!callee)
 			return Debugger::ErrorV((std::string("Unknown function referenced :") + callee_name).c_str(),line,ch);
-
+		
 		// here we found the callee!
 		// check if the function argument count matchs.
 		// some function could have varible arguments size when isVarArg is true.
 		if (callee->arg_size() != args_v.size() && !callee->isVarArg())
 			return Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
 				std::to_string(args.size() + (is_member_func ? 1 : 0)) + " / " + std::to_string(callee->arg_size())).c_str(), line, ch);
+
+		printf("arg size %d\n",CodeGen::GetPtrDepth(args_v[0]));
+        while (CodeGen::GetPtrDepth(args_v[0])>1) {
+			args_v[0] = CodeGen::builder.CreateLoad(args_v[0]);
+        }
 
 		// call the function and save it to v
 		llvm::Value* v = CodeGen::builder.CreateCall(callee, args_v);

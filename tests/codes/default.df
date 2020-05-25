@@ -40,19 +40,18 @@ class A:B
 	}
 }
 
-extension A
-{
-	func baz():int
+
+	func A.baz():int
 	{
 		return 666;
 	}
-	func foo(a:int,b:int):int
+	func A.foo(a:int,b:int):int
 	{
 		return a+b;
 	}
-}
 
-extension A => func smt():int
+
+func A.smt():int
 {
 	return a+666;
 }

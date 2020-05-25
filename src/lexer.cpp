@@ -352,7 +352,7 @@ bool Lexer::Check(const std::vector<int> tys) {
 }
 
 bool Lexer::IsBasicType() {
-    return Lexer::token->type >= K_int && Lexer::token->type <= K_double;
+    return Lexer::token->type >= K_string && Lexer::token->type <= K_double;
 }
 
 void Lexer::MatchSemicolon() {

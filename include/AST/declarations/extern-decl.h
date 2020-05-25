@@ -1,5 +1,5 @@
-#ifndef EXTERN_H
-#define EXTERN_H
+#ifndef EXTERN_EXPR_H
+#define EXTERN_EXPR_H
 #include "lexer.h"
 #include "function-decl.h"
 
@@ -13,8 +13,8 @@ namespace parser {
 		Type return_type;
 		bool init;
 		static std::shared_ptr<Extern>Parse();
-		void Gen() override;
         void GenHeader() override;
+		void Gen() override;
     };
 }
 #endif

@@ -93,6 +93,12 @@ std::string parser::Name::GetFullNameWithoutFunc() {
 			ret += names[i] + "::";
 		return  ret;
 	}
+    else {
+		std::string ret;
+		for (auto i = 0; i < names.size(); i++)
+			ret += names[i] + "::";
+		return  ret;
+    }
 	return "ERROR";
 }
 
