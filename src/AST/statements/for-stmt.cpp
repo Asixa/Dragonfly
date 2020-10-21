@@ -19,9 +19,7 @@ namespace parser {
 	}
 
 	void For::Gen() {
-
 		init->Gen();
-
 	}
 
 }

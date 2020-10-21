@@ -1,7 +1,7 @@
 #include "AST/declarations/class-decl.h"
 #include "codegen.h"
 #include <sstream>
-#include "declarations/enum-decl.h"
+#include "AST/declarations/enum-decl.h"
 
 namespace parser {
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {

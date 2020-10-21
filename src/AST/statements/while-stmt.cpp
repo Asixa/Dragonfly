@@ -1,6 +1,6 @@
 #include "AST/statements/while-stmt.h"
-#include "expressions/binary.h"
-#include "statements/statements.h"
+#include "AST/expressions/binary.h"
+#include "AST/statements/statements.h"
 #include "codegen.h"
 
 namespace parser {

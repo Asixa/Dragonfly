@@ -1,6 +1,6 @@
 #include "AST/expressions/field.h"
-#include "lexer.h"
-#include "parser.h"
+#include "frontend/lexer.h"
+#include "frontend/parser.h"
 #include "codegen.h"
 
 namespace parser {

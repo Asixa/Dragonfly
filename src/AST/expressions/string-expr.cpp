@@ -1,5 +1,5 @@
 #include "AST/expressions/string-expr.h"
-#include "debug.h"
+#include "frontend/debug.h"
 #include "codegen.h"
 
 namespace parser {

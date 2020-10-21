@@ -1,6 +1,6 @@
 #include "AST/declarations/namespace-decl.h"
-#include "declarations/class-decl.h"
-#include "declarations/enum-decl.h"
+#include "AST/declarations/class-decl.h"
+#include "AST/declarations/enum-decl.h"
 
 std::shared_ptr<parser::Namespace> parser::Namespace::Parse() {
 	Lexer::Next();

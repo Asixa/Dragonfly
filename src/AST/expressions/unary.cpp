@@ -1,5 +1,5 @@
 #include "AST/expressions/unary.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/expressions/factor.h"
 #include "codegen.h"
 
