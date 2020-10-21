@@ -1,5 +1,5 @@
 #include "AST/statements/empty-stmt.h"
-#include "expressions/binary.h"
+#include "AST/expressions/binary.h"
 
 namespace parser {
 	std::shared_ptr<Empty> Empty::Parse() {

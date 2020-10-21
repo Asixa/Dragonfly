@@ -1,8 +1,8 @@
 #include "parser.h"
 #include <sstream>
 #include "codegen.h"
-#include "declarations/enum-decl.h"
-#include "declarations/extern-decl.h"
+#include "AST/declarations/enum-decl.h"
+#include "AST/declarations/extern-decl.h"
 
 namespace parser {
 

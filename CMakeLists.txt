@@ -111,7 +111,6 @@ include_directories(
 	    ${NVVM_INCLUDE_DIR}
 		${CUDA_HOME}/include
         ${PROJECT_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/include/AST
 	    ${PROJECT_SOURCE_DIR}/src
 	    ${PROJECT_SOURCE_DIR}/thirdparty/json
 )
