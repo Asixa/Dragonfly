@@ -10,10 +10,10 @@ namespace parser {
 	public:
 
 		void ToString() override;
-		llvm::Value* Gen(const int cmd = 0) override;
+		llvm::Value* Gen(std::shared_ptr<DFContext>,const int cmd = 0) override;
 		std::shared_ptr<GenericParam> generic;
 		std::vector<std::shared_ptr<Expr>> args;
-		llvm::Value* GenField(llvm::Value* parent) override;
+		llvm::Value* GenField(std::shared_ptr<DFContext>,llvm::Value* parent) override;
 		explicit FuncCall(std::string d) : Field(d) {}
 		static std::shared_ptr<FuncCall> Parse(std::string f);
 	};

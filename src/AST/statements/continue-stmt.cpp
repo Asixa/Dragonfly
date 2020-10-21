@@ -7,7 +7,7 @@ namespace parser {
 		auto instance = std::make_shared<Continue>();
 		return instance;
 	}
-	void Continue::Gen() {
+	void Continue::Gen(std::shared_ptr<DFContext> context) {
 		if (!CodeGen::is_sub_block) {
 			Debugger::ErrorNonBreak(L"invalid_token :continue");
 			return;

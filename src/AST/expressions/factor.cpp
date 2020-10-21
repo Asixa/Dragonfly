@@ -66,10 +66,12 @@ namespace parser {
 				(std::wstringstream() << "unexpected \"" << Lexer::Token::Name(Lexer::token->type) << "\" ").str());
 			return nullptr;
 		}
+
+       
 	}
 
 
-	llvm::Value* Factor::Gen(int cmd) {
+	llvm::Value* Factor::Gen(std::shared_ptr<DFContext> context,int cmd) {
 		return nullptr;
 	}
 }

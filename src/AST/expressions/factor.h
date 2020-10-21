@@ -8,7 +8,7 @@ namespace parser {
 	class Factor final : public Expr {
 	public:
 		void ToString() override;
-		llvm::Value* Gen(const int cmd = 0) override;
+		llvm::Value* Gen(std::shared_ptr<DFContext>,const int cmd = 0) override;
 		Lexer::Token* tok;
 		explicit Factor(Lexer::Token* t) : tok(t) {}
 		static std::shared_ptr<Expr> Parse();

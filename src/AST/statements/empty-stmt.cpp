@@ -9,8 +9,8 @@ namespace parser {
 			return instance;
 	}
 
-	void Empty::Gen() {
-		value->Gen();
+	void Empty::Gen(std::shared_ptr<DFContext> context) {
+		value->Gen(context);
 	}
 
 

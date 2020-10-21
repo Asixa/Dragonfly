@@ -9,7 +9,7 @@ namespace parser {
 		std::shared_ptr<Expr> value;
 		std::shared_ptr<Statement> stmts;
 		static std::shared_ptr<Switch> Parse();
-		void Gen() override;
+		void Gen(std::shared_ptr<DFContext>) override;
 	};
 }
 #endif

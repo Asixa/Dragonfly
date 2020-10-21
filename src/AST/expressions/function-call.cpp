@@ -30,11 +30,11 @@ namespace parser {
 		return func_call;
 	}
 
-	llvm::Value* FuncCall::Gen(int cmd) {
-		return GenField(nullptr);
+	llvm::Value* FuncCall::Gen(std::shared_ptr<DFContext> context,int cmd) {
+		return GenField(context,nullptr);
 	}
 
-	llvm::Value* FuncCall::GenField(llvm::Value* parent) {
+	llvm::Value* FuncCall::GenField(std::shared_ptr<DFContext> context,llvm::Value* parent) {
 		// TODO function call like a()()
         
 		// the data structure of Field for exmaple: a.B().C().d is
@@ -48,7 +48,7 @@ namespace parser {
 		// true if nested function call like A().B(), then we left-DFS
 		// TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
 		if (left != nullptr)
-			parent = left->GenField(parent);
+			parent = left->GenField(context,parent);
 
 		// if is calling a constructor, eg: A(), A is any class or struct.
 		auto is_constructor = false;
@@ -66,13 +66,13 @@ namespace parser {
 			
 			const auto template_class_decl = CodeGen::GetTemplateClass(callee_name);
             if (template_class_decl != nullptr) {
-			    template_class_decl->Instantiate(generic);
+			    template_class_decl->Instantiate(context,generic);
 			}
             else {
 				const auto template_decl = CodeGen::GetTemplateFunc(callee_name);
 				if (template_decl == nullptr)
 					return Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
-				template_decl->Instantiate(generic);
+  				template_decl->Instantiate(context,generic);
             }
             
 			
@@ -84,7 +84,7 @@ namespace parser {
 		std::vector<llvm::Value*> args_v;
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
 			// val is the llvm::Value* of current argument experssion.
-			auto val = args[i]->Gen();
+			auto val = args[i]->Gen(context);
 
 			// all Struct type will 'pass as value',
 			// except hidden pointer for member func, which is not added yet.
@@ -196,7 +196,7 @@ namespace parser {
 		if (child != nullptr)
 		{
 			child->cmd = cmd;
-			v = child->GenField(v);
+			v = child->GenField(context,v);
 		}
 
 		return v;

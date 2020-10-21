@@ -27,9 +27,9 @@ namespace parser {
 		std::shared_ptr<GenericParam> generic;
 		std::shared_ptr<FunctionDecl> destructor;
 		static std::shared_ptr<ClassDecl> Parse(int type = kClass);
-		void Gen() override;
-		void GenHeader() override;
-		void Instantiate(std::shared_ptr<GenericParam> param);
+		void Gen(std::shared_ptr<DFContext>) override;
+		void GenHeader(std::shared_ptr<DFContext>) override;
+		void Instantiate(std::shared_ptr<DFContext> context,std::shared_ptr<GenericParam> param);
 	};
 }
 #endif

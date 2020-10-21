@@ -26,9 +26,9 @@ namespace parser {
 			return let;
 	}
 
-	void FieldDecl::Gen() {
+	void FieldDecl::Gen(std::shared_ptr<DFContext> context) {
 
-		const auto val = value->Gen();
+		const auto val = value->Gen(context);
 
 		const auto ty = type.empty() ? val->getType() : CodeGen::GetType(type);
 		if (!val) return;

@@ -13,8 +13,8 @@ namespace parser {
 		Type return_type;
 		bool init;
 		static std::shared_ptr<Extern>Parse();
-        void GenHeader() override;
-		void Gen() override;
+        void GenHeader(std::shared_ptr<DFContext>) override;
+		void Gen(std::shared_ptr<DFContext>) override;
     };
 }
 #endif

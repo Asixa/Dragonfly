@@ -14,7 +14,7 @@ namespace parser {
 			return;
 		}
 	}
-	llvm::Value* NumberConst::Gen(int cmd) {
+	llvm::Value* NumberConst::Gen(std::shared_ptr<DFContext> context,int cmd) {
 		switch (type) {
 		case K_float: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(static_cast<float>(value)));
 		case K_double: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(value));

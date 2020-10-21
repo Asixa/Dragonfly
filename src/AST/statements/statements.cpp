@@ -18,8 +18,8 @@ namespace parser {
 		}
 	}
 
-	void Statements::Gen() {
-		stmt1->Gen();
-		stmt2->Gen();
+	void Statements::Gen(std::shared_ptr<DFContext> context) {
+		stmt1->Gen(context);
+		stmt2->Gen(context);
 	}
 }

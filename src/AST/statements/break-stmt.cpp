@@ -8,7 +8,7 @@ namespace parser {
 		return instance;
 	}
 
-	void Break::Gen() {
+	void Break::Gen(std::shared_ptr<DFContext> context) {
 		if (!CodeGen::is_sub_block) {
 			Debugger::ErrorNonBreak(L"invalid_token :break");
 			return;

@@ -23,7 +23,7 @@ namespace parser {
 		const auto c = Binary::Sub7();
 		return std::make_shared<Ternary>(a, b, c);
 	}
-	llvm::Value* Ternary::Gen(int cmd) {
+	llvm::Value* Ternary::Gen(std::shared_ptr<DFContext> context,int cmd) {
 		return nullptr;
 	}
 

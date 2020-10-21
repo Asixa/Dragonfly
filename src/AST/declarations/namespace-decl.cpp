@@ -111,10 +111,10 @@ void parser::Name::Verify() {
     
 }
 
-void parser::Namespace::Gen() {
+void parser::Namespace::Gen(std::shared_ptr<DFContext> context) {
     
 }
-void parser::Namespace::GenHeader() {
+void parser::Namespace::GenHeader(std::shared_ptr<DFContext> context) {
     
 }
 

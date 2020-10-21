@@ -32,8 +32,8 @@ namespace parser {
 		return instance;
 	}
 
-	void If::Gen() {
-		auto cond_v = condition->Gen();
+	void If::Gen(std::shared_ptr<DFContext>context) {
+		auto cond_v = condition->Gen(context);
 		if (!cond_v) {
 			Debugger::ErrorNonBreak(L"Error in condititon");
 			return;
@@ -51,7 +51,7 @@ namespace parser {
 		CodeGen::builder.SetInsertPoint(then_bb);
 
 
-		stmts->Gen();
+		stmts->Gen(context);
 
 
 		CodeGen::builder.CreateBr(merge_bb);
@@ -62,7 +62,7 @@ namespace parser {
 		function->getBasicBlockList().push_back(else_bb);
 		CodeGen::builder.SetInsertPoint(else_bb);
 
-		else_stmts->Gen();
+		else_stmts->Gen(context);
 
 
 		CodeGen::builder.CreateBr(merge_bb);

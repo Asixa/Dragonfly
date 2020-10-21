@@ -59,12 +59,12 @@ namespace parser {
 
 
 	// c is 0 by default, when c is 1, then it keep the pointer of the value.
-	llvm::Value* Field::Gen(const int c) {
+	llvm::Value* Field::Gen(std::shared_ptr<DFContext> context,const int c) {
 		cmd = c;
-		return GenField(nullptr);
+		return GenField(context,nullptr);
 	}
 
-	llvm::Value* Field::GenField(llvm::Value* parent) {
+	llvm::Value* Field::GenField(std::shared_ptr<DFContext> context,llvm::Value* parent) {
 
 		llvm::Value* v = nullptr;
 		// if the parent is null, then we find this field in the scope.
@@ -82,7 +82,7 @@ namespace parser {
 		if (child != nullptr)
 		{
 			child->cmd = cmd;
-			v = child->GenField(v);
+			v = child->GenField(context,v);
 		}
 
 		// If we want the constant, when load the pointer.

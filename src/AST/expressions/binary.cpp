@@ -9,11 +9,11 @@ namespace parser {
 		RHS->ToString();
 		*Debugger::out << ")";
 	}
-	llvm::Value* Binary::Gen(int cmd) {
+	llvm::Value* Binary::Gen(std::shared_ptr<DFContext> context,int cmd) {
 
 		const auto load_ptr = op == '=' || op >= AddAgn;
-		auto lhs = LHS->Gen(load_ptr);
-		auto rhs = RHS->Gen(load_ptr);
+		auto lhs = LHS->Gen(context,load_ptr);
+		auto rhs = RHS->Gen(context,load_ptr);
 		if (!lhs || !rhs)return Debugger::ErrorV("operands is NULL",line,ch);;
 
 

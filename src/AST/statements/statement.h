@@ -2,6 +2,8 @@
 #define STATEMENT_H
 #include "frontend/lexer.h"
 #include "frontend/debug.h"
+#include "LLVM/context.h"
+
 namespace parser {
 	// Base Class for Statements
 	class Statement {
@@ -12,7 +14,7 @@ namespace parser {
 			line = Debugger::line;
         }
 		virtual ~Statement() = default;
-		virtual void Gen() = 0;
+		virtual void Gen(std::shared_ptr<DFContext>) = 0;
 		static std::shared_ptr<Statement> Parse();
 	};
 }

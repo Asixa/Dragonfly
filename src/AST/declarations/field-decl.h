@@ -11,7 +11,7 @@ namespace parser {
 	    parser::Type type;
 		std::shared_ptr<Expr> value;
 	public:
-		void Gen() override;
+		void Gen(std::shared_ptr<DFContext>) override;
 		static std::shared_ptr<FieldDecl> Parse(bool is_const);
 	};
 }

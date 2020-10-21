@@ -47,7 +47,7 @@ namespace parser{
 		else Debugger::Error(L"Expected class or func");
 		return instance;
 	}
-	void Extern::GenHeader() {
+	void Extern::GenHeader(std::shared_ptr<DFContext> context) {
 		if (type == K_func) {
 			std::string func_name = name;
 			std::vector<llvm::Type*> arg_types;
@@ -109,7 +109,7 @@ namespace parser{
 		}
 	}
 
-	void Extern::Gen() {
+	void Extern::Gen(std::shared_ptr<DFContext> context) {
 
 	}
 

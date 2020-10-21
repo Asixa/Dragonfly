@@ -6,7 +6,7 @@ namespace parser {
 	class Import final :public Statement {
 	public:
 		static std::shared_ptr<Import> Parse();
-		void Gen() override;
+		void Gen(std::shared_ptr<DFContext>) override;
 	};
 }
 #endif

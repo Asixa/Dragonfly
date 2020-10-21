@@ -54,11 +54,11 @@ namespace parser {
 		static std::shared_ptr<FunctionDecl> CreateInit(std::shared_ptr<FuncParam> param);
 	
 		void SetInternal(llvm::StructType* type);
-		void Gen() override;
-		void GenHeader() override;
+		void Gen(std::shared_ptr<DFContext>) override;
+		void GenHeader(std::shared_ptr<DFContext>) override;
 
 		void PassGeneric(std::shared_ptr <GenericParam> val, std::shared_ptr<GenericParam> key=nullptr);
-		void Instantiate(std::shared_ptr <GenericParam> param);
+		void Instantiate(std::shared_ptr<DFContext> context,std::shared_ptr <GenericParam> param);
 	
 		static std::shared_ptr<FunctionDecl> Parse(bool ext = false);
 	};

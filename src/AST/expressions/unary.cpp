@@ -43,8 +43,8 @@ namespace parser {
 			return Factor::Parse();
 		}
 	}
-	llvm::Value* Unary::Gen(int cmd) {
-		const auto v = expr->Gen();
+	llvm::Value* Unary::Gen(std::shared_ptr<DFContext> context, int cmd) {
+		const auto v = expr->Gen(context);
 		if (!v)return nullptr;
 		switch (op) {
 		case '-':

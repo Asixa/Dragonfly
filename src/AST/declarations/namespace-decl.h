@@ -7,8 +7,8 @@ namespace parser {
 	public:
         std::string name;
 		std::vector<std::shared_ptr<Declaration>> declarations;
-		void Gen() override;
-		void GenHeader() override;
+		void Gen(std::shared_ptr<DFContext>) override;
+		void GenHeader(std::shared_ptr<DFContext>) override;
 		static std::shared_ptr<Namespace>Parse();
 		void ParseSingle();
     };

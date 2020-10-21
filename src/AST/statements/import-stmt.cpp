@@ -6,5 +6,5 @@ namespace parser {
 		return instance;
 	}
 
-	void Import::Gen() { }
+	void Import::Gen(std::shared_ptr<DFContext> context) { }
 }

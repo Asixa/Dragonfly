@@ -9,5 +9,5 @@ namespace parser {
 		return instance;
 	}
 
-	void Throw::Gen() { }
+	void Throw::Gen(std::shared_ptr<DFContext> context) { }
 }

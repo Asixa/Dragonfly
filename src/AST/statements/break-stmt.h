@@ -8,7 +8,7 @@ namespace parser {
 	class Break final :public Statement {
 	public:
 		static std::shared_ptr<Break> Parse();
-		void Gen() override;
+		void Gen(std::shared_ptr<DFContext>) override;
 	};
 
 }

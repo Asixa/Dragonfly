@@ -7,7 +7,7 @@ namespace parser {
 	class Unary final : public Expr {
 	public:
 		void ToString() override;
-		llvm::Value* Gen(const int cmd = 0) override;
+		llvm::Value* Gen(std::shared_ptr<DFContext>,const int cmd = 0) override;
 		int op;
 		bool prefix;
 		std::shared_ptr<Expr> expr;

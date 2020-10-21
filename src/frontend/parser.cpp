@@ -55,6 +55,7 @@ namespace parser {
 
 	void Program::Gen() {
 
+        const auto context = std::make_shared<DFContext>();
 
 		CodeGen::BuildInFunc("malloc", CodeGen::void_ptr,std::vector<llvm::Type*>{CodeGen::int32});
 
@@ -65,11 +66,11 @@ namespace parser {
 
 		CodeGen::BuildInFunc("printf", CodeGen::void_type,std::vector<llvm::Type*>{CodeGen::void_ptr}, true);
 
-		for (auto i = 0; i < declarations.size(); i++) 
-			try {declarations[i]->GenHeader();}catch (int e) {}
+		for (auto& declaration : declarations)
+            try { declaration->GenHeader(context);}catch (int e) {}
 		
 		for (auto& declaration : declarations) 
-			try { declaration->Gen(); }catch (int e) {}
+			try { declaration->Gen(context); }catch (int e) {}
 
 		// for (auto i = 0; i < late_declarations.size(); i++)
 		// 	try { late_declarations[i]->GenHeader(); } catch (int e) {}
@@ -86,11 +87,11 @@ namespace parser {
 
         
 		for (auto& statement : statements)
-			try {if (statement != nullptr)statement->Gen();}catch (int e){}
+			try {if (statement != nullptr)statement->Gen(context);}catch (int e){}
 		CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));
 
 		for (auto i = 0; i < late_gen.size(); i++)
-			try { late_gen[i]->Gen(); }catch (int e) {}
+			try { late_gen[i]->Gen(context); }catch (int e) {}
 
 
 		verifyFunction(*main_func);

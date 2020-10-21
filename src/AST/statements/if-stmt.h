@@ -12,7 +12,7 @@ namespace parser {
 		std::shared_ptr<Statement> else_stmts;
 	public:
 		static std::shared_ptr<If> Parse();
-		void Gen() override;
+		void Gen(std::shared_ptr<DFContext>) override;
 	};
 }
 #endif

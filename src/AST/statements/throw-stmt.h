@@ -8,7 +8,7 @@ namespace parser {
 		std::shared_ptr<Expr> value;
 	public:
 		static std::shared_ptr<Throw> Parse();
-		void Gen() override;
+		void Gen(std::shared_ptr<DFContext>) override;
 	};
 }
 #endif

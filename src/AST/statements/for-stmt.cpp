@@ -18,8 +18,8 @@ namespace parser {
 		return instance;
 	}
 
-	void For::Gen() {
-		init->Gen();
+	void For::Gen(std::shared_ptr<DFContext> context) {
+		init->Gen( context);
 	}
 
 }

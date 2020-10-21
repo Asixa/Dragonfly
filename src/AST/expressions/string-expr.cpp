@@ -6,7 +6,7 @@ namespace parser {
 	void String::ToString() {
 	    *Debugger::out << "[\"" << value << "\"]";
 	}
-	llvm::Value* String::Gen(int cmd) {
+	llvm::Value* String::Gen(std::shared_ptr<DFContext> context,int cmd) {
 		return CodeGen::builder.CreateGlobalStringPtr(llvm::StringRef(Lexer::MangleStr(value)));
 	}
 }

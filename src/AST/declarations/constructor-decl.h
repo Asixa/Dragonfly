@@ -8,8 +8,8 @@ namespace parser {
 	class ConstructorDecl final :public Declaration {
 		std::shared_ptr<FuncParam> args;
 		std::shared_ptr<Statement> statements;
-		void Gen() override;
-		void GenHeader() override;
+		void Gen(std::shared_ptr<DFContext>) override;
+		void GenHeader(std::shared_ptr<DFContext>) override;
 		static std::shared_ptr<ConstructorDecl> Parse();
 	};
 }

@@ -18,9 +18,9 @@ namespace parser {
 		else instance->stmts = Statement::Parse();
 		return instance;
 	}
-	void While::Gen() {
+	void While::Gen(std::shared_ptr<DFContext> context) {
 
-		auto cond_v = condition->Gen();
+		auto cond_v = condition->Gen(context);
 		if (!cond_v) {
 			Debugger::ErrorNonBreak(L"Error in condititon");
 			return;
@@ -31,7 +31,7 @@ namespace parser {
 		const auto end_bb = llvm::BasicBlock::Create(CodeGen::the_context, "end_while");
 		CodeGen::builder.SetInsertPoint(while_bb);
 		CodeGen::builder.CreateCondBr(cond_v, while_bb, end_bb);
-		stmts->Gen();
+		stmts->Gen(context);
 		CodeGen::builder.CreateBr(while_bb);
 	}
 }

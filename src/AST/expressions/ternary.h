@@ -10,7 +10,7 @@ namespace parser {
 		std::shared_ptr<Expr> c;
 	public:
 		void ToString() override;
-		llvm::Value* Gen(const int cmd = 0) override;
+		llvm::Value* Gen(std::shared_ptr<DFContext>,const int cmd = 0) override;
 		Ternary(std::shared_ptr<Expr> x, std::shared_ptr<Expr> y, std::shared_ptr<Expr> z) : a(x), b(y), c(z) {}
 		static std::shared_ptr<Expr> Parse();
 	};

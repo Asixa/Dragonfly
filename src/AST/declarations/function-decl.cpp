@@ -128,7 +128,7 @@ namespace parser {
     void FunctionDecl::SetInternal(llvm::StructType* type) {
 		parent_type = type;
 	}
-	void FunctionDecl::Instantiate(std::shared_ptr <GenericParam> param) {
+	void FunctionDecl::Instantiate(std::shared_ptr<DFContext> context,std::shared_ptr <GenericParam> param) {
 		if (!generic)return;
 		const auto func_instance_name = param->ToString();
 		const auto function = CodeGen::the_module->getFunction(full_name + func_instance_name);
@@ -139,7 +139,7 @@ namespace parser {
 		instance->PassGeneric(param);
 		instance->is_template = false;
 		instance->func_postfix = func_instance_name;
-		instance->GenHeader();
+		instance->GenHeader(context);
 		CodeGen::program->late_gen.push_back(instance);
 	}
 	void FunctionDecl::PassGeneric(std::shared_ptr<GenericParam> val, std::shared_ptr<GenericParam> key) {
@@ -156,7 +156,7 @@ namespace parser {
 			return_type = Type(val->names[std::distance(key->names.begin(), pos)]);
 	}
 
-	void FunctionDecl::GenHeader() {
+	void FunctionDecl::GenHeader(std::shared_ptr<DFContext> context) {
 		std::vector<llvm::Type*> arg_types;
 		auto const is_member_function = parent_type != nullptr;
 
@@ -224,12 +224,12 @@ namespace parser {
 
 
 
-    void FunctionDecl::Gen() {
+    void FunctionDecl::Gen(std::shared_ptr<DFContext> context) {
 		if (is_extern)return;
         if(is_template)return;
         if(extension) {
 			extension = false;
-			GenHeader();
+			GenHeader(context);
         }
 		
 		auto function = CodeGen::GetFunction(full_name);
@@ -271,7 +271,7 @@ namespace parser {
        
 		CodeGen::current_function = this;
 		// generate the statements in the function.
-		if (statements != nullptr)statements->Gen();
+		if (statements != nullptr)statements->Gen(context);
 		// return void by default.
 		if (function->getReturnType()->getTypeID() == llvm::Type::VoidTyID)CodeGen::builder.CreateRetVoid();
 		// clear the local scope.

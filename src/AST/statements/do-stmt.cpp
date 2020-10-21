@@ -20,8 +20,8 @@ namespace parser {
 		Lexer::Match(')');
 		return instance;
 	}
-	void Do::Gen() {
-		auto cond_v = condition->Gen();
+	void Do::Gen(std::shared_ptr<DFContext> context) {
+		auto cond_v = condition->Gen(context);
 		if (!cond_v) {
 			Debugger::ErrorNonBreak(L"Error in condititon");
 			return;
@@ -31,7 +31,7 @@ namespace parser {
 		const auto while_bb = llvm::BasicBlock::Create(CodeGen::the_context, "do", function);
 		const auto end_bb = llvm::BasicBlock::Create(CodeGen::the_context, "end_do");
 		CodeGen::builder.SetInsertPoint(while_bb);
-		stmts->Gen();
+		stmts->Gen(context);
 		CodeGen::builder.CreateCondBr(cond_v, while_bb, end_bb);
 		CodeGen::builder.CreateBr(while_bb);
 	}

@@ -9,7 +9,7 @@ namespace parser {
 	public:
 		std::shared_ptr<FuncCall>func;
 		void ToString() override;
-		llvm::Value* Gen(const int cmd = 0) override;
+		llvm::Value* Gen(std::shared_ptr<DFContext>,const int cmd = 0) override;
 		static std::shared_ptr<New> Parse();
 	};
 }

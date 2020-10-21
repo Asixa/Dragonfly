@@ -7,7 +7,7 @@ namespace parser {
 	class Declaration : public Statement {
 	public:
 		std::shared_ptr<Declaration>parent();
-		virtual void GenHeader() = 0;
+		virtual void GenHeader(std::shared_ptr<DFContext>) = 0;
 	};
 }
 #endif

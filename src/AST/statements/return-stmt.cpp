@@ -17,7 +17,7 @@ namespace parser {
 		*Debugger::out << "[Parsed] Return Statement\n";
 		return instance;
 	}
-	void Return::Gen() {
+	void Return::Gen(std::shared_ptr<DFContext> context) {
 		//////////////////////////////////////////////////////////////////////////////
 		/// State 1£¬ Gen the value, and check.
 		//////////////////////////////////////////////////////////////////////////////
@@ -26,7 +26,7 @@ namespace parser {
 			return;
 		}
 
-		auto val = value->Gen(1);
+		auto val = value->Gen(context,1);
 		if (!val) {
 			Debugger::ErrorV("Error in return", line, ch);
 			return;
@@ -47,6 +47,8 @@ namespace parser {
 		while (val_ptr_level > expected_ptr_level) {
 			val = CodeGen::builder.CreateLoad(val);
 			val_ptr_level--;
+
+            
 		}
 		CodeGen::builder.CreateRet(val);
 

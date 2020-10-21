@@ -4,7 +4,7 @@
 std::shared_ptr<parser::New> parser::New::Parse() {
 	Lexer::Next();
 	auto instance = std::make_shared<New>();
-	auto name = Lexer::string_val;
+    const auto name = Lexer::string_val;
 	Lexer::Match(Id);
 	if (Lexer::Check('(')) {
 		instance->func = FuncCall::Parse(name);
@@ -18,7 +18,7 @@ void parser::New::ToString() {
     
 }
 
-llvm::Value* parser::New::Gen(const int cmd) {
+llvm::Value* parser::New::Gen(const std::shared_ptr<DFContext> context,const int cmd) {
 
 	ClassDecl* decl = nullptr;
 	const auto mangled_str = func->name;
@@ -31,7 +31,7 @@ llvm::Value* parser::New::Gen(const int cmd) {
 	auto value = CodeGen::Malloc(CodeGen::the_module->getTypeByName(mangled_str));
     // const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, CodeGen::GetType(func->name), mangled_str);
 	// alloca->setAlignment(llvm::MaybeAlign(8));
-	func->GenField(value);
+	func->GenField(context,value);
 	return value;
 
 }

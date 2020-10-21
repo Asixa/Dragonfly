@@ -74,7 +74,7 @@ namespace parser {
 		return instance;
 	}
 
-	void ClassDecl::Instantiate(std::shared_ptr<GenericParam> param) {
+	void ClassDecl::Instantiate(std::shared_ptr<DFContext> context,std::shared_ptr<GenericParam> param) {
 		const auto instance = new ClassDecl();
 		instance->fields = fields;
 		instance->is_template = false;
@@ -102,7 +102,7 @@ namespace parser {
 		the_struct = llvm::StructType::create(CodeGen::the_context, full_name);
 		CodeGen::types_table[full_name] = instance;
 		instance->full_name = full_name;
-		instance->Gen();
+		instance->Gen(context);
         for(auto i=0;i<functions.size();i++) {
 			instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
         }
@@ -110,12 +110,12 @@ namespace parser {
 		for (auto& function : instance->functions) {
 			function->SetInternal(the_struct);
 			function->PassGeneric(param,generic);
-			function->GenHeader();
+			function->GenHeader(context);
 			CodeGen::program->late_gen.push_back(function);
 		}
 	}
 
-	void ClassDecl::GenHeader() {
+	void ClassDecl::GenHeader(std::shared_ptr<DFContext>) {
 		full_name = name;
 		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
 		if (!the_struct) {
@@ -139,7 +139,7 @@ namespace parser {
 
 
 
-    void ClassDecl::Gen() {
+    void ClassDecl::Gen(std::shared_ptr<DFContext>) {
        
 		if (is_template)return;
 		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
