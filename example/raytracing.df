@@ -1,0 +1,2 @@
+var nx,ny =512,512
+buffer= vector(3,float32,shape=(nx,ny))
