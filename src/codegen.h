@@ -25,7 +25,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 
-#include "parser.h"
+#include "frontend/parser.h"
 
 class CodeGen {
 public:

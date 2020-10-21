@@ -1,7 +1,7 @@
 #ifndef FUNCTION_DECL_H
 #define FUNCTION_DECL_H
 
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/declarations/declaration.h"
 #include "generic-param.h"
 #include "namespace-decl.h"

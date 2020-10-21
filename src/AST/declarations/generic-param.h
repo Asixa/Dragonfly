@@ -1,6 +1,6 @@
 #ifndef GENERIC_PARAM_H
 #define GENERIC_PARAM_H
-#include "lexer.h"
+#include "frontend/lexer.h"
 namespace parser {
 	class GenericParam {
 	public:

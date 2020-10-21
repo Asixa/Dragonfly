@@ -2,7 +2,7 @@
 #define CLASS_DECL_H
 #include "declaration.h"
 #include "AST/expressions/expr.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "function-decl.h"
 
 namespace parser {

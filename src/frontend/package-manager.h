@@ -1,6 +1,6 @@
 #ifndef PACKAGE_MANAGER_H
 #define PACKAGE_MANAGER_H
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include <string>
 #include <vector>
 

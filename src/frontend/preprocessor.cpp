@@ -1,5 +1,5 @@
 #include "preprocessor.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include <codecvt>
 #include <fstream>
 #include <sstream>

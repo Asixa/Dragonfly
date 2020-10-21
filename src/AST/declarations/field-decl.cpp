@@ -1,6 +1,6 @@
 #include "AST/declarations/field-decl.h"
-#include "debug.h"
-#include "lexer.h"
+#include "frontend/debug.h"
+#include "frontend/lexer.h"
 #include "AST/expressions/binary.h"
 #include "codegen.h"
 

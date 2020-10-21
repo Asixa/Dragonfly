@@ -1,7 +1,7 @@
 #ifndef FUNCTION_CALL_H
 #define FUNCTION_CALL_H
 #include "AST/expressions/field.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/declarations/generic-param.h"
 
 namespace parser {

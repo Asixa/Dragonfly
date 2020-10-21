@@ -15,8 +15,8 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include "keywords.h"
-#include "debug.h"
+#include "frontend/keywords.h"
+#include "frontend/debug.h"
 
 #include <vector>
 #include <string>

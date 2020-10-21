@@ -1,6 +1,6 @@
 #ifndef STATEMENTS_H
 #define STATEMENTS_H
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/statements/statement.h"
 
 namespace parser {

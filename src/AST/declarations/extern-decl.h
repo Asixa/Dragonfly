@@ -1,6 +1,6 @@
 #ifndef EXTERN_EXPR_H
 #define EXTERN_EXPR_H
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "function-decl.h"
 
 namespace parser {

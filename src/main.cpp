@@ -14,11 +14,11 @@
 #include <iostream>
 #include <sstream>
 
-#include "lexer.h"
-#include "parser.h"
+#include "frontend/lexer.h"
+#include "frontend/parser.h"
 #include "codegen.h" 
-#include "package-manager.h"
-#include "preprocessor.h"
+#include "frontend/package-manager.h"
+#include "frontend/preprocessor.h"
 
 int main(int argc, char** argv) {
 

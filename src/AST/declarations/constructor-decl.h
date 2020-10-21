@@ -1,7 +1,7 @@
 #ifndef CONSTRUCTOR_DECL_H
 #define CONSTRUCTOR_DECL_H
 #include "AST/declarations/declaration.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/declarations/function-decl.h"
 
 namespace parser {

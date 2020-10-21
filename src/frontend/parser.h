@@ -15,7 +15,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include <llvm/IR/Value.h>
 #include <llvm/IR/DerivedTypes.h>
 

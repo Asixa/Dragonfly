@@ -1,7 +1,7 @@
 #ifndef STATEMENT_H
 #define STATEMENT_H
-#include "lexer.h"
-#include "debug.h"
+#include "frontend/lexer.h"
+#include "frontend/debug.h"
 namespace parser {
 	// Base Class for Statements
 	class Statement {

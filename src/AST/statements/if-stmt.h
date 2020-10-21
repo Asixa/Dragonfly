@@ -2,7 +2,7 @@
 #define IF_STMT_H
 #include "AST/statements/statement.h"
 #include "AST/expressions/expr.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 
 namespace parser {
 	// class for if statement.

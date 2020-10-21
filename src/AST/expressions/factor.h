@@ -1,7 +1,7 @@
 #ifndef FACTOR_H
 #define FACTOR_H
 #include "AST/expressions/expr.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 
 namespace parser {
 	// Expression node for All general factors (including all expression nodes above)

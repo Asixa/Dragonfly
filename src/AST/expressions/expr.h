@@ -1,7 +1,7 @@
 #ifndef EXPR_H
 #define EXPR_H
 #include <llvm/IR/Value.h>
-#include "debug.h"
+#include "frontend/debug.h"
 namespace parser {
 	// Base Class for Expressions
 	class Expr {

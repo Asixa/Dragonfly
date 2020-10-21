@@ -1,6 +1,6 @@
 #ifndef NUMBER_CONST_H
 #define NUMBER_CONST_H
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/expressions/expr.h"
 
 namespace parser {

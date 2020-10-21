@@ -1,5 +1,5 @@
 #include "AST/statements/return-stmt.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/expressions/binary.h"
 #include "codegen.h"
 

@@ -19,9 +19,9 @@
 #include <vector>
 #include <fstream>
 
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include <windows.h>
-#include "preprocessor.h"
+#include "frontend/preprocessor.h"
 
 std::basic_ostream<wchar_t>* Debugger::out = nullptr;
 bool Debugger::is_std_out = false;

@@ -1,7 +1,7 @@
 #ifndef BINARY_H
 #define BINARY_H
 #include "AST/expressions/expr.h"
-#include "lexer.h"
+#include "frontend/lexer.h"
 #include "AST/expressions/unary.h"
 #include "AST/expressions/ternary.h"
 #include "field.h"
