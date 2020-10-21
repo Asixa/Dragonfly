@@ -110,18 +110,13 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 include_directories(
 	    ${NVVM_INCLUDE_DIR}
 		${CUDA_HOME}/include
-        ${PROJECT_SOURCE_DIR}/include
+
 	    ${PROJECT_SOURCE_DIR}/src
 	    ${PROJECT_SOURCE_DIR}/thirdparty/json
 )
  
-file(GLOB all_SRCS
-	    "${PROJECT_SOURCE_DIR}/src/*.cpp"
-	    "${PROJECT_SOURCE_DIR}/src/AST/*.cpp"
-	    "${PROJECT_SOURCE_DIR}/src/AST/expressions/*.cpp"
-	    "${PROJECT_SOURCE_DIR}/src/AST/statements/*.cpp"
-	    "${PROJECT_SOURCE_DIR}/src/AST/declarations/*.cpp"
-        "${PROJECT_SOURCE_DIR}/include/*.h" 
+file(GLOB_RECURSE all_SRCS
+	    "${PROJECT_SOURCE_DIR}/src/*.cpp" 
         )
 
 add_executable (${PROJECT_NAME} ${all_SRCS})
@@ -129,7 +124,7 @@ add_executable (${PROJECT_NAME} ${all_SRCS})
 target_link_libraries(${PROJECT_NAME} ${llvm_libs} ${NVVM_LIB}  )
 
 #install(TARGETS "${PROJECT_NAME}" DESTINATION bin)
-include(CPack)
+include(CPack) 
 
 enable_testing()
 add_subdirectory(tests)
