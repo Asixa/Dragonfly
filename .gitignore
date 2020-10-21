@@ -17,4 +17,5 @@ out
 *.testdurations
 tools/a.exe
 bin
+.VSCodeCounter
 
