@@ -20,20 +20,20 @@ namespace parser {
 		Lexer::Match(')');
 		return instance;
 	}
-	void Do::Gen(std::shared_ptr<DFContext> context) {
-		auto cond_v = condition->Gen(context);
+	void Do::Gen(std::shared_ptr<DFContext> ctx) {
+		auto cond_v = condition->Gen(ctx);
 		if (!cond_v) {
 			Debugger::ErrorNonBreak(L"Error in condititon");
 			return;
 		}
-		cond_v = CodeGen::builder.CreateICmpEQ(cond_v, CodeGen::True, "cond");
-		const auto function = CodeGen::builder.GetInsertBlock()->getParent();
-		const auto while_bb = llvm::BasicBlock::Create(CodeGen::the_context, "do", function);
-		const auto end_bb = llvm::BasicBlock::Create(CodeGen::the_context, "end_do");
-		CodeGen::builder.SetInsertPoint(while_bb);
-		stmts->Gen(context);
-		CodeGen::builder.CreateCondBr(cond_v, while_bb, end_bb);
-		CodeGen::builder.CreateBr(while_bb);
+		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->True, "cond");
+		const auto function = ctx->builder->GetInsertBlock()->getParent();
+		const auto while_bb = llvm::BasicBlock::Create(ctx->context, "do", function);
+		const auto end_bb = llvm::BasicBlock::Create(ctx->context, "end_do");
+		ctx->builder->SetInsertPoint(while_bb);
+		stmts->Gen(ctx);
+		ctx->builder->CreateCondBr(cond_v, while_bb, end_bb);
+		ctx->builder->CreateBr(while_bb);
 	}
 
 }

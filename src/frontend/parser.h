@@ -63,7 +63,7 @@ namespace parser {
 		std::vector<std::shared_ptr<Declaration>> declarations;
 		std::vector<std::shared_ptr<Declaration>> late_gen;
 		static std::shared_ptr<Program> Parse();
-        void Gen();
+        void Gen(std::shared_ptr<DFContext>);
     };
 
 	std::shared_ptr<Program> Parse();

@@ -26,32 +26,32 @@ namespace parser {
 			return let;
 	}
 
-	void FieldDecl::Gen(std::shared_ptr<DFContext> context) {
+	void FieldDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
-		const auto val = value->Gen(context);
+		const auto val = value->Gen(ctx);
 
-		const auto ty = type.empty() ? val->getType() : CodeGen::GetType(type);
+		const auto ty = type.empty() ? val->getType() : ctx->GetType(type);
 		if (!val) return;
 
 		if (constant) {
             // TODO ERROR, constant not supported yet!
-			const auto v = CodeGen::CreateGlob(name, ty);
+			const auto v = ctx->CreateGlob(name, ty);
 			// v->setInitializer(val);
-			CodeGen::local_fields_table[name] = v;
+			ctx->local_fields_table[name] = v;
 		}
 		else {
-			const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();
+			const auto the_function = ctx->builder->GetInsertBlock()->getParent();
 			if (the_function->getName() == "main") {
 				// All fields in main function are stored in heap.
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, name, the_function);
-				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
-				CodeGen::global_fields_table[name] = alloca;
+				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name, the_function);
+				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
+				ctx->global_fields_table[name] = alloca;
 			}
 			else {
 				// otherwise the local field store on stack.
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(ty, name,the_function);
-				CodeGen::AlignStore(CodeGen::builder.CreateStore(val, alloca));
-				CodeGen::local_fields_table[name] = alloca;
+				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name,the_function);
+				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
+				ctx->local_fields_table[name] = alloca;
 			}
 		}
 	}

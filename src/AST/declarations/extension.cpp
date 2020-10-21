@@ -32,16 +32,16 @@ namespace parser {
 		return instance;
 	}
 
-	void Extension::Gen(std::shared_ptr<DFContext> context) {
-		const auto the_struct = CodeGen::the_module->getTypeByName(name);
+	void Extension::Gen(std::shared_ptr<DFContext> ctx) {
+		const auto the_struct = ctx->module->getTypeByName(name);
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);
-			function->GenHeader(context);
-			function->Gen(context);
+			function->GenHeader(ctx);
+			function->Gen(ctx);
 		}
 	}
-	void Extension::GenHeader(std::shared_ptr<DFContext> context) {
-		const auto the_struct = CodeGen::the_module->getTypeByName(name);
+	void Extension::GenHeader(std::shared_ptr<DFContext> ctx) {
+		const auto the_struct = ctx->module->getTypeByName(name);
 		if (!the_struct)* Debugger::out << "Type " << name.c_str() << " is not defined" << std::endl;
 	}
 

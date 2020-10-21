@@ -45,15 +45,16 @@ int main(int argc, char** argv) {
 	// Lexer::LoadFile(filename.c_str());
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
-    
-   CodeGen::program = parser::Parse();
+	const auto context = std::make_shared<DFContext>();
+
+    context->program = parser::Parse();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
-	CodeGen::program->Gen();
+	context->program->Gen(context);
     if (!Debugger::error_existed) {
         
-        CodeGen::WriteReadableIr(CodeGen::the_module.get(), "ir.txt", true);
-		CodeGen::WriteBitCodeIr(CodeGen::the_module.get(), "a.ll");
+		context->WriteReadableIr(context->module.get(), "ir.txt", true);
+		context->WriteBitCodeIr(context->module.get(), "a.ll");
         std::cout << "Compiled successfully, took a total of " << static_cast<double>(clock() - start) << "ms\n\n";
     }
     else std::cout << "Compiler stopped due to errors occurred\n\n";

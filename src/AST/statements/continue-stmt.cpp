@@ -7,12 +7,12 @@ namespace parser {
 		auto instance = std::make_shared<Continue>();
 		return instance;
 	}
-	void Continue::Gen(std::shared_ptr<DFContext> context) {
-		if (!CodeGen::is_sub_block) {
+	void Continue::Gen(std::shared_ptr<DFContext> ctx) {
+		if (!ctx->is_sub_block) {
 			Debugger::ErrorNonBreak(L"invalid_token :continue");
 			return;
 		}
-		CodeGen::builder.CreateBr(CodeGen::block_begin);
+		ctx->builder->CreateBr(ctx->block_begin);
 	}
 
 }

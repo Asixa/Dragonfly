@@ -17,16 +17,16 @@ namespace parser {
 		*Debugger::out << "[Parsed] Return Statement\n";
 		return instance;
 	}
-	void Return::Gen(std::shared_ptr<DFContext> context) {
+	void Return::Gen(std::shared_ptr<DFContext> ctx) {
 		//////////////////////////////////////////////////////////////////////////////
 		/// State 1£¬ Gen the value, and check.
 		//////////////////////////////////////////////////////////////////////////////
 		if (value == nullptr) {
-			CodeGen::builder.CreateRetVoid();
+			ctx->builder->CreateRetVoid();
 			return;
 		}
 
-		auto val = value->Gen(context,1);
+		auto val = value->Gen(ctx,1);
 		if (!val) {
 			Debugger::ErrorV("Error in return", line, ch);
 			return;
@@ -35,22 +35,22 @@ namespace parser {
 		//////////////////////////////////////////////////////////////////////////////
 		/// State 2.a£¬ for generic function
 		//////////////////////////////////////////////////////////////////////////////
-		auto const function = CodeGen::builder.GetInsertBlock()->getParent();
+		auto const function = ctx->builder->GetInsertBlock()->getParent();
 	
 		auto const expected = function->getReturnType();
-		if (CodeGen::GetStructName(expected) != CodeGen::GetStructName(val)) {
+		if (ctx->GetStructName(expected) != ctx->GetStructName(val)) {
 			Debugger::ErrorV("return type not same", line, ch);
 			return;
 		}
-		auto const expected_ptr_level = CodeGen::GetPtrDepth(expected);
-		auto val_ptr_level = CodeGen::GetPtrDepth(val);
+		auto const expected_ptr_level = ctx->GetPtrDepth(expected);
+		auto val_ptr_level = ctx->GetPtrDepth(val);
 		while (val_ptr_level > expected_ptr_level) {
-			val = CodeGen::builder.CreateLoad(val);
+			val = ctx->builder->CreateLoad(val);
 			val_ptr_level--;
 
             
 		}
-		CodeGen::builder.CreateRet(val);
+		ctx->builder->CreateRet(val);
 
 	}
 }

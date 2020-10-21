@@ -49,10 +49,6 @@ public:
 
 
 
-
-
-
-
 	parser::ClassDecl* GetTemplateClass(std::string name);
 	parser::FunctionDecl* GetTemplateFunc(std::string name);
 

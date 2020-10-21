@@ -32,48 +32,48 @@ namespace parser {
 		return instance;
 	}
 
-	void If::Gen(std::shared_ptr<DFContext>context) {
-		auto cond_v = condition->Gen(context);
+	void If::Gen(std::shared_ptr<DFContext>ctx) {
+		auto cond_v = condition->Gen(ctx);
 		if (!cond_v) {
 			Debugger::ErrorNonBreak(L"Error in condititon");
 			return;
 		}
 
-		cond_v = CodeGen::builder.CreateICmpEQ(cond_v, CodeGen::True, "ifcond");
-		auto function = CodeGen::builder.GetInsertBlock()->getParent();
+		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->True, "ifcond");
+		auto function = ctx->builder->GetInsertBlock()->getParent();
 
-		auto then_bb = llvm::BasicBlock::Create(CodeGen::the_context, "then", function);
-		auto else_bb = llvm::BasicBlock::Create(CodeGen::the_context, "else");
-		const auto merge_bb = llvm::BasicBlock::Create(CodeGen::the_context, "ifcont");
+		auto then_bb = llvm::BasicBlock::Create(ctx->context, "then", function);
+		auto else_bb = llvm::BasicBlock::Create(ctx->context, "else");
+		const auto merge_bb = llvm::BasicBlock::Create(ctx->context, "ifcont");
 
-		CodeGen::builder.CreateCondBr(cond_v, then_bb, else_bb);
+		ctx->builder->CreateCondBr(cond_v, then_bb, else_bb);
 
-		CodeGen::builder.SetInsertPoint(then_bb);
-
-
-		stmts->Gen(context);
+		ctx->builder->SetInsertPoint(then_bb);
 
 
-		CodeGen::builder.CreateBr(merge_bb);
+		stmts->Gen(ctx);
+
+
+		ctx->builder->CreateBr(merge_bb);
 		// Codegen of 'Then' can change the current block, update ThenBB for the PHI.
-		then_bb = CodeGen::builder.GetInsertBlock();
+		then_bb = ctx->builder->GetInsertBlock();
 
 		// Emit else block.
 		function->getBasicBlockList().push_back(else_bb);
-		CodeGen::builder.SetInsertPoint(else_bb);
+		ctx->builder->SetInsertPoint(else_bb);
 
-		else_stmts->Gen(context);
+		else_stmts->Gen(ctx);
 
 
-		CodeGen::builder.CreateBr(merge_bb);
+		ctx->builder->CreateBr(merge_bb);
 		// Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-		else_bb = CodeGen::builder.GetInsertBlock();
+		else_bb = ctx->builder->GetInsertBlock();
 
 		// Emit merge block.
 		function->getBasicBlockList().push_back(merge_bb);
-		CodeGen::builder.SetInsertPoint(merge_bb);
+		ctx->builder->SetInsertPoint(merge_bb);
 
-		// PHINode* PN = CodeGen::builder.CreatePHI(Type::getDoubleTy(CodeGen::the_context), 2, "iftmp");
+		// PHINode* PN = ctx->builder->CreatePHI(Type::getDoubleTy(ctx->the_context), 2, "iftmp");
 		// PN->addIncoming(ThenV, ThenBB);
 		// PN->addIncoming(ElseV, ElseBB);
 		return;

@@ -2,6 +2,8 @@
 #include "AST/statements/statements.h"
 #include "codegen.h"
 #include <sstream>
+#include "frontend/parser.h"
+#include "llvm/IR/Verifier.h"
 namespace parser {
 	std::shared_ptr<FuncParam> FuncParam::Parse() {
 		auto param = std::make_shared<FuncParam>();
@@ -128,10 +130,10 @@ namespace parser {
     void FunctionDecl::SetInternal(llvm::StructType* type) {
 		parent_type = type;
 	}
-	void FunctionDecl::Instantiate(std::shared_ptr<DFContext> context,std::shared_ptr <GenericParam> param) {
+	void FunctionDecl::Instantiate(std::shared_ptr<DFContext> ctx,std::shared_ptr <GenericParam> param) {
 		if (!generic)return;
 		const auto func_instance_name = param->ToString();
-		const auto function = CodeGen::the_module->getFunction(full_name + func_instance_name);
+		const auto function = ctx->module->getFunction(full_name + func_instance_name);
 		if (function)return;
 		const auto instance = std::make_shared<FunctionDecl>();
 		*instance = *this;
@@ -139,8 +141,8 @@ namespace parser {
 		instance->PassGeneric(param);
 		instance->is_template = false;
 		instance->func_postfix = func_instance_name;
-		instance->GenHeader(context);
-		CodeGen::program->late_gen.push_back(instance);
+		instance->GenHeader(ctx);
+		ctx->program->late_gen.push_back(instance);
 	}
 	void FunctionDecl::PassGeneric(std::shared_ptr<GenericParam> val, std::shared_ptr<GenericParam> key) {
 		if (val == nullptr)return;
@@ -156,7 +158,7 @@ namespace parser {
 			return_type = Type(val->names[std::distance(key->names.begin(), pos)]);
 	}
 
-	void FunctionDecl::GenHeader(std::shared_ptr<DFContext> context) {
+	void FunctionDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
 		std::vector<llvm::Type*> arg_types;
 		auto const is_member_function = parent_type != nullptr;
 
@@ -164,7 +166,7 @@ namespace parser {
             const auto class_name = name->GetClassName();
             if(!class_name.empty()) {
 				extension = true;
-				parent_type = CodeGen::the_module->getTypeByName(class_name);
+				parent_type = ctx->module->getTypeByName(class_name);
 				return;
             }
         }
@@ -183,7 +185,7 @@ namespace parser {
 					args->generic_id.push_back(std::distance(generic->names.begin(), pos));
 				else  args->generic_id.push_back(-1);
             }
-			CodeGen::template_function_table[full_name] = this;
+			ctx->template_function_table[full_name] = this;
             return;
         }
 	
@@ -196,22 +198,22 @@ namespace parser {
 		}
 		// add to the arguments' type.
 		for (auto i = 0; i < args->size; i++)
-			arg_types.push_back(CodeGen::GetType(args->types[i]));
+			arg_types.push_back(ctx->GetType(args->types[i]));
 
 		
 		// added arg types to name for overloading.
 		full_name += "(";
 		for (int i = parent_type == nullptr ? 0 : 1, types_size = arg_types.size(); i < types_size; i++)
-			full_name += CodeGen::GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
+			full_name += ctx->GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
 		full_name += ")";
 		// check if the fucntion already exist.
-		auto the_function = CodeGen::GetFunction(full_name);
+		auto the_function = ctx->GetFunction(full_name);
 		if (!the_function) {
 			
 			// create the function type.
-			const auto func_type = llvm::FunctionType::get(CodeGen::GetType(return_type), arg_types, args->is_var_arg);
+			const auto func_type = llvm::FunctionType::get(ctx->GetType(return_type), arg_types, args->is_var_arg);
 			// create the function
-			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, full_name, CodeGen::the_module.get());
+			the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, full_name, ctx->module.get());
 			// add name for arguments.
 			unsigned idx = 0;
 			for (auto& arg : the_function->args())
@@ -224,59 +226,59 @@ namespace parser {
 
 
 
-    void FunctionDecl::Gen(std::shared_ptr<DFContext> context) {
+    void FunctionDecl::Gen(std::shared_ptr<DFContext> ctx) {
 		if (is_extern)return;
         if(is_template)return;
         if(extension) {
 			extension = false;
-			GenHeader(context);
+			GenHeader(ctx);
         }
 		
-		auto function = CodeGen::GetFunction(full_name);
+		auto function = ctx->GetFunction(full_name);
 		if (!function) {
 			Debugger::ErrorV((std::string("function head not found: ") + full_name).c_str(),line,ch);
 			return;
 		}
 		//  create the basic block for the function.
-		const auto basic_block = CodeGen::CreateBasicBlock(function, name->GetFunctionName() + "_entry");
-		CodeGen::builder.SetInsertPoint(basic_block);
+		const auto basic_block = ctx->CreateBasicBlock(function, name->GetFunctionName() + "_entry");
+		ctx->builder->SetInsertPoint(basic_block);
 
 		for (auto& arg : function->args()) {
 			
 			// store the argument to argument table.
 			// if argment is a struct passed by value. we store its alloca to local_fields.
-			const auto arg_type_name = CodeGen::GetStructName(arg.getType());
-			if (CodeGen::GetCustomTypeCategory(arg_type_name) == ClassDecl::kStruct) {
-				if (CodeGen::GetPtrDepth(&arg) == 0) {
-					const auto alloca = CodeGen::CreateEntryBlockAlloca(arg.getType(), arg.getName());
-					CodeGen::AlignStore(CodeGen::builder.CreateStore(&arg, alloca));
-					CodeGen::local_fields_table[arg.getName()] = alloca;
+			const auto arg_type_name = ctx->GetStructName(arg.getType());
+			if (ctx->GetCustomTypeCategory(arg_type_name) == ClassDecl::kStruct) {
+				if (ctx->GetPtrDepth(&arg) == 0) {
+					const auto alloca = ctx->CreateEntryBlockAlloca(arg.getType(), arg.getName());
+					ctx->AlignStore(ctx->builder->CreateStore(&arg, alloca));
+					ctx->local_fields_table[arg.getName()] = alloca;
 					continue;
 				}
 			}
-			CodeGen::local_fields_table[arg.getName()] = &arg;
+			ctx->local_fields_table[arg.getName()] = &arg;
 
 		}
 
 		// if 'this' have a base. then we create an alloca for the base.
 		if (parent_type != nullptr) {
-			const auto self_decl = CodeGen::types_table[parent_type->getStructName()];
+			const auto self_decl = ctx->types_table[parent_type->getStructName()];
 			if (!self_decl->base_type_name.empty()) {
-				const auto alloca = CodeGen::CreateEntryBlockAlloca(CodeGen::GetType(self_decl->base_type_name), "base", function);
-				const auto base = CodeGen::FindMemberField(function->getArg(0), "base");
-				CodeGen::AlignStore(CodeGen::builder.CreateStore(base, alloca));
-				CodeGen::local_fields_table["base"] = alloca;
+				const auto alloca = ctx->CreateEntryBlockAlloca(ctx->GetType(self_decl->base_type_name), "base", function);
+				const auto base = ctx->FindMemberField(function->getArg(0), "base");
+				ctx->AlignStore(ctx->builder->CreateStore(base, alloca));
+				ctx->local_fields_table["base"] = alloca;
 			}
 		}
        
-		CodeGen::current_function = this;
+		ctx->current_function = this;
 		// generate the statements in the function.
-		if (statements != nullptr)statements->Gen(context);
+		if (statements != nullptr)statements->Gen(ctx);
 		// return void by default.
-		if (function->getReturnType()->getTypeID() == llvm::Type::VoidTyID)CodeGen::builder.CreateRetVoid();
+		if (function->getReturnType()->getTypeID() == llvm::Type::VoidTyID)ctx->builder->CreateRetVoid();
 		// clear the local scope.
-		CodeGen::current_function = nullptr;
-		CodeGen::local_fields_table.clear();
+		ctx->current_function = nullptr;
+		ctx->local_fields_table.clear();
 		verifyFunction(*function);
 
 	}

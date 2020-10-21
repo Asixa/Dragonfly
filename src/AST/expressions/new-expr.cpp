@@ -18,20 +18,20 @@ void parser::New::ToString() {
     
 }
 
-llvm::Value* parser::New::Gen(const std::shared_ptr<DFContext> context,const int cmd) {
+llvm::Value* parser::New::Gen(const std::shared_ptr<DFContext> ctx,const int cmd) {
 
 	ClassDecl* decl = nullptr;
 	const auto mangled_str = func->name;
-	for (auto i : CodeGen::types_table)
+	for (auto i : ctx->types_table)
 		if (i.first == mangled_str)
 			decl = i.second;
 	if (decl == nullptr)
 		return Debugger::ErrorV((std::string("unknown type A") + mangled_str).c_str(),line,ch);
 	// const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();
-	auto value = CodeGen::Malloc(CodeGen::the_module->getTypeByName(mangled_str));
+	auto value = ctx->Malloc(ctx->module->getTypeByName(mangled_str));
     // const auto alloca = CodeGen::CreateEntryBlockAlloca(the_function, CodeGen::GetType(func->name), mangled_str);
 	// alloca->setAlignment(llvm::MaybeAlign(8));
-	func->GenField(context,value);
+	func->GenField(ctx,value);
 	return value;
 
 }

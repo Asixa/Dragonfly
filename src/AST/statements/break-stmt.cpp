@@ -8,11 +8,11 @@ namespace parser {
 		return instance;
 	}
 
-	void Break::Gen(std::shared_ptr<DFContext> context) {
-		if (!CodeGen::is_sub_block) {
+	void Break::Gen(std::shared_ptr<DFContext> ctx) {
+		if (!ctx->is_sub_block) {
 			Debugger::ErrorNonBreak(L"invalid_token :break");
 			return;
 		}
-		CodeGen::builder.CreateBr(CodeGen::block_end);
+		ctx->builder->CreateBr(ctx->block_end);
 	}
 }

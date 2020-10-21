@@ -278,7 +278,18 @@ int DFContext::GetCustomTypeCategory(const std::string ty) {
 }
 
 DFContext::DFContext() {
-	builder = std::make_unique<llvm::IRBuilder<>>(context);
+
+    module  =  std::make_unique<llvm::Module>("Program", context);
+    builder = std::make_unique<llvm::IRBuilder<>>(context);
+    data_layout = std::make_unique < llvm::DataLayout>(module.get());
+
+    //states
+	is_sub_block = false;
+	block_begin = nullptr;
+	block_end = nullptr;
+	current_function = nullptr;
+
+    //constant
 	True = llvm::ConstantInt::get(llvm::IntegerType::get(context, 1), 1);
 	False = llvm::ConstantInt::get(llvm::IntegerType::get(context, 1), 0);
 	// llvm::Value* CodeGen::Null = llvm::Constant::getNullValue();
@@ -286,10 +297,6 @@ DFContext::DFContext() {
 	void_type = llvm::Type::getVoidTy(context);
 	int32 = llvm::Type::getInt32Ty(context);
 
-	is_sub_block = false;
-	block_begin = nullptr;
-	block_end = nullptr;
 
-	current_function = nullptr;
 
 }

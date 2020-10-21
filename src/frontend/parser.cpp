@@ -3,7 +3,7 @@
 #include "codegen.h"
 #include "AST/declarations/enum-decl.h"
 #include "AST/declarations/extern-decl.h"
-
+#include "llvm/IR/Verifier.h"
 namespace parser {
 
     void Program::ParseSingle() {
@@ -53,18 +53,18 @@ namespace parser {
     }
 
 
-	void Program::Gen() {
+	void Program::Gen(std::shared_ptr<DFContext> context) {
 
-        const auto context = std::make_shared<DFContext>();
+        
 
-		CodeGen::BuildInFunc("malloc", CodeGen::void_ptr,std::vector<llvm::Type*>{CodeGen::int32});
+		context->BuildInFunc("malloc", context->void_ptr,std::vector<llvm::Type*>{context->int32});
 
-		CodeGen::BuildInFunc("memcpy", CodeGen::void_ptr,
-			std::vector<llvm::Type*>{CodeGen::void_ptr, CodeGen::void_ptr, CodeGen::int32});
+		context->BuildInFunc("memcpy", context->void_ptr,
+			std::vector<llvm::Type*>{context->void_ptr, context->void_ptr, context->int32});
 
-		CodeGen::BuildInFunc("free", CodeGen::void_type,std::vector<llvm::Type*>{CodeGen::void_ptr});
+		context->BuildInFunc("free", context->void_type,std::vector<llvm::Type*>{context->void_ptr});
 
-		CodeGen::BuildInFunc("printf", CodeGen::void_type,std::vector<llvm::Type*>{CodeGen::void_ptr}, true);
+		context->BuildInFunc("printf", context->void_type,std::vector<llvm::Type*>{context->void_ptr}, true);
 
 		for (auto& declaration : declarations)
             try { declaration->GenHeader(context);}catch (int e) {}
@@ -77,18 +77,18 @@ namespace parser {
         
 
 
-		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(CodeGen::void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", CodeGen::the_module.get());
-		CodeGen::builder.SetInsertPoint(CodeGen::CreateBasicBlock(__df_global_var_init, "entry"));
-		CodeGen::builder.CreateRetVoid();
+		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(context->void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", context->module.get());
+		context->builder->SetInsertPoint(context->CreateBasicBlock(__df_global_var_init, "entry"));
+		context->builder->CreateRetVoid();
 
-		const auto main_func = CodeGen::CreateMainFunc();
-		const auto entry = CodeGen::CreateBasicBlock(main_func, "entry");
-		CodeGen::builder.SetInsertPoint(entry);
+		const auto main_func = context->CreateMainFunc();
+		const auto entry = context->CreateBasicBlock(main_func, "entry");
+		context->builder->SetInsertPoint(entry);
 
         
 		for (auto& statement : statements)
 			try {if (statement != nullptr)statement->Gen(context);}catch (int e){}
-		CodeGen::builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), 0));
+		context->builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context->context), 0));
 
 		for (auto i = 0; i < late_gen.size(); i++)
 			try { late_gen[i]->Gen(context); }catch (int e) {}

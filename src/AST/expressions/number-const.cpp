@@ -14,11 +14,11 @@ namespace parser {
 			return;
 		}
 	}
-	llvm::Value* NumberConst::Gen(std::shared_ptr<DFContext> context,int cmd) {
+	llvm::Value* NumberConst::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 		switch (type) {
-		case K_float: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(static_cast<float>(value)));
-		case K_double: return llvm::ConstantFP::get(CodeGen::the_context, llvm::APFloat(value));
-		case K_int: return llvm::ConstantInt::get(llvm::Type::getInt32Ty(CodeGen::the_context), static_cast<int>(value));
+		case K_float: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(static_cast<float>(value)));
+		case K_double: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(value));
+		case K_int: return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->context), static_cast<int>(value));
 		default: return Debugger::ErrorV("Unknown number type",line,ch);
 		}
 	}

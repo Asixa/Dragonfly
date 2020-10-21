@@ -7,7 +7,7 @@ namespace parser {
 	void Boolean::ToString() {
 	    *Debugger::out << "[" << (value ? "true" : "false") << "]";
 	}
-	llvm::Value* Boolean::Gen(std::shared_ptr<DFContext> context,int cmd) {
-		return value ? CodeGen::True : CodeGen::False;;
+	llvm::Value* Boolean::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+		return value ? ctx->True : ctx->False;;
 	}
 }

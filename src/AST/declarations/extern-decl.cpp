@@ -47,19 +47,19 @@ namespace parser{
 		else Debugger::Error(L"Expected class or func");
 		return instance;
 	}
-	void Extern::GenHeader(std::shared_ptr<DFContext> context) {
+	void Extern::GenHeader(std::shared_ptr<DFContext> ctx) {
 		if (type == K_func) {
 			std::string func_name = name;
 			std::vector<llvm::Type*> arg_types;
 			for (auto i = 0; i < args->size; i++)
-				arg_types.push_back(CodeGen::GetType(args->types[i]));
+				arg_types.push_back(ctx->GetType(args->types[i]));
 			std::string param_name = "";
 			
 			llvm::Type* parent_type = nullptr;
 			if (alias!=nullptr&&!alias->names.empty()) {
 		
 				if (!alias->GetClassName().empty()) {
-					parent_type = CodeGen::the_module->getTypeByName(alias->GetClassName());
+					parent_type = ctx->module->getTypeByName(alias->GetClassName());
 					if (parent_type && parent_type != arg_types[0]) {
 						Debugger::ErrorV("the first argument nust be the member Class if it is a member function", line, ch);
 						return;
@@ -79,18 +79,18 @@ namespace parser{
 		
 			param_name += "(";
 			for (int i = parent_type == nullptr ? 0 : 1, types_size = arg_types.size(); i < types_size; i++)
-				param_name += CodeGen::GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
+				param_name += ctx->GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
 			param_name += ")";
 			if (alias != nullptr&&(alias->type != 0||init)) {
 				printf(" set alias %s to %s\n", (func_name + param_name).c_str(), name.c_str());
-				CodeGen::func_alias_table[func_name + param_name] = name;
+				ctx->func_alias_table[func_name + param_name] = name;
 			}
 
 
-			auto the_function = CodeGen::the_module->getFunction(name);
+			auto the_function = ctx->module->getFunction(name);
 			if (!the_function) {
-				const auto func_type = llvm::FunctionType::get(CodeGen::GetType(return_type), arg_types, args->is_var_arg);
-				the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name, CodeGen::the_module.get());
+				const auto func_type = llvm::FunctionType::get(ctx->GetType(return_type), arg_types, args->is_var_arg);
+				the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name, ctx->module.get());
 				unsigned idx = 0;
 				for (auto& arg : the_function->args())
 					arg.setName(args->names[idx++]);
@@ -98,9 +98,9 @@ namespace parser{
 			else  Debugger::ErrorV((std::string("function ") + name + std::string(" already defined\n")).c_str(), line, ch);
 		}
 		else  if (type == K_class) {
-			auto the_struct = CodeGen::the_module->getTypeByName(name);
+			auto the_struct = ctx->module->getTypeByName(name);
 			if (!the_struct) {
-				the_struct = llvm::StructType::create(CodeGen::the_context, name);
+				the_struct = llvm::StructType::create(ctx->context, name);
 			}
 			else {
 				*Debugger::out << "Type " << name.c_str() << " already defined" << std::endl;

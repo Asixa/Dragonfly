@@ -9,11 +9,11 @@ namespace parser {
 		RHS->ToString();
 		*Debugger::out << ")";
 	}
-	llvm::Value* Binary::Gen(std::shared_ptr<DFContext> context,int cmd) {
+	llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 
 		const auto load_ptr = op == '=' || op >= AddAgn;
-		auto lhs = LHS->Gen(context,load_ptr);
-		auto rhs = RHS->Gen(context,load_ptr);
+		auto lhs = LHS->Gen(ctx,load_ptr);
+		auto rhs = RHS->Gen(ctx,load_ptr);
 		if (!lhs || !rhs)return Debugger::ErrorV("operands is NULL",line,ch);;
 
 
@@ -25,21 +25,21 @@ namespace parser {
 			if (ltype == llvm::Type::IntegerTyID) {
 				if (rtype == llvm::Type::FloatTyID) {
 					type = llvm::Type::FloatTyID;
-					lhs = CodeGen::builder.CreateUIToFP(lhs, llvm::Type::getFloatTy(CodeGen::the_context));
+					lhs = ctx->builder->CreateUIToFP(lhs, llvm::Type::getFloatTy(ctx->context));
 				}
 				else if (rtype == llvm::Type::DoubleTyID) {
 					type = llvm::Type::DoubleTyID;
-					lhs = CodeGen::builder.CreateUIToFP(lhs, llvm::Type::getDoubleTy(CodeGen::the_context));
+					lhs = ctx->builder->CreateUIToFP(lhs, llvm::Type::getDoubleTy(ctx->context));
 				}
 			}
 			if (rtype == llvm::Type::IntegerTyID) {
 				if (ltype == llvm::Type::FloatTyID) {
 					type = llvm::Type::FloatTyID;
-					rhs = CodeGen::builder.CreateUIToFP(lhs, llvm::Type::getFloatTy(CodeGen::the_context));
+					rhs = ctx->builder->CreateUIToFP(lhs, llvm::Type::getFloatTy(ctx->context));
 				}
 				else if (ltype == llvm::Type::DoubleTyID) {
 					type = llvm::Type::DoubleTyID;
-					rhs = CodeGen::builder.CreateUIToFP(lhs, llvm::Type::getDoubleTy(CodeGen::the_context));
+					rhs = ctx->builder->CreateUIToFP(lhs, llvm::Type::getDoubleTy(ctx->context));
 				}
 			}
 		}
@@ -48,12 +48,12 @@ namespace parser {
 
 #define BASIC(f,i)[&](){                                                                                     \
 			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)                        \
-				return CodeGen::builder.Create##f(lhs, rhs, #f"_tmp");                                  \
+				return ctx->builder->Create##f(lhs, rhs, #f"_tmp");                                  \
 			if (type == llvm::Type::IntegerTyID)                                                        \
-				return CodeGen::builder.Create##i(lhs, rhs, #i"_tmp");                                  \
+				return ctx->builder->Create##i(lhs, rhs, #i"_tmp");                                  \
 			return Debugger::ErrorV( std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Non-number operands\n"),line,ch); }();
 #define BITWISE(f)[&](){                                                                                                                             \
-			if (type == llvm::Type::IntegerTyID)return CodeGen::builder.Create##f(lhs, rhs, "and_tmp");                                         \
+			if (type == llvm::Type::IntegerTyID)return ctx->builder->Create##f(lhs, rhs, "and_tmp");                                         \
 			return Debugger::ErrorV(std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Integer operands\n"),line,ch); \
 		}();
 
@@ -78,12 +78,12 @@ namespace parser {
 
 		case '/': {
 			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)
-				return CodeGen::builder.CreateFDiv(
+				return ctx->builder->CreateFDiv(
 					lhs, rhs, "FDiv""_tmp");
 			if (type == llvm::Type::IntegerTyID)
-				return CodeGen::builder.CreateFDiv(
-					CodeGen::builder.CreateCast(llvm::Instruction::SIToFP, lhs, llvm::Type::getDoubleTy(CodeGen::the_context)),
-					CodeGen::builder.CreateCast(llvm::Instruction::SIToFP, rhs, llvm::Type::getDoubleTy(CodeGen::the_context)),
+				return ctx->builder->CreateFDiv(
+					ctx->builder->CreateCast(llvm::Instruction::SIToFP, lhs, llvm::Type::getDoubleTy(ctx->context)),
+					ctx->builder->CreateCast(llvm::Instruction::SIToFP, rhs, llvm::Type::getDoubleTy(ctx->context)),
 					"FDiv""_tmp");
 			return Debugger::ErrorV(" ""'/'"" operation cannot apply on Non-number operands\n", line, ch);
 		}
@@ -97,33 +97,33 @@ namespace parser {
 			auto rhv = rhs;
 			if (rhs->getType()->getTypeID() != lhs->getType()->getPointerElementType()->getTypeID())
 				rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
-				? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs, "rhs"))
+				? ctx->AlignLoad(ctx->builder->CreateLoad(rhs, "rhs"))
 				: rhs;
-			CodeGen::AlignStore(CodeGen::builder.CreateStore(rhv, lhs));
+			ctx->AlignStore(ctx->builder->CreateStore(rhv, lhs));
 			return lhs;
 		}
 
 #define ASSGIN(x){																											\
-				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs,"rhs")) : rhs;			\
+				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? ctx->AlignLoad(ctx->builder->CreateLoad(rhs,"rhs")) : rhs;			\
 				if (ltype == llvm::Type::PointerTyID)																			\
 				{																										\
 					type = lhs->getType()->getPointerElementType()->getTypeID();										\
-					const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs,"lhs"));															\
-					return CodeGen::AlignStore(CodeGen::builder.CreateStore(x, lhs));						\
+					const auto lhsv = ctx->AlignLoad(ctx->builder->CreateLoad(lhs,"lhs"));															\
+					return ctx->AlignStore(ctx->builder->CreateStore(x, lhs));						\
 				}																										\
 				return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);														\
 			}
 #define BASIC_ASSGIN(a,b,c,d)case a:																					\
 			{																											\
-				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs,"rhs")) : rhs;			\
+				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? ctx->AlignLoad(ctx->builder->CreateLoad(rhs,"rhs")) : rhs;			\
 				if (type == llvm::Type::PointerTyID)																			\
 				{																										\
 					type = lhs->getType()->getPointerElementType()->getTypeID();										\
-					const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs,"lhs"));															\
+					const auto lhsv = ctx->AlignLoad(ctx->builder->CreateLoad(lhs,"lhs"));															\
 					if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)											\
-						return CodeGen::AlignStore(CodeGen::builder.CreateStore(CodeGen::builder.Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
+						return ctx->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
 					if (type == llvm::Type::IntegerTyID)																		\
-						return CodeGen::AlignStore(CodeGen::builder.CreateStore(CodeGen::builder.Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
+						return ctx->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
 					return Debugger::ErrorV(" "#d" operation cannot apply on Non-number variables\n",line,ch);							\
 				}																										\
 				return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);														\
@@ -131,8 +131,8 @@ namespace parser {
 
 				  // #define  BITWISE_ASSGIN(a,b,c,d)case a: {\
 	              // 			if (type == Type::IntegerTyID)\
-	              // 				lhs = CodeGen::builder.Create##c(lhs, rhs, #c"_tmp"); \
-	              // 			else return CodeGen::LogErrorV(" "#d" operation cannot apply on Non-number variables\n");\
+	              // 				lhs = ctx->builder->Create##c(lhs, rhs, #c"_tmp"); \
+	              // 			else return ctx->LogErrorV(" "#d" operation cannot apply on Non-number variables\n");\
 	              // 			return lhs;}
 
 				  BASIC_ASSGIN(AddAgn, FAdd, Add, +=)
@@ -142,23 +142,23 @@ namespace parser {
 
 		case DivAgn: {
 					  auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
-						  ? CodeGen::AlignLoad(CodeGen::builder.CreateLoad(rhs, "rhs"))
+						  ? ctx->AlignLoad(ctx->builder->CreateLoad(rhs, "rhs"))
 						  : rhs;
 					  if (type == llvm::Type::PointerTyID) {
 						  type = lhs->getType()->getPointerElementType()->getTypeID();
-						  const auto lhsv = CodeGen::AlignLoad(CodeGen::builder.CreateLoad(lhs, "lhs"));
+						  const auto lhsv = ctx->AlignLoad(ctx->builder->CreateLoad(lhs, "lhs"));
 						  if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)
-							  return CodeGen::AlignStore(
-								  CodeGen::builder.CreateStore(CodeGen::builder.CreateFDiv(lhsv, rhv, "FDiv""_tmp"), lhs));
+							  return ctx->AlignStore(
+								  ctx->builder->CreateStore(ctx->builder->CreateFDiv(lhsv, rhv, "FDiv""_tmp"), lhs));
 						  if (type == llvm::Type::IntegerTyID) {
-							  const auto lhv_d = CodeGen::builder.CreateCast(llvm::Instruction::SIToFP, lhsv,
-								  llvm::Type::getDoubleTy(CodeGen::the_context));
-							  const auto rhv_d = CodeGen::builder.CreateCast(llvm::Instruction::SIToFP, rhv,
-								  llvm::Type::getDoubleTy(CodeGen::the_context));
-							  const auto div = CodeGen::builder.CreateFDiv(lhv_d, rhv_d, "div_tmp");
-							  const auto div_i = CodeGen::builder.CreateCast(llvm::Instruction::FPToUI, div,
-								  llvm::Type::getInt32Ty(CodeGen::the_context));
-							  return CodeGen::AlignStore(CodeGen::builder.CreateStore(div_i, lhs));
+							  const auto lhv_d = ctx->builder->CreateCast(llvm::Instruction::SIToFP, lhsv,
+								  llvm::Type::getDoubleTy(ctx->context));
+							  const auto rhv_d = ctx->builder->CreateCast(llvm::Instruction::SIToFP, rhv,
+								  llvm::Type::getDoubleTy(ctx->context));
+							  const auto div = ctx->builder->CreateFDiv(lhv_d, rhv_d, "div_tmp");
+							  const auto div_i = ctx->builder->CreateCast(llvm::Instruction::FPToUI, div,
+								  llvm::Type::getInt32Ty(ctx->context));
+							  return ctx->AlignStore(ctx->builder->CreateStore(div_i, lhs));
 						  }
 
 

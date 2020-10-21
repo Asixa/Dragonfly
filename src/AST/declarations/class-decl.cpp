@@ -2,7 +2,7 @@
 #include "codegen.h"
 #include <sstream>
 #include "AST/declarations/enum-decl.h"
-
+#include "frontend/parser.h"
 namespace parser {
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
@@ -74,7 +74,7 @@ namespace parser {
 		return instance;
 	}
 
-	void ClassDecl::Instantiate(std::shared_ptr<DFContext> context,std::shared_ptr<GenericParam> param) {
+	void ClassDecl::Instantiate(std::shared_ptr<DFContext> ctx,std::shared_ptr<GenericParam> param) {
 		const auto instance = new ClassDecl();
 		instance->fields = fields;
 		instance->is_template = false;
@@ -93,16 +93,16 @@ namespace parser {
 		}
         const auto posfix = param->ToString();
 		const auto full_name = name + posfix;
-		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
+		auto the_struct = ctx->module->getTypeByName(full_name);
 		if (the_struct) {
 			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
 			return;
 		}
 
-		the_struct = llvm::StructType::create(CodeGen::the_context, full_name);
-		CodeGen::types_table[full_name] = instance;
+		the_struct = llvm::StructType::create(ctx->context, full_name);
+		ctx->types_table[full_name] = instance;
 		instance->full_name = full_name;
-		instance->Gen(context);
+		instance->Gen(ctx);
         for(auto i=0;i<functions.size();i++) {
 			instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
         }
@@ -110,39 +110,39 @@ namespace parser {
 		for (auto& function : instance->functions) {
 			function->SetInternal(the_struct);
 			function->PassGeneric(param,generic);
-			function->GenHeader(context);
-			CodeGen::program->late_gen.push_back(function);
+			function->GenHeader(ctx);
+			ctx->program->late_gen.push_back(function);
 		}
 	}
 
-	void ClassDecl::GenHeader(std::shared_ptr<DFContext>) {
+	void ClassDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
 		full_name = name;
-		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
+		auto the_struct = ctx->module->getTypeByName(full_name);
 		if (!the_struct) {
             if(is_template) {
-				CodeGen::template_types_table[full_name] = this;
+				ctx->template_types_table[full_name] = this;
                 return;
             }
-		    the_struct = llvm::StructType::create(CodeGen::the_context, name);
+		    the_struct = llvm::StructType::create(ctx->context, name);
 		}
 		else {
 			*Debugger::out << "Type " << name.c_str() << " already defined" << std::endl;
 			return;
 		}
-		CodeGen::types_table[the_struct->getName().str()] = this;
+		ctx->types_table[the_struct->getName().str()] = this;
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);
-			CodeGen::program->declarations.push_back(function);
+			ctx->program->declarations.push_back(function);
 		}
 
 	}
 
 
 
-    void ClassDecl::Gen(std::shared_ptr<DFContext>) {
+    void ClassDecl::Gen(std::shared_ptr<DFContext> ctx) {
        
 		if (is_template)return;
-		auto the_struct = CodeGen::the_module->getTypeByName(full_name);
+		auto the_struct = ctx->module->getTypeByName(full_name);
         if(!the_struct) {
 			Debugger::ErrorV((std::string("type") + full_name + " is not defined").c_str(), line, ch);
             return;
@@ -153,11 +153,11 @@ namespace parser {
 			llvm::Type* base_type = nullptr;
 			for (auto interface : interfaces) {
 				auto mangled_interface_name =interface.str;
-				if (CodeGen::IsCustomType(mangled_interface_name)) {
-					const auto decl = CodeGen::types_table[mangled_interface_name];
+				if (ctx->IsCustomType(mangled_interface_name)) {
+					const auto decl = ctx->types_table[mangled_interface_name];
 					if (!decl->category == kInterface) {
 						if (base_type == nullptr) {
-							base_type = CodeGen::the_module->getTypeByName(interface.str);
+							base_type = ctx->module->getTypeByName(interface.str);
 							base_type_name = interface;
 						}
 						else Debugger::ErrorV("Inherit multiple classes is not allowed",line,ch);
@@ -172,7 +172,7 @@ namespace parser {
 			}
 		}
 
-		for (const auto& type : types)field_tys.push_back(CodeGen::GetType(type));
+		for (const auto& type : types)field_tys.push_back(ctx->GetType(type));
 		the_struct->setBody(field_tys);
 	}
 }
