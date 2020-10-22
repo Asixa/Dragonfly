@@ -14,6 +14,7 @@
 ** [泛型](zh-cn/guide/generic)
 ** [面向对象](zh-cn/guide/oop)
 ** [命名空间](zh-cn/guide/namespace)
+** [张量](zh-cn/guide/tensor)
 * **标准库**
 
 * **样例代码**

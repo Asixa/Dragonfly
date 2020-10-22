@@ -5,7 +5,12 @@
 
 namespace AST {
 	namespace decl {
-		// class for matching variable declaration.
+		/**
+		 * \brief class for matching variable declaration.\n
+		 * ``var NAME : TYPE = EXPR``\n
+		 * ``var NAME = EXPR``\n
+		 * ``let NAME : TYPE = EXPR`` <span style="color:red">**TODO**</span> \n
+		 */
 		class FieldDecl : public stmt::Statement {
 			bool constant;
 			std::string name;

@@ -18,14 +18,9 @@ namespace AST {
 			let->type = Lexer::MatchType();
 		}
 		Lexer::Match('=');
-		
-			let->value = expr::Binary::Parse();
-		
-
-			Lexer::MatchSemicolon();
-		
-			// PRINT("[Parsed] %s field declaration\n", is_const ? "Constant" : "Variable");let->value->ToString();PRINT("\n");
-			return let;
+		let->value = expr::Binary::Parse();
+		Lexer::MatchSemicolon();
+		return let;
 	}
 
 	void FieldDecl::Gen(std::shared_ptr<DFContext> ctx) {

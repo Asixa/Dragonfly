@@ -5,6 +5,11 @@
 
 namespace AST {
 	namespace decl {
+	     /**
+		 * \brief Class for matching 'C' style extern functions.\n
+		 * ``extern XXX(..){...}``\n
+		 * ``extern XXX(..)=> STATEMENT``\n
+		 */
 		class Extern final : public Declaration {
 		public:
 			int type = 0;

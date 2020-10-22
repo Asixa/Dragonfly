@@ -8,7 +8,10 @@
 
 namespace AST {
 	namespace decl {
-		// class for matching function declaration parameters; 
+		/**
+		 * \brief class for matching function's parameters' declaration ; \n
+		 * `` NAME:TYPE,NAME:TYPE...``\n
+		 */
 		class FuncParam {
 		public:
 			int size = 0;
@@ -26,7 +29,15 @@ namespace AST {
 			}
 		};
 
-		// class for matching function definition.
+
+		/**
+		 * \brief class for matching function definition. \n
+		 * ``func NAME (FuncParam) {...} ``\n
+		 * ``dfunc NAME (FuncParam) {...} ``\n
+		 * ``kernel NAME (FuncParam) {...}`` \n
+		 * ``func CLASS::NAME (FuncParam) {...}`` \n
+		 */
+		// 
 		class FunctionDecl final : public Declaration {
 		public:
 			bool differentiable = false,

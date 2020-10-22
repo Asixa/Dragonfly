@@ -3,6 +3,10 @@
 #include "frontend/lexer.h"
 namespace AST {
 	namespace decl {
+		/**
+		 * \brief class for matching generic parameters' declaration ; \n
+		 *  <NAME,NAME...>\n
+		 */
 		class GenericParam {
 		public:
 			int size;

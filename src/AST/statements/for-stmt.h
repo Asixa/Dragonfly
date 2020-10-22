@@ -13,6 +13,16 @@ namespace AST {
 			static std::shared_ptr<For> Parse();
 			void Gen(std::shared_ptr<DFContext>) override;
 		};
+
+		class ForIterator final : public Statement {
+		public:
+			bool kernel;
+			std::shared_ptr<expr::Expr> iterator;
+			std::shared_ptr<Statement> stmts;
+			static std::shared_ptr<For> Parse();
+			void Gen(std::shared_ptr<DFContext>) override;
+		};
+		
 	}
 
 }

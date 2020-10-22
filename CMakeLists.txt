@@ -7,9 +7,6 @@ if(${LLVM_DIR} MATCHES "LLVM_DIR-NOTFOUND" )
 	message("Using LLVM_DIR From cmake/FindLLVM.cmake")
 	include("${PROJECT_SOURCE_DIR}/cmake/FindLLVM.cmake")
 endif(${LLVM_DIR} MATCHES "LLVM_DIR-NOTFOUND" )
-
-
-
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVM_DIR: ${LLVM_DIR}")
@@ -17,8 +14,9 @@ message(STATUS "Using LLVM_DIR: ${LLVM_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter)
+message(STATUS "Using LLVM_Include: ${LLVM_INCLUDE_DIRS}")
+message(STATUS "Using LLVM_Lib: ${llvm_libs}")
 
- 
 
 #CUDA
 find_package(CUDA 10.1 REQUIRED)
@@ -43,7 +41,8 @@ elseif (NOT DEFINED CUDA_HOME)
   set(CUDA_HOME "${CUDA_HOME}" CACHE PATH "Path to CUDA Toolkit.")
 endif()
 message(STATUS "Using CUDA_HOME: ${CUDA_HOME}")
-link_directories(${CUDA_HOME}/include/lib/x64)
+ set(CUDA_LIB ${CUDA_HOME}/lib/x64/cuda.lib)
+link_directories(${CUDA_HOME}/lib/x64)
 
 
 # libNVVM
@@ -91,19 +90,6 @@ message(STATUS "Using libnvvm library: ${NVVM_LIB}")
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 #MAIN
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
@@ -120,8 +106,8 @@ file(GLOB_RECURSE all_SRCS
         )
 
 add_executable (${PROJECT_NAME} ${all_SRCS})
-
-target_link_libraries(${PROJECT_NAME} ${llvm_libs} ${NVVM_LIB}  )
+message(STATUS "Using cuda library: ${CUDA_LIB}")
+target_link_libraries(${PROJECT_NAME} ${llvm_libs} ${NVVM_LIB} ${CUDA_LIB} )
 
 #install(TARGETS "${PROJECT_NAME}" DESTINATION bin)
 include(CPack) 

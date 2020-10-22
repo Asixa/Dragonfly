@@ -3,9 +3,14 @@
 #include "AST/declarations/declaration.h"
 #include "frontend/lexer.h"
 #include "AST/declarations/function-decl.h"
-
+ 
 namespace AST {
 	namespace decl {
+		/**
+		 * \brief <span style="color:red">**BUGGY**  keyword conflicts with extern</span>  \n
+		 * Class for matching extension functions.\n
+		 * ``extension XXX{...}``\n
+		 */
 		class Extension final :public Declaration {
 		public:
 			std::string name;

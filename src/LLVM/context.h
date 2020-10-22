@@ -137,7 +137,9 @@ public:
 	void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
 	// Write compilable ir to file , for further compilation.
 	void WriteBitCodeIr(llvm::Module* module, const char* file);
+
 	DFContext();
+
 
 };
 
