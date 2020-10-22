@@ -4,12 +4,12 @@
 
 using namespace frontend;
 namespace AST {
-	void Unary::ToString() {
+	void expr::Unary::ToString() {
 		*Debugger::out << "<" << Lexer::Token::Name(op) << ">";
 		expr->ToString();
 	}
 
-	std::shared_ptr<Expr> Unary::ParsePostfix() {
+	std::shared_ptr<expr::Expr> expr::Unary::ParsePostfix() {
 		const auto factor = ParsePrefix();
 		switch (Lexer::token->type) {
 		case Inc:
@@ -21,11 +21,11 @@ namespace AST {
 		}
 	}
 
-	std::shared_ptr<Expr> Unary::Parse() {
+	std::shared_ptr<expr::Expr> expr::Unary::Parse() {
 		return ParsePostfix();
 	}
 
-	std::shared_ptr<Expr> Unary::ParsePrefix() {
+	std::shared_ptr<expr::Expr> expr::Unary::ParsePrefix() {
 		switch (Lexer::token->type) {
 		case NewLine:
 			Debugger::CatchNewline();
@@ -43,7 +43,7 @@ namespace AST {
 			return Factor::Parse();
 		}
 	}
-	llvm::Value* Unary::Gen(std::shared_ptr<DFContext> context, int cmd) {
+	llvm::Value* expr::Unary::Gen(std::shared_ptr<DFContext> context, int cmd) {
 		const auto v = expr->Gen(context);
 		if (!v)return nullptr;
 		switch (op) {

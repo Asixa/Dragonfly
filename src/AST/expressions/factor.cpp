@@ -4,6 +4,7 @@
 #include "AST/expressions/new-expr.h"
 
 namespace AST {
+	using namespace expr;
 	void Factor::ToString() {
 	    *Debugger::out << "[Factor]";
 	}

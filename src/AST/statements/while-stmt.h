@@ -4,12 +4,14 @@
 #include "AST/expressions/expr.h"
 
 namespace AST {
-	class While final : public Statement {
-	public:
-		std::shared_ptr<Expr> condition;
-		std::shared_ptr<Statement> stmts;
-		static std::shared_ptr<While> Parse();
-		void Gen(std::shared_ptr<DFContext>) override;
-	};
+	namespace stmt {
+		class While final : public Statement {
+		public:
+			std::shared_ptr<expr::Expr> condition;
+			std::shared_ptr<Statement> stmts;
+			static std::shared_ptr<While> Parse();
+			void Gen(std::shared_ptr<DFContext>) override;
+		};
+	}
 }
 #endif

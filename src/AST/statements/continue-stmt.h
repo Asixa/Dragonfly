@@ -3,12 +3,12 @@
 #include "AST/statements/statement.h"
 
 namespace AST {
-
-	class Continue final :public Statement {
-	public:
-		static std::shared_ptr<Continue> Parse();
-		void Gen(std::shared_ptr<DFContext>) override;
-	};
-
+	namespace stmt {
+		class Continue final :public Statement {
+		public:
+			static std::shared_ptr<Continue> Parse();
+			void Gen(std::shared_ptr<DFContext>) override;
+		};
+	}
 }
 #endif

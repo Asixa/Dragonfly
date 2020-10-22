@@ -3,11 +3,12 @@
 #include "AST/statements/statements.h"
 
 namespace AST {
+	using namespace  stmt;
 	std::shared_ptr<For> For::Parse() {
 		const auto instance = std::make_shared<For>();
 		Lexer::Next();
 		Lexer::Match('(');
-		instance->condition = Binary::Parse();
+		instance->condition = expr::Binary::Parse();
 		Lexer::Match(')');
 		if (Lexer::Check('{')) {
 			Lexer::Next();

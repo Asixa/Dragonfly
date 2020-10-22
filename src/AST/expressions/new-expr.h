@@ -4,13 +4,15 @@
 #include "function-call.h"
 
 namespace AST {
-	// Expression node for Lambda expression.
-	class New final : public Expr {
-	public:
-		std::shared_ptr<FuncCall>func;
-		void ToString() override;
-		llvm::Value* Gen(std::shared_ptr<DFContext>,const int cmd = 0) override;
-		static std::shared_ptr<New> Parse();
-	};
+	namespace expr {
+		// Expression node for Lambda expression.
+		class New final : public Expr {
+		public:
+			std::shared_ptr<FuncCall>func;
+			void ToString() override;
+			llvm::Value* Gen(std::shared_ptr<DFContext>, const int cmd = 0) override;
+			static std::shared_ptr<New> Parse();
+		};
+	}
 }
 #endif

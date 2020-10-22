@@ -4,11 +4,13 @@
 #include "AST/expressions/expr.h"
 
 namespace AST {
-	class Throw : Statement {
-		std::shared_ptr<Expr> value;
-	public:
-		static std::shared_ptr<Throw> Parse();
-		void Gen(std::shared_ptr<DFContext>) override;
-	};
+	namespace stmt {
+		class Throw : Statement {
+			std::shared_ptr<expr::Expr> value;
+		public:
+			static std::shared_ptr<Throw> Parse();
+			void Gen(std::shared_ptr<DFContext>) override;
+		};
+	}
 }
 #endif

@@ -2,7 +2,7 @@
 
 using namespace frontend;
 namespace AST {
-	void NumberConst::ToString() {
+	void expr::NumberConst::ToString() {
 		switch (type) {
 		case K_int: *Debugger::out << "[" << static_cast<int>(value) << "]";
 			return;
@@ -14,7 +14,7 @@ namespace AST {
 			return;
 		}
 	}
-	llvm::Value* NumberConst::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+	llvm::Value* expr::NumberConst::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 		switch (type) {
 		case K_float: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(static_cast<float>(value)));
 		case K_double: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(value));

@@ -9,12 +9,12 @@
 
 #include "frontend/parser.h"
 
-AST::ClassDecl* DFContext::GetTemplateClass(const std::string name) {
+AST::decl::ClassDecl* DFContext::GetTemplateClass(const std::string name) {
 	if (template_types_table.find(name) == template_types_table.end())return nullptr;
 	return template_types_table[name];
 }
 
-AST::FunctionDecl* DFContext::GetTemplateFunc(std::string name) {
+AST::decl::FunctionDecl* DFContext::GetTemplateFunc(std::string name) {
 	if (template_function_table.find(name) == template_function_table.end())return nullptr;
 	return template_function_table[name];
 }
@@ -76,7 +76,7 @@ llvm::Type* DFContext::GetType(AST::Type  type) {
 	else {
 		if (IsCustomType(type.str)) {
 			const auto ty = module->getTypeByName(type.str);
-			llvm_type = types_table[type.str]->category == AST::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
+			llvm_type = types_table[type.str]->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 		}
 		else {
 

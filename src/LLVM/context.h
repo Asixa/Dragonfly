@@ -6,11 +6,16 @@
 
 // forward declaration
 namespace AST {
+	namespace decl {
+		class ClassDecl;
+		class FunctionDecl;
+	}
+    namespace expr {
+		class Field;
+	}
     struct Type;
-    class ClassDecl;
-	class FunctionDecl;
 	class Program;
-	class Field;
+	
 }
 
 
@@ -28,9 +33,9 @@ public:
 	std::map<std::string, llvm::Value*> local_fields_table;
 	std::map<std::string, llvm::Value*> global_fields_table;
 	std::map<std::string, std::string> func_alias_table;
-	std::map<std::string, AST::ClassDecl*> template_types_table;
-	std::map<std::string, AST::FunctionDecl*> template_function_table;
-	std::map<std::string, AST::ClassDecl*> types_table;
+	std::map<std::string, AST::decl::ClassDecl*> template_types_table;
+	std::map<std::string, AST::decl::FunctionDecl*> template_function_table;
+	std::map<std::string, AST::decl::ClassDecl*> types_table;
 
 
 	llvm::Value* True;
@@ -45,12 +50,12 @@ public:
 	bool is_sub_block;
 	llvm::BasicBlock* block_begin;
 	llvm::BasicBlock* block_end;
-	AST::FunctionDecl* current_function;
+	AST::decl::FunctionDecl* current_function;
 
 
 
-	AST::ClassDecl* GetTemplateClass(std::string name);
-	AST::FunctionDecl* GetTemplateFunc(std::string name);
+	AST::decl::ClassDecl* GetTemplateClass(std::string name);
+	AST::decl::FunctionDecl* GetTemplateFunc(std::string name);
 
 	llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
 	llvm::ConstantInt* CreateConstant(int value);

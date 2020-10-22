@@ -2,7 +2,8 @@
 #include "AST/declarations/class-decl.h"
 #include "AST/declarations/enum-decl.h"
 using namespace frontend;
-std::shared_ptr<AST::Namespace> AST::Namespace::Parse() {
+using namespace AST::decl;
+std::shared_ptr<AST::decl::Namespace> AST::decl::Namespace::Parse() {
 	Lexer::Next();
 	auto instance = std::make_shared<Namespace>();
 	instance->name = Lexer::string_val;
@@ -25,7 +26,7 @@ std::shared_ptr<AST::Namespace> AST::Namespace::Parse() {
 	return instance;
 }
 
-void AST::Namespace::ParseSingle() {
+void AST::decl::Namespace::ParseSingle() {
 	switch (Lexer::token->type) {
 	case NewLine: Lexer::Next(); break;
 	case K_func:
@@ -42,7 +43,7 @@ void AST::Namespace::ParseSingle() {
 	}
 }
 
-std::shared_ptr<AST::Name> AST::Name::Parse(int ty) {
+std::shared_ptr<Name> Name::Parse(int ty) {
 	auto instance = std::make_shared<Name>();
 	instance->type = ty;
 	instance->names.push_back(Lexer::string_val);
@@ -57,17 +58,17 @@ std::shared_ptr<AST::Name> AST::Name::Parse(int ty) {
 	return instance;
 }
 
-std::string AST::Name::GetFunctionName() {
-	if (type == kFunction && !names.empty())return names[names.size() - 1];
+std::string Name::GetFunctionName() {
+	if (type == Name::kFunction && !names.empty())return names[names.size() - 1];
 	return "";
 }
-std::string AST::Name::GetClassName() {
-	if (type == kFunction && names.size() > 1)return names[names.size() - 2];
+std::string Name::GetClassName() {
+	if (type == Name::kFunction && names.size() > 1)return names[names.size() - 2];
 	if (type == kClass&& !names.empty())return names[names.size() - 1];
 	return "";
 }
 
-std::string AST::Name::GetNamespace() {
+std::string Name::GetNamespace() {
 	std::string str;
     if(type==kFunction||type==kClass) {
 		for (int i = 0, size = names.size(); i < size-1; i++)
@@ -78,14 +79,14 @@ std::string AST::Name::GetNamespace() {
 		str += names[i] + (i == size - 1 ? "" : "::");
 	return str;
 }
-std::string AST::Name::GetFullName() {
+std::string Name::GetFullName() {
 	std::string str;
     for(int  i=0,size=names.size();i<size;i++)
 		str += names[i] + (i == size - 1 ? "" : "::");
 	return str;
 }
 
-std::string AST::Name::GetFullNameWithoutFunc() {
+std::string Name::GetFullNameWithoutFunc() {
 	if (type == kFunction) {
 		if (names.size() <= 1)return "ERROR";
 		std::string ret;
@@ -102,19 +103,19 @@ std::string AST::Name::GetFullNameWithoutFunc() {
 	return "ERROR";
 }
 
-void AST::Name::Set(std::string s) {
+void Name::Set(std::string s) {
 	names.clear();
 	names.push_back(s);
 }
 
-void AST::Name::Verify() {
+void Name::Verify() {
     
 }
 
-void AST::Namespace::Gen(std::shared_ptr<DFContext> context) {
+void Namespace::Gen(std::shared_ptr<DFContext> context) {
     
 }
-void AST::Namespace::GenHeader(std::shared_ptr<DFContext> context) {
+void Namespace::GenHeader(std::shared_ptr<DFContext> context) {
     
 }
 

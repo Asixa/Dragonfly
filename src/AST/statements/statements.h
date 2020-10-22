@@ -4,14 +4,16 @@
 #include "AST/statements/statement.h"
 
 namespace AST {
-	// 'Statements' Class will match all statements in a binary-tree structure
-	class Statements final : public Statement {
-		std::shared_ptr<Statement> stmt1;
-		std::shared_ptr<Statement> stmt2;
-	public:
-		Statements(std::shared_ptr<Statement> a, std::shared_ptr<Statement> b) : stmt1(a), stmt2(b) {}
-		static std::shared_ptr<Statement> Parse();
-		void Gen(std::shared_ptr<DFContext>) override;
-	};
+	namespace stmt {
+		// 'Statements' Class will match all statements in a binary-tree structure
+		class Statements final : public Statement {
+			std::shared_ptr<Statement> stmt1;
+			std::shared_ptr<Statement> stmt2;
+		public:
+			Statements(std::shared_ptr<Statement> a, std::shared_ptr<Statement> b) : stmt1(a), stmt2(b) {}
+			static std::shared_ptr<Statement> Parse();
+			void Gen(std::shared_ptr<DFContext>) override;
+		};
+	}
 }
 #endif

@@ -5,14 +5,16 @@
 #include "frontend/lexer.h"
 
 namespace AST {
-	// class for if statement.
-	class If : public Statement {
-		std::shared_ptr<Expr> condition;
-		std::shared_ptr<Statement> stmts;
-		std::shared_ptr<Statement> else_stmts;
-	public:
-		static std::shared_ptr<If> Parse();
-		void Gen(std::shared_ptr<DFContext>) override;
-	};
+	namespace stmt {
+		// class for if statement.
+		class If : public Statement {
+			std::shared_ptr<expr::Expr> condition;
+			std::shared_ptr<Statement> stmts;
+			std::shared_ptr<Statement> else_stmts;
+		public:
+			static std::shared_ptr<If> Parse();
+			void Gen(std::shared_ptr<DFContext>) override;
+		};
+	}
 }
 #endif

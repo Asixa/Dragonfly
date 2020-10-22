@@ -2,6 +2,7 @@
 
 
 namespace AST {
+	using namespace expr;
 	void Binary::ToString() {
 		*Debugger::out << "(";
 		LHS->ToString();

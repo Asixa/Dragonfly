@@ -2,6 +2,7 @@
 
 
 namespace AST {
+	using namespace  stmt;
 	std::shared_ptr<Break> Break::Parse() {
         frontend::Lexer::Next();
 		auto instance = std::make_shared<Break>();

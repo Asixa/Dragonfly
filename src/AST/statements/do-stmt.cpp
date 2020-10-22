@@ -4,6 +4,7 @@
 
 
 namespace AST {
+	using namespace  stmt;
 	std::shared_ptr<Do> Do::Parse() {
 		const auto instance = std::make_shared<Do>();
 		Lexer::Next();
@@ -16,7 +17,7 @@ namespace AST {
 
 		Lexer::Match(K_do);
 		Lexer::Match('(');
-		instance->condition = Binary::Parse();
+		instance->condition = expr::Binary::Parse();
 		Lexer::Match(')');
 		return instance;
 	}

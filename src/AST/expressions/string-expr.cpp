@@ -4,10 +4,10 @@
 #include "frontend/lexer.h"
 
 namespace AST {
-	void String::ToString() {
+	void expr::String::ToString() {
 	    *frontend::Debugger::out << "[\"" << value << "\"]";
 	}
-	llvm::Value* String::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+	llvm::Value* expr::String::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 		return ctx->builder->CreateGlobalStringPtr(llvm::StringRef(frontend::Lexer::MangleStr(value)));
 	}
 }

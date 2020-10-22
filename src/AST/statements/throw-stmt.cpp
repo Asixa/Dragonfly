@@ -2,10 +2,11 @@
 #include "AST/expressions/factor.h"
 
 namespace AST {
+	using namespace stmt;
 	std::shared_ptr<Throw> Throw::Parse() {
         frontend::Lexer::Next();
 		auto instance = std::make_shared<Throw>();
-		instance->value = Factor::Parse();
+		instance->value = expr::Factor::Parse();
 		return instance;
 	}
 

@@ -5,7 +5,7 @@
 #include "AST/declarations/extern-decl.h"
 #include "llvm/IR/Verifier.h"
 namespace AST {
-
+	using namespace decl;
     void Program::ParseSingle() {
         switch (Lexer::token->type) {
         case NewLine: Lexer::Next(); break;
@@ -13,14 +13,14 @@ namespace AST {
         case K_dfunc:
         case K_kernal: declarations.push_back(FunctionDecl::Parse()); break;
         // case K_extern: declarations.push_back(FunctionDecl::Parse(true)); break;
-        case K_import:      Import::Parse(); break;
+        case K_import:      stmt::Import::Parse(); break;
 		case K_class:       declarations.push_back(ClassDecl::Parse(ClassDecl::kClass)); break;
 		case K_interface:   declarations.push_back(ClassDecl::Parse(ClassDecl::kInterface)); break;
 		case K_struct:      declarations.push_back(ClassDecl::Parse(ClassDecl::kStruct)); break;
 		case K_namespace:   declarations.push_back(Namespace::Parse()); break;
 		case K_enum:        declarations.push_back(EnumDecl::Parse()); break;
 		case K_extern:      declarations.push_back(Extern::Parse()); break;
-        default: statements.push_back(Statement::Parse());
+        default: statements.push_back(stmt::Statement::Parse());
         }
     }
 

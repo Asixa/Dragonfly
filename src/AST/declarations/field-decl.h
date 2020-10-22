@@ -4,15 +4,17 @@
 #include "AST/expressions/expr.h"
 
 namespace AST {
-	// class for matching variable declaration.
-	class FieldDecl : public Statement {
-		bool constant;
-		std::string name;
-	    AST::Type type;
-		std::shared_ptr<Expr> value;
-	public:
-		void Gen(std::shared_ptr<DFContext>) override;
-		static std::shared_ptr<FieldDecl> Parse(bool is_const);
-	};
+	namespace decl {
+		// class for matching variable declaration.
+		class FieldDecl : public stmt::Statement {
+			bool constant;
+			std::string name;
+			AST::Type type;
+			std::shared_ptr<expr::Expr> value;
+		public:
+			void Gen(std::shared_ptr<DFContext>) override;
+			static std::shared_ptr<FieldDecl> Parse(bool is_const);
+		};
+	}
 }
 #endif

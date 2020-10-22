@@ -3,6 +3,7 @@
 using namespace frontend;
 namespace AST {
 
+	using namespace AST::decl;
 	std::shared_ptr<Extension> Extension::Parse() {
 		auto instance = std::make_shared<Extension>();
 		Lexer::Next();

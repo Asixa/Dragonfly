@@ -3,12 +3,14 @@
 #include "AST/declarations/declaration.h"
 
 namespace AST {
-	class EnumDecl final : public Declaration {
-	public:
-		bool anonymous = false;
-        void GenHeader(std::shared_ptr<DFContext> context) override;
-        void Gen(std::shared_ptr<DFContext> context) override;
-		static std::shared_ptr<EnumDecl>Parse();
-	};
+	namespace decl {
+		class EnumDecl final : public Declaration {
+		public:
+			bool anonymous = false;
+			void GenHeader(std::shared_ptr<DFContext> context) override;
+			void Gen(std::shared_ptr<DFContext> context) override;
+			static std::shared_ptr<EnumDecl>Parse();
+		};
+	}
 }
 #endif

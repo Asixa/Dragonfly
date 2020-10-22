@@ -4,6 +4,7 @@
 
 
 namespace AST {
+	using namespace expr;
 	void Boolean::ToString() {
 	    *frontend::Debugger::out << "[" << (value ? "true" : "false") << "]";
 	}

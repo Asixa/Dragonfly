@@ -3,7 +3,9 @@
 #include <sstream>
 #include "AST/declarations/enum-decl.h"
 #include "frontend/parser.h"
+
 namespace AST {
+	using namespace decl;
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
 		instance->category = ty;

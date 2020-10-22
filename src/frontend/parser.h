@@ -53,12 +53,12 @@
 #include "AST/statements/for-stmt.h"
 namespace AST {
     class Program {
-        std::vector<std::shared_ptr<Statement>> statements;
+        std::vector<std::shared_ptr<stmt::Statement>> statements;
         
 		void ParseSingle();
     public:
-		std::vector<std::shared_ptr<Declaration>> declarations;
-		std::vector<std::shared_ptr<Declaration>> late_gen;
+		std::vector<std::shared_ptr<decl::Declaration>> declarations;
+		std::vector<std::shared_ptr<decl::Declaration>> late_gen;
 		static std::shared_ptr<Program> Parse();
         void Gen(std::shared_ptr<DFContext>);
     };

@@ -3,6 +3,8 @@
 
 
 namespace AST {
+	using namespace decl;
+	using namespace expr;
 	void FuncCall::ToString() {
 		if (left != nullptr)left->ToString();
 		*Debugger::out << name.c_str() << "(";

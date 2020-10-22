@@ -2,9 +2,10 @@
 #include "AST/expressions/binary.h"
 
 namespace AST {
+	using namespace  stmt;
 	std::shared_ptr<Empty> Empty::Parse() {
 		auto instance = std::make_shared<Empty>();
-		instance->value = Binary::Parse();
+		instance->value = expr::Binary::Parse();
 			Lexer::MatchSemicolon();
 			return instance;
 	}

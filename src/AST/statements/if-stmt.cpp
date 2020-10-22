@@ -4,11 +4,12 @@
 
 
 namespace AST {
+	using namespace  stmt;
 	std::shared_ptr<If> If::Parse() {
 		const auto instance = std::make_shared<If>();
 		Lexer::Next();
 		Lexer::Match('(');
-		instance->condition = Binary::Parse();
+		instance->condition = expr::Binary::Parse();
 		Lexer::Match(')');
 		if (Lexer::Check('{')) {
 			Lexer::Next();

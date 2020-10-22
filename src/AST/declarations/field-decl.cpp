@@ -5,6 +5,8 @@
 
 
 namespace AST {
+
+	using namespace AST::decl;
 	std::shared_ptr<FieldDecl> FieldDecl::Parse(const bool is_const) {
 		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;
@@ -17,7 +19,7 @@ namespace AST {
 		}
 		Lexer::Match('=');
 		
-			let->value = Binary::Parse();
+			let->value = expr::Binary::Parse();
 		
 
 			Lexer::MatchSemicolon();

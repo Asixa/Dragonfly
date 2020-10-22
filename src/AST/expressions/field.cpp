@@ -4,7 +4,8 @@
 
 
 namespace AST {
-	void Field::ToString() {
+	using namespace expr;
+	void AST::Field::ToString() {
 		*Debugger::out << name.c_str();
 		if (child != nullptr) {
 			*Debugger::out << ".";

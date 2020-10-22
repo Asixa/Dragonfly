@@ -4,6 +4,7 @@
 
 
 namespace AST {
+	using namespace stmt;
 	std::shared_ptr<Return> Return::Parse() {
 		Lexer::Next();
 		auto instance = std::make_shared<Return>();
@@ -12,7 +13,7 @@ namespace AST {
 			Lexer::Next();
 			return instance;
 		}
-		instance->value = Binary::Parse();
+		instance->value = expr::Binary::Parse();
 		Lexer::MatchSemicolon();
 		*Debugger::out << "[Parsed] Return Statement\n";
 		return instance;

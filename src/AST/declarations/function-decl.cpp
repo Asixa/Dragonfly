@@ -5,6 +5,8 @@
 #include "frontend/parser.h"
 #include "llvm/IR/Verifier.h"
 namespace AST {
+
+	using namespace AST::decl;
 	std::shared_ptr<FuncParam> FuncParam::Parse() {
 		auto param = std::make_shared<FuncParam>();
 		while (Lexer::token->type != ')') {
@@ -82,11 +84,11 @@ namespace AST {
 		*Debugger::out << "[Parsed] Function declaration\n";
 		if (Lexer::Check(Arrow)) {
 			Lexer::Next();
-			function->statements = Statement::Parse();
+			function->statements = stmt::Statement::Parse();
 		}
 		else {
 			Lexer::Match('{');
-			function->statements = Statements::Parse();
+			function->statements = stmt::Statements::Parse();
 			Lexer::SkipNewlines();
 			Lexer::Match('}');
 		}
@@ -107,17 +109,17 @@ namespace AST {
 		instance->name->type = Name::kFunction;
 		auto func_param = std::make_shared<FuncParam>();
 		
-		std::vector<std::shared_ptr<Statement>>statements;
+		std::vector<std::shared_ptr<stmt::Statement>>statements;
         for(auto i=0;i<param->size;i++) {
 			func_param->names.push_back("_"+param->names[i]);
 			func_param->types.push_back(param->types[i]);
-			statements.push_back(std::make_shared<Empty>(std::make_shared<Binary>( param->names[i], func_param->names[i], '=')));
+			statements.push_back(std::make_shared<stmt::Empty>(std::make_shared<expr::Binary>( param->names[i], func_param->names[i], '=')));
         }
 		
 		if (statements.size() > 0) {
 			instance->statements = statements[0];
 			for (auto i = 1; i < statements.size(); i++)
-				instance->statements = std::make_shared<Statements>(instance->statements, statements[i]);
+				instance->statements = std::make_shared<stmt::Statements>(instance->statements, statements[i]);
 		}
 
 		func_param->size = param->size;
@@ -219,7 +221,7 @@ namespace AST {
 			for (auto& arg : the_function->args())
 				arg.setName(args->names[idx++]);
 		}
-		else  Debugger::ErrorV((std::string("function ") + full_name + std::string(" already defined\n")).c_str(), line, ch);
+		else  Debugger::ErrorV((std::string("function ") + full_name + std::string(" already defined\n")).c_str(), Debugger::line, Debugger::ch);
 		
 	}
 
@@ -236,7 +238,7 @@ namespace AST {
 		
 		auto function = ctx->GetFunction(full_name);
 		if (!function) {
-			Debugger::ErrorV((std::string("function head not found: ") + full_name).c_str(),line,ch);
+			Debugger::ErrorV((std::string("function head not found: ") + full_name).c_str(), Debugger::line, Debugger::ch);
 			return;
 		}
 		//  create the basic block for the function.

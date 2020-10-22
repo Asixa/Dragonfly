@@ -4,7 +4,7 @@
 
 namespace AST {
 
-	void Ternary::ToString() {
+	void expr::Ternary::ToString() {
 		*Debugger::out << "[";
 		a->ToString();
 		*Debugger::out << "?";
@@ -14,7 +14,7 @@ namespace AST {
 		*Debugger::out << "]";
 	}
 
-	std::shared_ptr<Expr> Ternary::Parse() {
+	std::shared_ptr<expr::Expr> expr::Ternary::Parse() {
 		const auto a = Binary::Sub7();
 		if (Lexer::token->type != '?')return a;
 		Lexer::Next();
@@ -23,7 +23,7 @@ namespace AST {
 		const auto c = Binary::Sub7();
 		return std::make_shared<Ternary>(a, b, c);
 	}
-	llvm::Value* Ternary::Gen(std::shared_ptr<DFContext> context,int cmd) {
+	llvm::Value* expr::Ternary::Gen(std::shared_ptr<DFContext> context,int cmd) {
 		return nullptr;
 	}
 
