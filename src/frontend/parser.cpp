@@ -1,6 +1,6 @@
 #include "frontend/parser.h"
 #include <sstream>
-#include "codegen.h"
+
 #include "AST/declarations/enum-decl.h"
 #include "AST/declarations/extern-decl.h"
 #include "llvm/IR/Verifier.h"
@@ -66,15 +66,18 @@ namespace parser {
 
 		context->BuildInFunc("printf", context->void_type,std::vector<llvm::Type*>{context->void_ptr}, true);
 
-		for (auto& declaration : declarations)
-            try { declaration->GenHeader(context);}catch (int e) {}
+
+        // DO not make it into the form like below, because the array will change.
+		for (auto i = 0; i < declarations.size(); i++)
+			try { declarations[i]->GenHeader(context); }
+		catch (int e) {}
 		
 		for (auto& declaration : declarations) 
 			try { declaration->Gen(context); }catch (int e) {}
 
 		// for (auto i = 0; i < late_declarations.size(); i++)
 		// 	try { late_declarations[i]->GenHeader(); } catch (int e) {}
-        
+         
 
 
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(context->void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", context->module.get());

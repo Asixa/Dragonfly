@@ -1,5 +1,5 @@
 #include "AST/declarations/generic-param.h"
-#include "codegen.h"
+
 
 std::string parser::GenericParam::ToString() {
 	std::string name = "<";

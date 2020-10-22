@@ -4,7 +4,7 @@
 
 #include "llvm/IR/IRBuilder.h"
 
-
+// forward declaration
 namespace parser {
     struct Type;
     class ClassDecl;

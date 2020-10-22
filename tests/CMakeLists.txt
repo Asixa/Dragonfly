@@ -3,7 +3,7 @@ set(gtest_SOURCE_DIR "${PROJECT_SOURCE_DIR}/thirdparty/googletest/googletest")
 message(STATUS "Using googletest in: ${gtest_SOURCE_DIR}")
 set(SOURCES 
 	test.cpp
-)
+) 
 
 #set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/tests/bin)
 
