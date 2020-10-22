@@ -22,7 +22,7 @@
 #include "frontend/lexer.h"
 #include <windows.h>
 #include "frontend/preprocessor.h"
-
+using namespace frontend;
 std::basic_ostream<wchar_t>* Debugger::out = nullptr;
 bool Debugger::is_std_out = false;
 bool Debugger::error_existed = false;

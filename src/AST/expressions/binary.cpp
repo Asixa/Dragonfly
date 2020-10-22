@@ -1,7 +1,7 @@
 #include "AST/expressions/binary.h"
 
 
-namespace parser {
+namespace AST {
 	void Binary::ToString() {
 		*Debugger::out << "(";
 		LHS->ToString();

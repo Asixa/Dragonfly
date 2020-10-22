@@ -3,7 +3,7 @@
 #include "AST/expressions/binary.h"
 
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<Do> Do::Parse() {
 		const auto instance = std::make_shared<Do>();
 		Lexer::Next();

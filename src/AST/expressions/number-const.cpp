@@ -1,7 +1,7 @@
 #include "AST/expressions/number-const.h"
 
-
-namespace parser {
+using namespace frontend;
+namespace AST {
 	void NumberConst::ToString() {
 		switch (type) {
 		case K_int: *Debugger::out << "[" << static_cast<int>(value) << "]";

@@ -2,7 +2,7 @@
 #define LAMBDA_H
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for Lambda expression.
 	class Lambda final : public Expr {
 	public:

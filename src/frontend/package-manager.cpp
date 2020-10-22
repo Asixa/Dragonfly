@@ -5,6 +5,8 @@
 #include "json.hpp"
 
 #include "preprocessor.h"
+using namespace frontend;
+
 using json = nlohmann::json;
 
 std::vector<PackageManager::Package*>PackageManager::packages;

@@ -5,7 +5,7 @@
 #include "frontend/lexer.h"
 #include "function-decl.h"
 
-namespace parser {
+namespace AST {
 	// class for matching class declaration.
 	class ClassDecl final : public Declaration {
 	public:
@@ -17,10 +17,10 @@ namespace parser {
 		std::string full_name;
 		std::string name;
 		
-		parser::Type base_type_name;
+		AST::Type base_type_name;
 		std::vector<std::string> fields;
-		std::vector<parser::Type> types;
-		std::vector<parser::Type> interfaces;
+		std::vector<AST::Type> types;
+		std::vector<AST::Type> interfaces;
 		std::vector<std::shared_ptr<Declaration>> declarations;
 		std::vector<std::shared_ptr<FunctionDecl>> functions;
 		std::vector<std::shared_ptr<FunctionDecl>> constructor;

@@ -1,9 +1,9 @@
 #include "AST/statements/throw-stmt.h"
 #include "AST/expressions/factor.h"
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<Throw> Throw::Parse() {
-		Lexer::Next();
+        frontend::Lexer::Next();
 		auto instance = std::make_shared<Throw>();
 		instance->value = Factor::Parse();
 		return instance;

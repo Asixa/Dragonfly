@@ -5,8 +5,8 @@
 #include "AST/expressions/unary.h"
 #include "AST/expressions/ternary.h"
 #include "field.h"
-
-namespace parser {
+using namespace frontend;
+namespace AST {
 	// Expression node for all binary expressions
 	class Binary final : public Expr {
 	public:
@@ -34,6 +34,7 @@ namespace parser {
                 left= std::make_shared<Binary>(left, func(), op);   \
             } return left;}
 
+		
 		    PARSE(Sub1, Unary::Parse, Lexer::Check('*') || Lexer::Check('/') || Lexer::Check('%'), while)
 			PARSE(Sub2, Sub1, Lexer::Check('+') || Lexer::Check('-'), while)
 			PARSE(Sub3, Sub2, Lexer::Check(Shl) || Lexer::Check(Shr), while)
@@ -43,6 +44,7 @@ namespace parser {
 			PARSE(Sub7, Sub6, Lexer::Check(Or) || Lexer::Check(And), while)
 			PARSE(Parse, Ternary::Parse,
 				Lexer::Check({ '=',AddAgn,SubAgn ,SubAgn,DivAgn,MulAgn,ModAgn,ShlAgn,ShrAgn,BAndAgn,BXORAgn,BORAgn }), while)
+
 #undef  PARSE
 	};
 }

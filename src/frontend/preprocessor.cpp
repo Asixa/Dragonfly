@@ -5,6 +5,7 @@
 #include <sstream>
 #include "package-manager.h"
 #include <iostream>
+using namespace frontend;
 std::wstring Preprocessor::code;
 std::vector<int>Preprocessor::file_numbers;
 std::vector<std::string>Preprocessor::files;

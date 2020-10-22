@@ -4,7 +4,7 @@
 #include "AST/expressions/binary.h"
 
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<FieldDecl> FieldDecl::Parse(const bool is_const) {
 		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;

@@ -1,17 +1,17 @@
 #include "AST/statements/switch-stmt.h"
-namespace parser {
+namespace AST {
 
 	std::shared_ptr<Switch> Switch::Parse() {
-		Lexer::Next();
-		Lexer::Match('(');
-		Lexer::Match(')');
-		Lexer::Match('{');
+        frontend::Lexer::Next();
+        frontend::Lexer::Match('(');
+        frontend::Lexer::Match(')');
+        frontend::Lexer::Match('{');
 
 		while (true) {
 			break;
 		}
 
-		Lexer::Match('}');
+        frontend::Lexer::Match('}');
 		return nullptr;
 	}
 }

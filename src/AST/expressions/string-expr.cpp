@@ -3,11 +3,11 @@
 
 #include "frontend/lexer.h"
 
-namespace parser {
+namespace AST {
 	void String::ToString() {
-	    *Debugger::out << "[\"" << value << "\"]";
+	    *frontend::Debugger::out << "[\"" << value << "\"]";
 	}
 	llvm::Value* String::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
-		return ctx->builder->CreateGlobalStringPtr(llvm::StringRef(Lexer::MangleStr(value)));
+		return ctx->builder->CreateGlobalStringPtr(llvm::StringRef(frontend::Lexer::MangleStr(value)));
 	}
 }

@@ -4,7 +4,7 @@
 #include <sstream>
 #include "frontend/parser.h"
 #include "llvm/IR/Verifier.h"
-namespace parser {
+namespace AST {
 	std::shared_ptr<FuncParam> FuncParam::Parse() {
 		auto param = std::make_shared<FuncParam>();
 		while (Lexer::token->type != ')') {

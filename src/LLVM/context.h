@@ -5,7 +5,7 @@
 #include "llvm/IR/IRBuilder.h"
 
 // forward declaration
-namespace parser {
+namespace AST {
     struct Type;
     class ClassDecl;
 	class FunctionDecl;
@@ -24,13 +24,13 @@ public:
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	std::unique_ptr<llvm::DataLayout> data_layout;
 
-	std::shared_ptr<parser::Program> program;
+	std::shared_ptr<AST::Program> program;
 	std::map<std::string, llvm::Value*> local_fields_table;
 	std::map<std::string, llvm::Value*> global_fields_table;
 	std::map<std::string, std::string> func_alias_table;
-	std::map<std::string, parser::ClassDecl*> template_types_table;
-	std::map<std::string, parser::FunctionDecl*> template_function_table;
-	std::map<std::string, parser::ClassDecl*> types_table;
+	std::map<std::string, AST::ClassDecl*> template_types_table;
+	std::map<std::string, AST::FunctionDecl*> template_function_table;
+	std::map<std::string, AST::ClassDecl*> types_table;
 
 
 	llvm::Value* True;
@@ -45,12 +45,12 @@ public:
 	bool is_sub_block;
 	llvm::BasicBlock* block_begin;
 	llvm::BasicBlock* block_end;
-	parser::FunctionDecl* current_function;
+	AST::FunctionDecl* current_function;
 
 
 
-	parser::ClassDecl* GetTemplateClass(std::string name);
-	parser::FunctionDecl* GetTemplateFunc(std::string name);
+	AST::ClassDecl* GetTemplateClass(std::string name);
+	AST::FunctionDecl* GetTemplateFunc(std::string name);
 
 	llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
 	llvm::ConstantInt* CreateConstant(int value);
@@ -63,7 +63,7 @@ public:
 
 
 
-	llvm::Type* GetType(parser::Type type);
+	llvm::Type* GetType(AST::Type type);
 
 	llvm::StoreInst* AlignStore(llvm::StoreInst* a);
 	llvm::LoadInst* AlignLoad(llvm::LoadInst* a);

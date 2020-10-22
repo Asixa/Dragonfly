@@ -4,7 +4,7 @@
 #include "frontend/lexer.h"
 #include "AST/declarations/function-decl.h"
 
-namespace parser {
+namespace AST {
 	class Extension final :public Declaration {
 	public:
 		std::string name;

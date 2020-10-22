@@ -1,7 +1,7 @@
 #ifndef GENERIC_PARAM_H
 #define GENERIC_PARAM_H
 #include "frontend/lexer.h"
-namespace parser {
+namespace AST {
 	class GenericParam {
 	public:
 		int size;

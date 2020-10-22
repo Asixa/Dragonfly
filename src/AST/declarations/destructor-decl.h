@@ -3,7 +3,7 @@
 #include "declaration.h"
 #include "function-decl.h"
 
-namespace parser {
+namespace AST {
 	class DestructorDecl final :public Declaration {
 		std::shared_ptr<FuncParam> args;
 		std::shared_ptr<Statement> statements;

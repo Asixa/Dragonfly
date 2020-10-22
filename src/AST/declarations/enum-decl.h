@@ -2,7 +2,7 @@
 #define ENUM_DECL_H
 #include "AST/declarations/declaration.h"
 
-namespace parser {
+namespace AST {
 	class EnumDecl final : public Declaration {
 	public:
 		bool anonymous = false;

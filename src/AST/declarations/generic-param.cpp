@@ -1,14 +1,14 @@
 #include "AST/declarations/generic-param.h"
+using namespace frontend;
 
-
-std::string parser::GenericParam::ToString() {
+std::string AST::GenericParam::ToString() {
 	std::string name = "<";
     for (auto i=0;i<size;i++) 
 		name += names[i] + (i == size - 1 ? "" : ",");
 	return name+">";
 }
 
-std::shared_ptr<parser::GenericParam> parser::GenericParam::Parse() {
+std::shared_ptr<AST::GenericParam> AST::GenericParam::Parse() {
 	auto instance = std::make_shared<GenericParam>();
 	Lexer::Match('<');
     if(Lexer::Check(Id)) {

@@ -4,7 +4,7 @@
 #include "AST/declarations/enum-decl.h"
 #include "AST/declarations/extern-decl.h"
 #include "llvm/IR/Verifier.h"
-namespace parser {
+namespace AST {
 
     void Program::ParseSingle() {
         switch (Lexer::token->type) {
@@ -43,7 +43,7 @@ namespace parser {
 
     std::shared_ptr<Program> Parse() {
         Lexer::Next();
-        if (!Debugger::only_tokenize)return parser::Program::Parse();
+        if (!Debugger::only_tokenize)return AST::Program::Parse();
         while (Lexer::peek > 0 && Lexer::token != nullptr) {
             *Debugger::out << "[" << Lexer::Token::Name(Lexer::token->type) << "] ";
             if (Lexer::Check(NewLine) || Lexer::Check(';'))*Debugger::out << "\n";
@@ -102,8 +102,8 @@ namespace parser {
 }
 
 
-parser::Type Lexer::MatchType() {
-	parser::Type type;
+AST::Type Lexer::MatchType() {
+	AST::Type type;
 	if (Lexer::IsBasicType()) {
 		type.ty = token->type;
 		type.str = "";

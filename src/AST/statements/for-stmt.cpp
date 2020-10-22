@@ -2,7 +2,7 @@
 #include "AST/expressions/binary.h"
 #include "AST/statements/statements.h"
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<For> For::Parse() {
 		const auto instance = std::make_shared<For>();
 		Lexer::Next();

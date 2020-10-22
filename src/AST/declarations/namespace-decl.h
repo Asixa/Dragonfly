@@ -2,7 +2,7 @@
 #define NAMESPACE_DECL_H
 #include "declaration.h"
 
-namespace parser {
+namespace AST {
     class Namespace final : public Declaration {
 	public:
         std::string name;

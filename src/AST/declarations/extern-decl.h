@@ -3,7 +3,7 @@
 #include "frontend/lexer.h"
 #include "function-decl.h"
 
-namespace parser {
+namespace AST {
     class Extern final : public Declaration {
     public:
 		int type=0;

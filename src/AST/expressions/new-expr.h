@@ -3,7 +3,7 @@
 #include "AST/expressions/expr.h"
 #include "function-call.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for Lambda expression.
 	class New final : public Expr {
 	public:

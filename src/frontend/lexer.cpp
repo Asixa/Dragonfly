@@ -19,7 +19,7 @@
 
 #include "lexer.h"
 
-
+using namespace frontend;
 wchar_t* Lexer::src = nullptr;
 wchar_t* Lexer::root = nullptr;
 wchar_t* Lexer::end = nullptr;

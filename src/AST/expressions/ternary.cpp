@@ -2,7 +2,7 @@
 #include "frontend/debug.h"
 #include "frontend/parser.h"
 
-namespace parser {
+namespace AST {
 
 	void Ternary::ToString() {
 		*Debugger::out << "[";

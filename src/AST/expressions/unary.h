@@ -2,7 +2,7 @@
 #define UNARY_H
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for factors with prefix or postfix)
 	class Unary final : public Expr {
 	public:

@@ -4,7 +4,7 @@
 #include "AST/expressions/expr.h"
 #include "frontend/lexer.h"
 
-namespace parser {
+namespace AST {
 	// class for if statement.
 	class If : public Statement {
 		std::shared_ptr<Expr> condition;

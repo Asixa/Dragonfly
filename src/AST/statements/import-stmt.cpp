@@ -1,7 +1,7 @@
 #include "AST/statements/import-stmt.h"
-namespace parser {
+namespace AST {
 	std::shared_ptr<Import> Import::Parse() {
-		Lexer::Next();
+        frontend::Lexer::Next();
 		auto instance = std::make_shared<Import>();
 		return instance;
 	}

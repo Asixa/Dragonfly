@@ -2,7 +2,7 @@
 #define CONTINUE_STMT_H
 #include "AST/statements/statement.h"
 
-namespace parser {
+namespace AST {
 
 	class Continue final :public Statement {
 	public:

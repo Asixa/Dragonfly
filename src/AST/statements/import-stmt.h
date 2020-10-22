@@ -2,7 +2,7 @@
 #define IMPORT_STMT_H
 #include "AST/statements/statement.h"
 
-namespace parser {
+namespace AST {
 	class Import final :public Statement {
 	public:
 		static std::shared_ptr<Import> Parse();

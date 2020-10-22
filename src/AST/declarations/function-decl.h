@@ -6,14 +6,14 @@
 #include "generic-param.h"
 #include "namespace-decl.h"
 
-namespace parser {
+namespace AST {
 	// class for matching function declaration parameters; 
 	class FuncParam {
 	public:
 		int size = 0;
 		bool is_var_arg = false;
 		std::vector<std::string> names;
-		std::vector<parser::Type> types;
+		std::vector<AST::Type> types;
 		std::vector<int>generic_id;
 		static std::shared_ptr<FuncParam> Parse();
 		FuncParam() {

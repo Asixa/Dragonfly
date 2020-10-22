@@ -1,7 +1,7 @@
 #include "AST/statements/statement.h"
 #include "frontend/parser.h"
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<Statement> Statements::Parse() {
 		Lexer::SkipNewlines();
 		if (Lexer::Check('}')) return nullptr;

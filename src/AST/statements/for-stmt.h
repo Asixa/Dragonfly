@@ -3,7 +3,7 @@
 #include "AST/statements/statement.h"
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	class For final : public Statement {
 	public:
 		std::shared_ptr<Statement> init, post;

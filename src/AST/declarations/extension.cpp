@@ -1,7 +1,7 @@
 #include "AST/declarations/extension.h"
 
-
-namespace parser {
+using namespace frontend;
+namespace AST {
 
 	std::shared_ptr<Extension> Extension::Parse() {
 		auto instance = std::make_shared<Extension>();

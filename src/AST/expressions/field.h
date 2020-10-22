@@ -2,7 +2,7 @@
 #define FIELD_H
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for variable or fields.
 	class Field : public Expr {
 

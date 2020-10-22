@@ -3,7 +3,7 @@
 #include "AST/statements/statements.h"
 
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<While> While::Parse() {
 		const auto instance = std::make_shared<While>();
 		Lexer::Next();

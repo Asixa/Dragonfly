@@ -1,7 +1,7 @@
 #include "AST/expressions/new-expr.h"
 
-
-std::shared_ptr<parser::New> parser::New::Parse() {
+using namespace frontend;
+std::shared_ptr<AST::New> AST::New::Parse() {
 	Lexer::Next();
 	auto instance = std::make_shared<New>();
     const auto name = Lexer::string_val;
@@ -14,11 +14,11 @@ std::shared_ptr<parser::New> parser::New::Parse() {
     
 }
 
-void parser::New::ToString() {
+void AST::New::ToString() {
     
 }
 
-llvm::Value* parser::New::Gen(const std::shared_ptr<DFContext> ctx,const int cmd) {
+llvm::Value* AST::New::Gen(const std::shared_ptr<DFContext> ctx,const int cmd) {
 
 	ClassDecl* decl = nullptr;
 	const auto mangled_str = func->name;

@@ -3,7 +3,7 @@
 #include "frontend/parser.h"
 
 
-namespace parser {
+namespace AST {
 	void Field::ToString() {
 		*Debugger::out << name.c_str();
 		if (child != nullptr) {

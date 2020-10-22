@@ -4,7 +4,7 @@
 
 #include "AST/statements/statement.h"
 #include "frontend/lexer.h"
-namespace parser {
+namespace AST {
 	class Break final :public Statement {
 	public:
 		static std::shared_ptr<Break> Parse();

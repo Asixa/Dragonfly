@@ -1,8 +1,8 @@
 #include "AST/declarations/extern-decl.h"
 
-
-namespace parser{
-	std::shared_ptr<parser::Extern> parser::Extern::Parse() {
+using namespace frontend;
+namespace AST{
+	std::shared_ptr<AST::Extern> AST::Extern::Parse() {
 		auto instance = std::make_shared<Extern>();
 		Lexer::Next();
 		if (Lexer::Check(K_class)) {

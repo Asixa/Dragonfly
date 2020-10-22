@@ -2,7 +2,7 @@
 #define BOOLEAN_H
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for literal booleans.
 	class Boolean final : public Expr {
 	public:

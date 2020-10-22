@@ -12,89 +12,88 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DEBUG_H
+#ifndef DEBUG_H 
 #define DEBUG_H
 #include <llvm/Bitcode/BitcodeWriter.h>
+namespace frontend {
+	class Debugger {
+	public:
 
-class Debugger {
-public:
-    static std::basic_ostream<wchar_t>* out;
-	// collection of pointers to the beginning of each line of source code.
-	static std::vector<wchar_t*> lines;
-    static bool is_std_out;
-    // Once called ALERT, error_existed will be true and will not be changed, and the compiler won't generate IR.
-    static bool error_existed;
-	// Once called ALERT, error_occurred will be true, and all AST parsing will stop immediately,
-    static bool error_occurred;			
-    // error_occurred will be false once lexer moved to the next line.
-    // only_tokenize is used for testing lexer, when it is true, compiler will print token buffer, and won't parse AST.
-    static bool  only_tokenize;
-	// to Solve an error, the lexer will skip current line, but for special cases like NEWLINE, lexer will not skip.
-    static bool skip_line;		
-    // line is the number of current line, tab is 1 if there are tabs in this line, otherwise is 0
-	// ch is the right location of error token, chp is the left location of error token. 
-    static int line, ch, chp, tab;		
-    static int log_color;				// the color the debugger going to use while print infos.
-    
-    static void SetStream(const bool t);
-    // Write all output to file , for debug and testing.
-    static void WriteOutput(const char* file);
+		class ErrorMsg {
+		public:
+			static wchar_t* cannot_resolve_symbol;
+			static wchar_t* invalid_token;
+			static wchar_t* expected;
+			static wchar_t* expected_but;
+			static wchar_t* unexpected;
 
-    // this special micro will be called when the error token is "Newline", then we need to go back a line to print debug info.
+			static std::wstring Format(wchar_t* format, ...);
+		};
 
-    enum Color {
-        kDarkBlue = 1,
-        kDarkGreen,
-        kDarkTeal,
-        kDarkRed,
-        kDarkPink,
-        kDarkYellow,
-        kGray,
-        kDarkGray,
-        kBlue,
-        kGreen,
-        kTeal,
-        kRed,
-        kPink,
-        kYellow,
-        kWhite
-    };
+		static std::basic_ostream<wchar_t>* out;
+		// collection of pointers to the beginning of each line of source code.
+		static std::vector<wchar_t*> lines;
+		static bool is_std_out;
+		// Once called ALERT, error_existed will be true and will not be changed, and the compiler won't generate IR.
+		static bool error_existed;
+		// Once called ALERT, error_occurred will be true, and all AST parsing will stop immediately,
+		static bool error_occurred;
+		// error_occurred will be false once lexer moved to the next line.
+		// only_tokenize is used for testing lexer, when it is true, compiler will print token buffer, and won't parse AST.
+		static bool  only_tokenize;
+		// to Solve an error, the lexer will skip current line, but for special cases like NEWLINE, lexer will not skip.
+		static bool skip_line;
+		// line is the number of current line, tab is 1 if there are tabs in this line, otherwise is 0
+		// ch is the right location of error token, chp is the left location of error token. 
+		static int line, ch, chp, tab;
+		static int log_color;				// the color the debugger going to use while print infos.
 
-    static void SetColor(const int c);
+		static void SetStream(const bool t);
+		// Write all output to file , for debug and testing.
+		static void WriteOutput(const char* file);
 
-    // this function is implemented in main.cpp,
-    // because there are some issues with include<windows.h> before other headers.
-    static void PrintErrorInfo(const std::wstring type, int l=-1,int c = -1);
+		// this special micro will be called when the error token is "Newline", then we need to go back a line to print debug info.
 
-    //This function will print the current token and the line of code it belongs.
-    static void PrintErrorPostfix(int l = -1, int c = -1,int cp=-1);
+		enum Color {
+			kDarkBlue = 1,
+			kDarkGreen,
+			kDarkTeal,
+			kDarkRed,
+			kDarkPink,
+			kDarkYellow,
+			kGray,
+			kDarkGray,
+			kBlue,
+			kGreen,
+			kTeal,
+			kRed,
+			kPink,
+			kYellow,
+			kWhite
+		};
 
-    static void CatchNewline();
+		static void SetColor(const int c);
 
-	
-	static void Error(const std::wstring info);
-	static void ErrorNonBreak(const std::wstring info);
-	static llvm::Value* ErrorV(const std::wstring info, int line, int ch);
-	static llvm::Value* Debugger::ErrorV(const char* str, int line, int ch);
+		// this function is implemented in main.cpp,
+		// because there are some issues with include<windows.h> before other headers.
+		static void PrintErrorInfo(const std::wstring type, int l = -1, int c = -1);
 
-    static void Warn(const std::wstring info);
+		//This function will print the current token and the line of code it belongs.
+		static void PrintErrorPostfix(int l = -1, int c = -1, int cp = -1);
 
-    // this micro should be called each time AST parsed a node, to stop immediately if there are error.
-    // #define VERIFY {if(Debugger::error_occurred)return nullptr;}
-
-};
-
-class ErrorMsg {
-public:
-	static wchar_t* cannot_resolve_symbol;
-	static wchar_t* invalid_token;
-	static wchar_t* expected;
-	static wchar_t* expected_but;
-	static wchar_t* unexpected;
-
-	static std::wstring Format(wchar_t* format, ...);
-};
-	
+		static void CatchNewline();
 
 
+		static void Error(const std::wstring info);
+		static void ErrorNonBreak(const std::wstring info);
+		static llvm::Value* ErrorV(const std::wstring info, int line, int ch);
+		static llvm::Value* Debugger::ErrorV(const char* str, int line, int ch);
+
+		static void Warn(const std::wstring info);
+
+		// this micro should be called each time AST parsed a node, to stop immediately if there are error.
+		// #define VERIFY {if(Debugger::error_occurred)return nullptr;}
+
+	};
+}
 #endif

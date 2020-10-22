@@ -3,7 +3,7 @@
 #include "frontend/lexer.h"
 #include "AST/statements/statement.h"
 
-namespace parser {
+namespace AST {
 	// 'Statements' Class will match all statements in a binary-tree structure
 	class Statements final : public Statement {
 		std::shared_ptr<Statement> stmt1;

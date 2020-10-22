@@ -2,7 +2,7 @@
 #include "frontend/parser.h"
 
 
-namespace parser {
+namespace AST {
 	void FuncCall::ToString() {
 		if (left != nullptr)left->ToString();
 		*Debugger::out << name.c_str() << "(";

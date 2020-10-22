@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	Preprocessor::Process();
 	const auto context = std::make_shared<DFContext>();
 
-    context->program = parser::Parse();
+    context->program = AST::Parse();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
 	context->program->Gen(context);

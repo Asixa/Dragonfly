@@ -4,7 +4,7 @@
 #include "frontend/lexer.h"
 #include "AST/declarations/generic-param.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for function calls.
 	class FuncCall final : public Field {
 	public:

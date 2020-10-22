@@ -4,14 +4,14 @@
 #include "frontend/debug.h"
 #include "LLVM/context.h"
 
-namespace parser {
+namespace AST {
 	// Base Class for Statements
 	class Statement {
 	public:
 	    int ch, line;
 		Statement() {
-			ch = Debugger::chp;
-			line = Debugger::line;
+			ch = frontend::Debugger::chp;
+			line = frontend::Debugger::line;
         }
 		virtual ~Statement() = default;
 		virtual void Gen(std::shared_ptr<DFContext>) = 0;

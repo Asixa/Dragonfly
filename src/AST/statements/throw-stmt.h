@@ -3,7 +3,7 @@
 #include "AST/statements/statement.h"
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	class Throw : Statement {
 		std::shared_ptr<Expr> value;
 	public:

@@ -1,7 +1,7 @@
 #include "AST/statements/statements.h"
 #include "frontend/parser.h"
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<Statement> Statement::Parse() {
 		Lexer::SkipNewlines();
 		switch (Lexer::token->type) {

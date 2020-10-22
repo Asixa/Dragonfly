@@ -2,7 +2,7 @@
 #define MY_STRING_H
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for literal strings.
 	class String final : public Expr {
 	public:

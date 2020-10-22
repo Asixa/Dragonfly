@@ -2,7 +2,7 @@
 #define TERNARY_H
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for Ternary expression like a?b:c
 	class Ternary final : public Expr {
 		std::shared_ptr<Expr> a;

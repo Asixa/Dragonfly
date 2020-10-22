@@ -2,8 +2,8 @@
 #include "frontend/lexer.h"
 #include "AST/expressions/factor.h"
 
-
-namespace parser {
+using namespace frontend;
+namespace AST {
 	void Unary::ToString() {
 		*Debugger::out << "<" << Lexer::Token::Name(op) << ">";
 		expr->ToString();

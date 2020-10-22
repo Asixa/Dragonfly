@@ -3,7 +3,7 @@
 #include "frontend/lexer.h"
 #include "AST/expressions/expr.h"
 
-namespace parser {
+namespace AST {
 	// Expression node for literal numbers.
 	class NumberConst final : public Expr {
 	public:

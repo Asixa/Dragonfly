@@ -1,7 +1,7 @@
 #include "AST/statements/empty-stmt.h"
 #include "AST/expressions/binary.h"
 
-namespace parser {
+namespace AST {
 	std::shared_ptr<Empty> Empty::Parse() {
 		auto instance = std::make_shared<Empty>();
 		instance->value = Binary::Parse();

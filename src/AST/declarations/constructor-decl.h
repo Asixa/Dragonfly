@@ -4,7 +4,7 @@
 #include "frontend/lexer.h"
 #include "AST/declarations/function-decl.h"
 
-namespace parser {
+namespace AST {
 	class ConstructorDecl final :public Declaration {
 		std::shared_ptr<FuncParam> args;
 		std::shared_ptr<Statement> statements;

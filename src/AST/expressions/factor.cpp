@@ -3,7 +3,7 @@
 #include <sstream>
 #include "AST/expressions/new-expr.h"
 
-namespace parser {
+namespace AST {
 	void Factor::ToString() {
 	    *Debugger::out << "[Factor]";
 	}

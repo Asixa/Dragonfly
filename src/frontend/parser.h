@@ -51,10 +51,7 @@
 #include "AST/statements/do-stmt.h"
 #include "AST/statements/switch-stmt.h"
 #include "AST/statements/for-stmt.h"
-namespace parser {
-
- 
-
+namespace AST {
     class Program {
         std::vector<std::shared_ptr<Statement>> statements;
         

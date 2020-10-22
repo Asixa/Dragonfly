@@ -9,12 +9,12 @@
 
 #include "frontend/parser.h"
 
-parser::ClassDecl* DFContext::GetTemplateClass(const std::string name) {
+AST::ClassDecl* DFContext::GetTemplateClass(const std::string name) {
 	if (template_types_table.find(name) == template_types_table.end())return nullptr;
 	return template_types_table[name];
 }
 
-parser::FunctionDecl* DFContext::GetTemplateFunc(std::string name) {
+AST::FunctionDecl* DFContext::GetTemplateFunc(std::string name) {
 	if (template_function_table.find(name) == template_function_table.end())return nullptr;
 	return template_function_table[name];
 }
@@ -50,7 +50,7 @@ llvm::AllocaInst* DFContext::CreateEntryBlockAlloca(llvm::Type* type, const std:
 	return alloca;
 }
 
-llvm::Type* DFContext::GetType(parser::Type  type) {
+llvm::Type* DFContext::GetType(AST::Type  type) {
 
 	llvm::Type* llvm_type = nullptr;
 	if (type.ty > 0) {
@@ -76,7 +76,7 @@ llvm::Type* DFContext::GetType(parser::Type  type) {
 	else {
 		if (IsCustomType(type.str)) {
 			const auto ty = module->getTypeByName(type.str);
-			llvm_type = types_table[type.str]->category == parser::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
+			llvm_type = types_table[type.str]->category == AST::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 		}
 		else {
 

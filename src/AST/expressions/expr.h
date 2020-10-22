@@ -4,14 +4,14 @@
 #include "frontend/debug.h"
 #include "LLVM/context.h"
 
-namespace parser {
+namespace AST {
 	// Base Class for Expressions
 	class Expr {
 	public:
 		int ch, line;
         Expr() {
-			ch = Debugger::ch;
-			line = Debugger::line;
+			ch = frontend::Debugger::ch;
+			line = frontend::Debugger::line;
         }
 		virtual ~Expr() = default;
 		virtual void ToString() = 0;

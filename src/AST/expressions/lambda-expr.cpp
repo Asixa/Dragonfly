@@ -1,4 +1,4 @@
 #include "AST/expressions/lambda-expr.h"
-namespace parser {
+namespace AST {
     
 }
