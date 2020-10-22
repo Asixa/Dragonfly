@@ -49,6 +49,7 @@ int main(int argc, char** argv) {
     context->program = AST::Parse();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
+
 	context->program->Gen(context);
     if (!Debugger::error_existed) {
         

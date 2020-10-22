@@ -5,7 +5,13 @@
 #include "AST/declarations/function-decl.h"
 
 namespace AST {
-	namespace decl {
+	namespace decl
+    {
+        /**
+		 * \brief class for matching constructor function.\n
+		 * ``init(..){...}``\n
+		 * ``init(..)=>STATEMENT``
+		 */
 		class ConstructorDecl final :public Declaration {
 			std::shared_ptr<FuncParam> args;
 			std::shared_ptr<Statement> statements;
