@@ -24,11 +24,11 @@ namespace AST {
 			std::string full_name;      ///< name as NAMESPACE::CLASS::CLASS, usually managled.
 			std::string name;           ///< name as CLASS, without the namespace etc.
 
-			AST::Type base_type_name;                               ///< return type of this class.
+			std::shared_ptr<AST::Type> base_type_name;                               ///< return type of this class.
 			std::vector<std::string> fields;                        ///< a list contains all fields'names, mapped with types
-			std::vector<AST::Type> types;                           ///< a list contains all fields' type, mapped with fields
+			std::vector<std::shared_ptr<AST::Type>> types;                           ///< a list contains all fields' type, mapped with fields
 
-			std::vector<AST::Type> interfaces;                      ///< a list contains all interfaces' type, empty if there no interface used.
+			std::vector<std::shared_ptr<AST::Type>> interfaces;                      ///< a list contains all interfaces' type, empty if there no interface used.
 			std::vector<std::shared_ptr<Declaration>> declarations; ///< a list contains all sub declaration like enums, sub classes.
 			std::vector<std::shared_ptr<FunctionDecl>> functions;   ///< a list contains all sub functions
 			std::vector<std::shared_ptr<FunctionDecl>> constructor; ///< a list contains all constructors, \n constructors overloading is allowed, therefore it is a list.
@@ -36,7 +36,7 @@ namespace AST {
 			std::shared_ptr<FunctionDecl> destructor;               ///< a decl represents the destructor. null if there is no destuctor.
 
 
-
+			ClassDecl() { base_type_name = std::make_shared<AST::Type>(); }
 		    static std::shared_ptr<ClassDecl> Parse(int type = kClass);
 
 			void Gen(std::shared_ptr<DFContext>) override;

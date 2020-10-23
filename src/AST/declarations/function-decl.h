@@ -17,7 +17,7 @@ namespace AST {
 			int size = 0;
 			bool is_var_arg = false;
 			std::vector<std::string> names;
-			std::vector<AST::Type> types;
+			std::vector<std::shared_ptr<AST::Type>> types;
 			std::vector<int>generic_id;
 			static std::shared_ptr<FuncParam> Parse();
 			FuncParam() {
@@ -51,7 +51,7 @@ namespace AST {
 			std::string func_postfix;
 			std::string header_name;
 			std::string full_name;
-			Type return_type;
+			std::shared_ptr<AST::Type> return_type;
 			llvm::StructType* parent_type = nullptr;
 
 			// std::vector<int>generic_arguments;
@@ -59,7 +59,7 @@ namespace AST {
 			std::shared_ptr<FuncParam> args;
 			std::shared_ptr<Statement> statements;
 
-			FunctionDecl() {}
+			FunctionDecl() { return_type = std::make_shared<AST::Type>(); }
 			FunctionDecl(std::shared_ptr < FunctionDecl> copy);
 
 

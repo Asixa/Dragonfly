@@ -16,8 +16,9 @@ namespace AST {
 			std::string name;
 			std::shared_ptr<Name> alias;
 			std::shared_ptr<FuncParam> args;
-			Type return_type;
+			std::shared_ptr<AST::Type> return_type;
 			bool init;
+			Extern() { return_type = std::make_shared<Type>(); }
 			static std::shared_ptr<Extern>Parse();
 			void GenHeader(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;

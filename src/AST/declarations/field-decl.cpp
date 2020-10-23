@@ -26,7 +26,7 @@ namespace AST {
 	void FieldDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
 		const auto val = value->Gen(ctx);
-		const auto ty = type.empty() ? val->getType() : ctx->GetType(type);
+		const auto ty = type->empty() ? val->getType() : ctx->GetType(type);
 		if (!val) return;
 
 		if (constant) {

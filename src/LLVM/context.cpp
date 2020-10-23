@@ -32,7 +32,7 @@ llvm::GlobalVariable* DFContext::CreateGlob(const std::string name, llvm::Type* 
 }
 
 llvm::ConstantInt* DFContext::CreateConstant(const int value) {
-	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(DFContext::context), value);
+	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), value);
 }
 
 llvm::Function* DFContext::CreateMainFunc() {
@@ -42,7 +42,7 @@ llvm::Function* DFContext::CreateMainFunc() {
 }
 
 llvm::BasicBlock* DFContext::CreateBasicBlock(llvm::Function* func, const std::string name) {
-	return llvm::BasicBlock::Create(DFContext::context, name, func);
+	return llvm::BasicBlock::Create(context, name, func);
 }
 
 llvm::AllocaInst* DFContext::CreateEntryBlockAlloca(llvm::Type* type, const std::string& var_name, llvm::Function* the_function) {
@@ -54,21 +54,21 @@ llvm::AllocaInst* DFContext::CreateEntryBlockAlloca(llvm::Type* type, const std:
 	return alloca;
 }
 
-llvm::Type* DFContext::GetType(AST::Type  type) {
+llvm::Type* DFContext::GetType(std::shared_ptr<AST::Type>  type) {
 
 	llvm::Type* llvm_type = nullptr;
-	if (type.ty > 0) {
-		switch (type.ty) {
+	if (type->ty > 0) {
+		switch (type->ty) {
 		case K_void:
-		case 1:             llvm_type = llvm::Type::getVoidTy(DFContext::context); break;
-		case K_byte:        llvm_type = llvm::Type::getInt8Ty(DFContext::context); break;
-		case K_short:       llvm_type = llvm::Type::getInt16Ty(DFContext::context); break;
-		case K_int:         llvm_type = llvm::Type::getInt32Ty(DFContext::context); break;
-		case K_long:        llvm_type = llvm::Type::getInt64Ty(DFContext::context); break;
-		case K_float:       llvm_type = llvm::Type::getFloatTy(DFContext::context); break;
-		case K_double:      llvm_type = llvm::Type::getDoubleTy(DFContext::context); break;
-		case K_bool:        llvm_type = llvm::Type::getInt1Ty(DFContext::context); break;
-		case K_string:      llvm_type = llvm::Type::getInt8PtrTy(DFContext::context); break;
+		case 1:             llvm_type = llvm::Type::getVoidTy(context); break;
+		case K_byte:        llvm_type = llvm::Type::getInt8Ty(context); break;
+		case K_short:       llvm_type = llvm::Type::getInt16Ty(context); break;
+		case K_int:         llvm_type = llvm::Type::getInt32Ty(context); break;
+		case K_long:        llvm_type = llvm::Type::getInt64Ty(context); break;
+		case K_float:       llvm_type = llvm::Type::getFloatTy(context); break;
+		case K_double:      llvm_type = llvm::Type::getDoubleTy(context); break;
+		case K_bool:        llvm_type = llvm::Type::getInt1Ty(context); break;
+		case K_string:      llvm_type = llvm::Type::getInt8PtrTy(context); break;
 			// case K_ushort:       return llvm::Type::getInt16Ty(DFContext::context);break;
 			// case K_uint:         return llvm::Type::getInt32Ty(DFContext::context);break;
 			// case K_ulong:        return llvm::Type::getInt64Ty(DFContext::context);break;
@@ -78,23 +78,23 @@ llvm::Type* DFContext::GetType(AST::Type  type) {
 		}
 	}
 	else {
-		if (IsCustomType(type.str)) {
-			const auto ty = module->getTypeByName(type.str);
-			llvm_type = types_table[type.str]->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
+		if (IsCustomType(type->str)) {
+			const auto ty = module->getTypeByName(type->str);
+			llvm_type = types_table[type->str]->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 		}
 		else {
 
-			llvm_type = DFContext::module->getTypeByName(type.str);
+			llvm_type = module->getTypeByName(type->str);
 			if (llvm_type == nullptr) {
-				Debugger::ErrorV((std::string("Unknown Type: ") + type.str + "\n").c_str(), -1, -1);
+				Debugger::ErrorV((std::string("Unknown Type: ") + type->str + "\n").c_str(), -1, -1);
 				return nullptr;
 			}
 		}
 	}
 
-	if (type.array == -1)return llvm_type;
-	if (type.array == -2)return llvm_type->getPointerTo();
-	return llvm::ArrayType::get(llvm_type, type.array);
+	if (type->array == -1)return llvm_type;
+	if (type->array == -2)return llvm_type->getPointerTo();
+	return llvm::ArrayType::get(llvm_type, type->array);
 }
 
 llvm::StoreInst* DFContext::AlignStore(llvm::StoreInst* a) {
@@ -195,22 +195,22 @@ std::string DFContext::DebugValue(llvm::Value* value) {
 }
 
 llvm::Value* DFContext::Malloc(llvm::Type* type, bool cast) {
-	const auto ptr = DFContext::builder->CreateCall(DFContext::module->getFunction("malloc"),
-		llvm::ConstantInt::get(llvm::Type::getInt32Ty(DFContext::context), data_layout->getTypeStoreSize(type)));
-	return DFContext::builder->CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
+	const auto ptr = builder->CreateCall(module->getFunction("malloc"),
+		llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), data_layout->getTypeStoreSize(type)));
+	return builder->CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
 }
 
 void DFContext::Free(llvm::Value* value) {
-	DFContext::builder->CreateCall(DFContext::module->getFunction("free"),
+	builder->CreateCall(module->getFunction("free"),
 		builder->CreateCast(llvm::Instruction::BitCast, value, void_ptr));
 }
 
 llvm::Value* DFContext::FindMemberField(llvm::Value* obj, const std::string name) {
 
-	const auto obj_type_name = DFContext::GetStructName(obj);
+	const auto obj_type_name = GetStructName(obj);
 
 	// get the this's type and check if it contains the field
-	auto decl = DFContext::types_table[obj_type_name];
+	auto decl = types_table[obj_type_name];
 	auto idx = -1;
 	for (int id = 0, n = decl->fields.size(); id < n; id++) {
 		if (decl->fields[id] == name) {
@@ -221,8 +221,8 @@ llvm::Value* DFContext::FindMemberField(llvm::Value* obj, const std::string name
 
 	// get the base's type and check if it contains the field
 	if (idx == -1) {
-		if (!decl->base_type_name.empty()) {
-			auto base_decl = DFContext::types_table[decl->base_type_name.str];
+		if (!decl->base_type_name->empty()) {
+			auto base_decl = types_table[decl->base_type_name->str];
 			for (int id = 0, n = decl->fields.size(); id < n; id++) {
 				if (base_decl->fields[id] == name) {
 					idx = id;
@@ -230,13 +230,13 @@ llvm::Value* DFContext::FindMemberField(llvm::Value* obj, const std::string name
 				}
 			}
 			if (idx != -1) {
-				const auto base = DFContext::builder->CreateStructGEP(obj, 0);                      // base is A**
-				return  DFContext::builder->CreateStructGEP(base, idx);     // after a load, we get A* and return it.
+				const auto base = builder->CreateStructGEP(obj, 0);                      // base is A**
+				return  builder->CreateStructGEP(base, idx);     // after a load, we get A* and return it.
 			}
 		}
 		return Debugger::ErrorV("Cannot find field... \n", -1, -1);
 	}
-	return  DFContext::builder->CreateStructGEP(obj, idx);
+	return  builder->CreateStructGEP(obj, idx);
 }
 
 llvm::Value* DFContext::FindField(const std::string name, int cmd, const bool warn) {
@@ -244,29 +244,29 @@ llvm::Value* DFContext::FindField(const std::string name, int cmd, const bool wa
 	const auto mangle_name = name;
 
 	// find this field in local like function argument
-	if (!v && DFContext::local_fields_table.find(mangle_name) != DFContext::local_fields_table.end())
-		v = DFContext::local_fields_table[mangle_name];
+	if (!v && local_fields_table.find(mangle_name) != local_fields_table.end())
+		v = local_fields_table[mangle_name];
 	//for (auto& it : local_fields_table)std::cout << it.first << ",";std::cout << std::endl;
 	// find this field in this
-	if (!v && DFContext::local_fields_table.find("this") != DFContext::local_fields_table.end()) {
-		auto this_fields = types_table[DFContext::GetStructName(local_fields_table["this"])]->fields;
+	if (!v && local_fields_table.find("this") != local_fields_table.end()) {
+		auto this_fields = types_table[GetStructName(local_fields_table["this"])]->fields;
 		if (std::find(this_fields.begin(), this_fields.end(), name) != this_fields.end()) {
-			v = DFContext::FindMemberField(DFContext::local_fields_table["this"], name);
-			v = cmd == 0 ? DFContext::builder->CreateLoad(v, "this." + mangle_name) : v;
+			v = FindMemberField(local_fields_table["this"], name);
+			v = cmd == 0 ? builder->CreateLoad(v, "this." + mangle_name) : v;
 		}
 	}
 
 	// find this field in base
-	if (!v && DFContext::local_fields_table.find("base") != DFContext::local_fields_table.end()) {
-		auto base_field = types_table[DFContext::GetStructName(local_fields_table["base"])]->fields;
+	if (!v && local_fields_table.find("base") != local_fields_table.end()) {
+		auto base_field = types_table[GetStructName(local_fields_table["base"])]->fields;
 		if (std::find(base_field.begin(), base_field.end(), name) != base_field.end()) {
-			v = DFContext::FindMemberField(DFContext::builder->CreateLoad(DFContext::local_fields_table["base"]), name);
-			v = cmd == 0 ? DFContext::builder->CreateLoad(v, "base." + mangle_name) : v;
+			v = FindMemberField(builder->CreateLoad(local_fields_table["base"]), name);
+			v = cmd == 0 ? builder->CreateLoad(v, "base." + mangle_name) : v;
 		}
 	}
 	// find this field in global varibales
-	if (!v && DFContext::global_fields_table.find(mangle_name) != DFContext::global_fields_table.end())
-		v = DFContext::global_fields_table[mangle_name];
+	if (!v && global_fields_table.find(mangle_name) != global_fields_table.end())
+		v = global_fields_table[mangle_name];
 
 	// TODO find v in public Enums
 	// TODO find v in namespaces
@@ -275,7 +275,7 @@ llvm::Value* DFContext::FindField(const std::string name, int cmd, const bool wa
 }
 
 bool DFContext::IsCustomType(std::string name) {
-	return types_table.find(name) != DFContext::types_table.end();
+	return types_table.find(name) != types_table.end();
 }
 
 int DFContext::GetCustomTypeCategory(llvm::Type* ty) {

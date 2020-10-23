@@ -70,7 +70,7 @@ namespace AST {
 		function->args = FuncParam::Parse();
 		Lexer::Match(')');
 
-		function->return_type.ty = 1;
+		function->return_type->ty = 1;
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			function->return_type = Type::Match();
@@ -124,7 +124,7 @@ namespace AST {
 
 		func_param->size = param->size;
 		instance->args = func_param;
-		instance->return_type.ty = 1;
+		instance->return_type->ty = 1;
 		return instance;
 	}
 
@@ -151,13 +151,13 @@ namespace AST {
 		if (key == nullptr)key = generic;
         if(!key)return;
 		for (auto i = 0, size = args->size; i < size; ++i) {
-				auto pos = std::find(key->names.begin(), key->names.end(), args->types[i].str);
+				auto pos = std::find(key->names.begin(), key->names.end(), args->types[i]->str);
 				if (pos != key->names.end())
-					args->types[i] = Type(val->names[std::distance(key->names.begin(), pos)]);
+					args->types[i] = std::make_shared<Type>(val->names[std::distance(key->names.begin(), pos)]);
 		}
-		const auto pos = std::find(key->names.begin(), key->names.end(), return_type.str);
+		const auto pos = std::find(key->names.begin(), key->names.end(), return_type->str);
 		if (pos != key->names.end())
-			return_type = Type(val->names[std::distance(key->names.begin(), pos)]);
+			return_type = std::make_shared<Type>(val->names[std::distance(key->names.begin(), pos)]);
 	}
 
 	void FunctionDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
@@ -182,7 +182,7 @@ namespace AST {
 		full_name += func_postfix;
         if(is_template) {
             for(auto i=0;i<args->size;i++) {
-				auto pos = std::find(generic->names.begin(), generic->names.end(), args->types[i].str);
+				auto pos = std::find(generic->names.begin(), generic->names.end(), args->types[i]->str);
 				if (pos != generic->names.end()) 
 					args->generic_id.push_back(std::distance(generic->names.begin(), pos));
 				else  args->generic_id.push_back(-1);
@@ -265,7 +265,7 @@ namespace AST {
 		// if 'this' have a base. then we create an alloca for the base.
 		if (parent_type != nullptr) {
 			const auto self_decl = ctx->types_table[parent_type->getStructName()];
-			if (!self_decl->base_type_name.empty()) {
+			if (!self_decl->base_type_name->empty()) {
 				const auto alloca = ctx->CreateEntryBlockAlloca(ctx->GetType(self_decl->base_type_name), "base", function);
 				const auto base = ctx->FindMemberField(function->getArg(0), "base");
 				ctx->AlignStore(ctx->builder->CreateStore(base, alloca));

@@ -28,11 +28,11 @@ namespace AST {
 
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			instance->interfaces.push_back(Type(Lexer::string_val));
+			instance->interfaces.push_back(std::make_shared<Type>(Lexer::string_val));
 			Lexer::Next();
 			while (Lexer::Check(',')) {
 				Lexer::Next();
-				instance->interfaces.push_back(Type(Lexer::string_val));
+				instance->interfaces.push_back(std::make_shared<Type>(Lexer::string_val));
 				Lexer::Match(Id);
 			}
 		}
@@ -89,9 +89,9 @@ namespace AST {
 		instance->destructor = destructor;
 		for (const auto& i : types)instance->types.push_back(i);
 		for (int i = 0, size = instance->types.size(); i < size; ++i) {
-			auto pos = std::find(generic->names.begin(), generic->names.end(), instance->types[i].str);
+			auto pos = std::find(generic->names.begin(), generic->names.end(), instance->types[i]->str);
 			if (pos != generic->names.end())
-				instance->types[i] = Type(param->names[i]);//TODO
+				instance->types[i] = std::make_shared<Type>(param->names[i]);//TODO
 		}
         const auto posfix = param->ToString();
 		const auto full_name = name + posfix;
@@ -154,12 +154,12 @@ namespace AST {
 		if (!interfaces.empty()) {
 			llvm::Type* base_type = nullptr;
 			for (auto interface : interfaces) {
-				auto mangled_interface_name =interface.str;
+				auto mangled_interface_name =interface->str;
 				if (ctx->IsCustomType(mangled_interface_name)) {
 					const auto decl = ctx->types_table[mangled_interface_name];
 					if (!decl->category == kInterface) {
 						if (base_type == nullptr) {
-							base_type = ctx->module->getTypeByName(interface.str);
+							base_type = ctx->module->getTypeByName(interface->str);
 							base_type_name = interface;
 						}
 						else Debugger::ErrorV("Inherit multiple classes is not allowed",line,ch);

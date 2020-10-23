@@ -1,36 +1,47 @@
 #include "AST/Type.h"
 #include "frontend/lexer.h"
 
-AST::Type AST::Type::Match() {
-	AST::Type type;
+std::shared_ptr<AST::Type> AST::Type::Match() {
+	std::shared_ptr<AST::Type> type=std::make_shared<AST::Type>();
 	if (frontend::Lexer::IsBasicType()) {
-		type.ty = frontend::Lexer::token->type;
-		type.str = "";
+		type->ty = frontend::Lexer::token->type;
+		type->str = "";
         frontend::Lexer::Next();
 	}
+	else if(frontend::Lexer::Check('(')) {
+
+		// frontend::Lexer::Next();
+		// std::vector<Type> types;
+		// types.push_back(Match());
+  //       while (frontend::Lexer::Check(',')) {
+		// 	types.push_back(Match());
+		// }
+		// frontend::Lexer::Match(')');
+  //       
+	}
 	else {
-		type.ty = 0;
-		type.str = frontend::Lexer::string_val;
+		type->ty = 0;
+		type->str = frontend::Lexer::string_val;
         frontend::Lexer::Match(Id);
 		while (frontend::Lexer::Check('.')) {
             frontend::Lexer::Next();
-			type.str += "." + frontend::Lexer::string_val;
+			type->str += "." + frontend::Lexer::string_val;
             frontend::Lexer::Match(Id);
 		}
 		if (frontend::Lexer::Check('<')) {
             frontend::Lexer::Next();
-			type.str += "<";
+			type->str += "<";
 			if (frontend::Lexer::Check(Id)) {
                 frontend::Lexer::Next();
-				type.str += frontend::Lexer::string_val;
+				type->str += frontend::Lexer::string_val;
 				while (frontend::Lexer::Check(',')) {
                     frontend::Lexer::Next();
                     frontend::Lexer::Match(Id);
-					type.str += "," + frontend::Lexer::string_val;
+					type->str += "," + frontend::Lexer::string_val;
 				}
 			}
             frontend::Lexer::Match('>');
-			type.str += ">";
+			type->str += ">";
 		}
 	}
 	if (frontend::Lexer::Check('[')) {
@@ -40,11 +51,11 @@ AST::Type AST::Type::Match() {
                 frontend::Debugger::Error(L"Value in side a array operator shoule be integer.");
 				return type;
 			}
-			type.array = frontend::Lexer::number_val;
+			type->array = frontend::Lexer::number_val;
             frontend::Lexer::Next();
 		}
 		else {
-			type.array = -2;
+			type->array = -2;
 		}
         frontend::Lexer::Match(']');
 	}
