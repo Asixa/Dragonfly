@@ -363,5 +363,3 @@ void Lexer::MatchSemicolon() {
 void Lexer::SkipNewlines() {
 	while (Check(NewLine))Next();
 }
-
-

@@ -15,7 +15,7 @@ namespace AST {
 		Lexer::Match(Id);
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			let->type = Lexer::MatchType();
+			let->type = Type::Match();
 		}
 		Lexer::Match('=');
 		let->value = expr::Binary::Parse();

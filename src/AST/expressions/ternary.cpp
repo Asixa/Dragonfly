@@ -1,6 +1,6 @@
 #include "AST/expressions/ternary.h"
 #include "frontend/debug.h"
-#include "frontend/parser.h"
+#include "AST/program.h"
 
 namespace AST {
 

@@ -15,7 +15,7 @@
 #include <sstream>
 
 #include "frontend/lexer.h"
-#include "frontend/parser.h"
+#include "AST/program.h"
 #include "frontend/package-manager.h"
 #include "frontend/preprocessor.h"
 int main(int argc, char** argv) {

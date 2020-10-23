@@ -2,7 +2,7 @@
 #include "AST/statements/statements.h"
 
 #include <sstream>
-#include "frontend/parser.h"
+#include "AST/program.h"
 #include "llvm/IR/Verifier.h"
 namespace AST {
 
@@ -23,7 +23,7 @@ namespace AST {
 			param->names.push_back(Lexer::string_val);
 			Lexer::Match(Id);
 			Lexer::Match(':');
-			param->types.push_back(Lexer::MatchType());
+			param->types.push_back(Type::Match());
 			if (Lexer::Check(',')) Lexer::Match(',');
 		}
 		return param;
@@ -73,7 +73,7 @@ namespace AST {
 		function->return_type.ty = 1;
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			function->return_type = Lexer::MatchType();
+			function->return_type = Type::Match();
 		}
 		if (ext) {
 			*Debugger::out << "[Parsed] Extern function declaration\n";

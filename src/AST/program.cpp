@@ -1,4 +1,4 @@
-#include "frontend/parser.h"
+#include "AST//program.h"
 #include <sstream>
 
 #include "AST/declarations/enum-decl.h"
@@ -101,53 +101,8 @@ namespace AST {
 	}
 }
 
-
-AST::Type Lexer::MatchType() {
-	AST::Type type;
-	if (Lexer::IsBasicType()) {
-		type.ty = token->type;
-		type.str = "";
-		Lexer::Next();
-	}
-	else {
-		type.ty = 0;
-		type.str = Lexer::string_val;
-		Lexer::Match(Id);
-		while (Check('.')) {
-			Next();
-			type.str +="." + Lexer::string_val;
-			Lexer::Match(Id);
-		}
-		if (Check('<')) {
-			Next();
-			type.str += "<";
-			if (Lexer::Check(Id)) {
-				Lexer::Next();
-				type.str += Lexer::string_val;
-				while (Lexer::Check(',')) {
-					Lexer::Next();
-					Lexer::Match(Id);
-					type.str += "," + Lexer::string_val;
-				}
-			}
-			Lexer::Match('>');
-			type.str += ">";
-		}
-	}
-	if (Check('[')) {
-		Next();
-        if(Check(Num)) {
-            if(token->value!=K_int) {
-				Debugger::Error(L"Value in side a array operator shoule be integer.");
-                return type;
-            }
-			type.array = number_val;
-            Next();
-        }
-        else {
-			type.array = -2;
-        }
-		Match(']');
-	}
-	return type;
-}
+       
+// 		Match(']');
+// 	}
+// 	return type;
+// }

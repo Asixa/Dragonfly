@@ -2,7 +2,7 @@
 
 #include <sstream>
 #include "AST/declarations/enum-decl.h"
-#include "frontend/parser.h"
+#include "AST/program.h"
 
 namespace AST {
 	using namespace decl;
@@ -67,7 +67,7 @@ namespace AST {
 				instance->fields.push_back(Lexer::string_val);
 				Lexer::Match(Id);
 				Lexer::Match(':');
-				instance->types.push_back(Lexer::MatchType());
+				instance->types.push_back(Type::Match());
 				Lexer::MatchSemicolon();
 				Lexer::SkipNewlines();
 			}

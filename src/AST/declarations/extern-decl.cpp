@@ -29,7 +29,7 @@ namespace AST{
 			Lexer::Match(')');
 			if (Lexer::Check(':')) {
 				Lexer::Next();
-				instance->return_type = Lexer::MatchType();
+				instance->return_type = Type::Match();
 			}
 			else instance->return_type.ty = K_void;
 			if (Lexer::Check(K_as)) {

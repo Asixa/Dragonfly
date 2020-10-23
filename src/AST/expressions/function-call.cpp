@@ -1,5 +1,5 @@
 #include "AST/expressions/function-call.h"
-#include "frontend/parser.h"
+#include "AST/program.h"
 
 
 namespace AST {

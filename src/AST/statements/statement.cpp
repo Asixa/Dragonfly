@@ -1,5 +1,5 @@
 #include "AST/statements/statement.h"
-#include "frontend/parser.h"
+#include "AST/program.h"
 
 namespace AST {
 	using namespace stmt;

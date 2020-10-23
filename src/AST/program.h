@@ -54,7 +54,6 @@
 namespace AST {
     class Program {
         std::vector<std::shared_ptr<stmt::Statement>> statements;
-        
 		void ParseSingle();
     public:
 		std::vector<std::shared_ptr<decl::Declaration>> declarations;
@@ -62,9 +61,7 @@ namespace AST {
 		static std::shared_ptr<Program> Parse();
         void Gen(std::shared_ptr<DFContext>);
     };
-
 	std::shared_ptr<Program> Parse();
-
 };
 
 #endif

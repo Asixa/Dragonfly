@@ -7,7 +7,7 @@
 #include "LLVM/context.h"
 #include "frontend/debug.h"
 
-#include "frontend/parser.h"
+#include "AST/program.h"
 
 AST::decl::ClassDecl* DFContext::GetTemplateClass(const std::string name) {
 	if (template_types_table.find(name) == template_types_table.end())return nullptr;
