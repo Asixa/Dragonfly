@@ -14,7 +14,7 @@
 
 #ifndef LEXER_H
 #define LEXER_H
-
+#include <iostream>
 #include "frontend/keywords.h"
 #include "frontend/debug.h"
 

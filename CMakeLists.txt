@@ -1,7 +1,8 @@
 
 cmake_minimum_required (VERSION 3.8)
 project(dragonfly)
-
+set(CMAKE_CXX_STANDARD 17)
+message(STATUS "Using CC: ${CMAKE_CXX_COMPILER_ID}  ${MSVC_VERSION}")
 #LLVM
 if(${LLVM_DIR} MATCHES "LLVM_DIR-NOTFOUND" )
 	message("Using LLVM_DIR From cmake/FindLLVM.cmake")

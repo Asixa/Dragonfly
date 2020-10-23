@@ -1,9 +1,7 @@
-#include "package-manager.h"
 #include <filesystem>
-#include <iostream>
+#include "package-manager.h"
 #include <fstream>
 #include "json.hpp"
-
 #include "preprocessor.h"
 using namespace frontend;
 
@@ -14,7 +12,7 @@ std::vector<std::string>PackageManager::imported;
 void PackageManager::QueryPackages() {
 	// printf("querying packages\n");
 	std::vector<std::string> r;
-	for (auto& p : std::experimental::filesystem::recursive_directory_iterator("packages"))
+	for (auto& p : std::filesystem::recursive_directory_iterator("packages"))
 	{
         if((p.path().filename()!="package.json"))continue;
         std::ifstream ifstream;
