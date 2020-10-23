@@ -20,10 +20,8 @@
 #include "frontend/preprocessor.h"
 int main(int argc, char** argv) {
 
-
+    std::wcout.imbue(std::locale(""));
 	PackageManager::QueryPackages();
-	// system("pause");
-	// return 0;
     std::string filename;
     if (argc == 1) {
 		// filename = "../tests/codes/default3.df";
@@ -36,29 +34,20 @@ int main(int argc, char** argv) {
 
     Debugger::SetStream(argc == 1);
     Debugger::only_tokenize = argc > 2;
-	
-    Debugger::error_existed = Debugger::only_tokenize;
-    std::wcout.imbue(std::locale(""));
+	std::wcout.imbue(std::locale(""));
+
+    
     const auto start = clock();
 	// Lexer::LoadFile(filename.c_str());
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
-	const auto context = std::make_shared<DFContext>();
-
-    context->program = AST::Parse();
+	const auto context = DFContext::Create(AST::Parse());
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
-
-	context->program->Gen(context);
-    if (!Debugger::error_existed) {
-        
-		context->WriteReadableIr(context->module.get(), "ir.txt", true);
-		context->WriteBitCodeIr(context->module.get(), "a.ll");
-        std::cout << "Compiled successfully, took a total of " << static_cast<double>(clock() - start) << "ms\n\n";
-    }
-    else std::cout << "Compiler stopped due to errors occurred\n\n";
+	DFContext::Gen();
     Debugger::WriteOutput("log.txt");
 
+	std::cout << "took a total of " << static_cast<double>(clock() - start) << "ms\n\n";
 
     if (argc == 1)system("pause");
      

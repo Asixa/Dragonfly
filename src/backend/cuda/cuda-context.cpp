@@ -78,3 +78,15 @@ std::string CudaContext::GenPTX() {
 	delete[] ptx;
 	return result;
 }
+
+void CudaContext::Write() {
+	DFContext::Write();
+	GenPTX();
+    // TODO write to file
+}
+
+std::shared_ptr<CudaContext> CudaContext::Create(std::shared_ptr<AST::Program> program) {
+	auto ptr = std::make_shared<CudaContext>(program);
+	contexts.push_back(ptr);
+	return ptr;
+}

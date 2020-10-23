@@ -22,7 +22,7 @@ namespace AST {
 class DFContext {
 public:
 
-	// static  std::vector<std::shared_ptr<llvm::LLVMContext>> contexts;
+	static std::vector<std::shared_ptr<DFContext>> contexts;
 
 	llvm::LLVMContext context;
 	std::unique_ptr<llvm::Module> module;
@@ -52,7 +52,9 @@ public:
 	llvm::BasicBlock* block_end;
 	AST::decl::FunctionDecl* current_function;
 
-
+    explicit DFContext(std::shared_ptr<AST::Program> program);
+	static void Gen();
+	static std::shared_ptr<DFContext> Create(std::shared_ptr<AST::Program> program);
 
 	AST::decl::ClassDecl* GetTemplateClass(std::string name);
 	AST::decl::FunctionDecl* GetTemplateFunc(std::string name);
@@ -138,9 +140,7 @@ public:
 	// Write compilable ir to file , for further compilation.
 	void WriteBitCodeIr(llvm::Module* module, const char* file);
 
-	DFContext();
-
-
+	virtual void Write();
 };
 
 #endif

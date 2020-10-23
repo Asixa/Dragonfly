@@ -26,12 +26,11 @@ namespace AST {
 	void FieldDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
 		const auto val = value->Gen(ctx);
-
 		const auto ty = type.empty() ? val->getType() : ctx->GetType(type);
 		if (!val) return;
 
 		if (constant) {
-            // TODO ERROR, constant not supported yet!
+            // TODO ERROR, constant not supported yet! 
 			const auto v = ctx->CreateGlob(name, ty);
 			// v->setInitializer(val);
 			ctx->local_fields_table[name] = v;
@@ -39,7 +38,7 @@ namespace AST {
 		else {
 			const auto the_function = ctx->builder->GetInsertBlock()->getParent();
 			if (the_function->getName() == "main") {
-				// All fields in main function are stored in heap.
+				// All fields in main function are stored in heap. // TODO
 				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name, the_function);
 				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
 				ctx->global_fields_table[name] = alloca;

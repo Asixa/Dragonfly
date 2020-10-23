@@ -8,6 +8,10 @@
 #include "frontend/debug.h"
 
 #include "AST/program.h"
+#include "AST/type.h"
+
+std::vector<std::shared_ptr<DFContext>> DFContext::contexts;
+
 
 AST::decl::ClassDecl* DFContext::GetTemplateClass(const std::string name) {
 	if (template_types_table.find(name) == template_types_table.end())return nullptr;
@@ -125,6 +129,11 @@ void DFContext::WriteBitCodeIr(llvm::Module* module, const char* file) {
 	llvm::raw_fd_ostream os(file, ec, llvm::sys::fs::F_None);
 	WriteBitcodeToFile(*module, os);
 	os.flush();
+}
+
+void DFContext::Write() {
+	WriteReadableIr(module.get(), (std::string(module->getModuleIdentifier().c_str())+".txt").c_str(), true);
+	WriteBitCodeIr(module.get(), (std::string(module->getModuleIdentifier().c_str()) + ".ll").c_str());
 }
 
 int DFContext::GetPtrDepth(llvm::Value* value) {
@@ -277,7 +286,7 @@ int DFContext::GetCustomTypeCategory(const std::string ty) {
 	return IsCustomType(ty) ? types_table[ty]->category : -1;
 }
 
-DFContext::DFContext() {
+DFContext::DFContext(std::shared_ptr<AST::Program> program) {
 
     module  =  std::make_unique<llvm::Module>("Program", context);
     builder = std::make_unique<llvm::IRBuilder<>>(context);
@@ -297,6 +306,23 @@ DFContext::DFContext() {
 	void_type = llvm::Type::getVoidTy(context);
 	int32 = llvm::Type::getInt32Ty(context);
 
+	this->program = program;
 
+}
 
+void DFContext::Gen() {
+    for (auto context : contexts) {
+		context->program->Gen(context);
+		if (!Debugger::error_existed) {
+			context->Write();
+			std::cout << "Context \""<< context->module->getModuleIdentifier().c_str() <<"\" Compiled successfully "<< "\n";
+		}
+		else std::cout << "Context \"" << context->module->getModuleIdentifier().c_str() << "\" Compilation Failed " << "\n";
+    }
+}
+
+std::shared_ptr<DFContext> DFContext::Create(std::shared_ptr<AST::Program> program) {
+	auto ptr = std::make_shared<DFContext>(program);
+	contexts.push_back(ptr);
+	return ptr;
 }
