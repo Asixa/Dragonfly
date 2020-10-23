@@ -41,24 +41,25 @@ namespace AST {
 		static std::shared_ptr<AST::Type> Match();
 	};
 
-	class  BasicType : Type {
-		// enum {
-		// 	Int8, Custom, Tuple, Tensor
-		// };
+	class  BasicType : public Type {
+	public:
+		static std::shared_ptr<AST::BasicType> Match();
     };
-	class  CustomType : Type {
-
-	};
-	class  Tuple : Type {
+	class  CustomType : public Type {
 	public:
-		std::vector<Type> types;
-		static Tuple Match();
+		static std::shared_ptr<AST::CustomType> Match();
 	};
-	class  Tensor : Type {
+	class  Tuple : public Type {
 	public:
-		Type base;
+		std::vector<std::shared_ptr<AST::Type>> types;
+		static std::shared_ptr<AST::Type> Match();
+	};
+	class  Tensor : public Type {
+	public:
+		std::shared_ptr < AST::Type> base;
 		std::vector<int>shape;
-
+        Tensor(std::shared_ptr<AST::Type> base):base(base){}
+		static std::shared_ptr<AST::Tensor> Match(std::shared_ptr<AST::Type> base);
 	};
 }
 #endif
