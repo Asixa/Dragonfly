@@ -44,8 +44,8 @@ int main(int argc, char** argv) {
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
 
-	auto ctx = CudaContext::Create(nullptr);
-	// const auto context = DFContext::Create(AST::Parse()); //umcomment this code and comment above to run normal code.
+	// auto ctx = CudaContext::Create(nullptr);
+	const auto context = DFContext::Create(AST::Parse()); 
 
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
