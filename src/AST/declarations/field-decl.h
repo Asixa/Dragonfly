@@ -18,7 +18,7 @@ namespace AST {
 			std::shared_ptr<expr::Expr> value;
 		public:
 			void Gen(std::shared_ptr<DFContext>) override;
-			static std::shared_ptr<FieldDecl> Parse(bool is_const);
+			static std::shared_ptr<FieldDecl> Parse(bool is_const, bool skip_keyword_check = false, const std::string* field_name = nullptr);
 		};
 	}
 }

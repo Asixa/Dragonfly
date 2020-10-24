@@ -7,11 +7,11 @@
 namespace AST {
 
 	using namespace AST::decl;
-	std::shared_ptr<FieldDecl> FieldDecl::Parse(const bool is_const) {
+	std::shared_ptr<FieldDecl> FieldDecl::Parse(const bool is_const, const bool skip_keyword_check, const std::string* field_name) {
 		auto let = std::make_shared<FieldDecl>();
 		let->constant = is_const;
-		Lexer::Next();
-		let->name = Lexer::string_val;
+		if(!skip_keyword_check) Lexer::Match(is_const ? K_let : K_var);
+		let->name = field_name == nullptr ? Lexer::string_val : *field_name;
 		Lexer::Match(Id);
 		if (Lexer::Check(':')) {
 			Lexer::Next();
