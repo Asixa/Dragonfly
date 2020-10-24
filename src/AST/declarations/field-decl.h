@@ -19,7 +19,10 @@ namespace AST {
 		public:
 			FieldDecl() { type = std::make_shared<AST::Type>(); }
 			void Gen(std::shared_ptr<DFContext>) override;
-			static std::shared_ptr<FieldDecl> Parse(bool is_const, bool skip_keyword_check = false, const std::string* field_name = nullptr);
+			static std::shared_ptr<FieldDecl> Parse();
+
+			// [for] [(] [var] [x] [of]  [Y] [)]
+			//                 ^   ^
 		};
 	}
 }

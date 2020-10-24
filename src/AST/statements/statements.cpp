@@ -6,8 +6,8 @@ namespace AST {
 	std::shared_ptr<Statement> Statement::Parse() {
 		Lexer::SkipNewlines();
 		switch (Lexer::token->type) {
-		case K_let:         return decl::FieldDecl::Parse(true);
-		case K_var:         return decl::FieldDecl::Parse(false);
+		case K_let:         return decl::FieldDecl::Parse();
+		case K_var:         return decl::FieldDecl::Parse();
 		case K_if:          return If::Parse();
 		case K_return:      return Return::Parse();
 		case K_do:          return For::Parse();

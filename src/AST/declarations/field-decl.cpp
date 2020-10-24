@@ -7,12 +7,15 @@
 namespace AST {
 
 	using namespace AST::decl;
-	std::shared_ptr<FieldDecl> FieldDecl::Parse(const bool is_const, const bool skip_keyword_check, const std::string* field_name) {
+	std::shared_ptr<FieldDecl> FieldDecl::Parse() {
 		auto let = std::make_shared<FieldDecl>();
-		let->constant = is_const;
-		if(!skip_keyword_check) Lexer::Match(is_const ? K_let : K_var);
-		let->name = field_name == nullptr ? Lexer::string_val : *field_name;
+		if (Lexer::Check(K_let)) let->constant = true;
+		else if (Lexer::Check(K_var)) let->constant = false;
+		Lexer::Match(let->constant ? K_let : K_var);
+		
+		let->name = Lexer::string_val;
 		Lexer::Match(Id);
+		
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			let->type = Type::Match();
@@ -38,13 +41,13 @@ namespace AST {
 		else {
 			const auto the_function = ctx->builder->GetInsertBlock()->getParent();
 			if (the_function->getName() == "main") {
-				// All fields in main function are stored in heap. // TODO
+				// All fields in main function are stored in heap. 
 				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name, the_function);
 				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
 				ctx->global_fields_table[name] = alloca;
 			}
 			else {
-				// otherwise the local field store on stack.
+				// otherwise the local field store on stack. // TODO
 				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name,the_function);
 				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
 				ctx->local_fields_table[name] = alloca;
