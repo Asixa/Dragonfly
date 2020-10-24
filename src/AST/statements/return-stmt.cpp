@@ -11,7 +11,7 @@ namespace AST {
 		if (Lexer::token->type == ';' || Lexer::token->type == NewLine) {
 			instance->value = nullptr;
 			Lexer::Next();
-			return instance;
+			return instance; 
 		}
 		instance->value = expr::Binary::Parse();
 		Lexer::MatchSemicolon();

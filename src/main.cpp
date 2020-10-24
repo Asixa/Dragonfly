@@ -18,6 +18,8 @@
 #include "AST/program.h"
 #include "frontend/package-manager.h"
 #include "frontend/preprocessor.h"
+#include "backend/cuda/cuda-context.h"
+
 int main(int argc, char** argv) {
 
     std::wcout.imbue(std::locale(""));
@@ -41,7 +43,10 @@ int main(int argc, char** argv) {
 	// Lexer::LoadFile(filename.c_str());
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
-	const auto context = DFContext::Create(AST::Parse());
+
+	auto ctx = CudaContext::Create(nullptr);
+	// const auto context = DFContext::Create(AST::Parse()); //umcomment this code and comment above to run normal code.
+
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
 	DFContext::Gen();

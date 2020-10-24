@@ -287,6 +287,7 @@ int DFContext::GetCustomTypeCategory(const std::string ty) {
 }
 
 DFContext::DFContext(std::shared_ptr<AST::Program> program) {
+    if(program==nullptr)return;
 
     module  =  std::make_unique<llvm::Module>("Program", context);
     builder = std::make_unique<llvm::IRBuilder<>>(context);
@@ -312,7 +313,7 @@ DFContext::DFContext(std::shared_ptr<AST::Program> program) {
 
 void DFContext::Gen() {
     for (auto context : contexts) {
-		context->program->Gen(context);
+		if(context->program)context->program->Gen(context);
 		if (!Debugger::error_existed) {
 			context->Write();
 			std::cout << "Context \""<< context->module->getModuleIdentifier().c_str() <<"\" Compiled successfully "<< "\n";

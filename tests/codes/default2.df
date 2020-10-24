@@ -3,7 +3,6 @@ class A
   a:int
   func toB():B
   {
-
     return B(this)
   }
   init()
@@ -11,7 +10,6 @@ class A
   a=666
   }
 }
-
 struct B
 {
   a:int
@@ -20,7 +18,7 @@ struct B
 	this.a=a.a
   }
   init(){
-  a=233
+  a=233++
   }
 }
 

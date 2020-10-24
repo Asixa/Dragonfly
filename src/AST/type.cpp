@@ -13,6 +13,7 @@ std::shared_ptr<AST::Type> AST::Type::Match() {
 	if (frontend::Lexer::Check('[')) 
 		type= Tensor::Match(type);
 	return type;
+
 }
 
 std::shared_ptr<AST::BasicType> AST::BasicType::Match() {
