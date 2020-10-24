@@ -13,7 +13,7 @@ namespace AST {
     namespace expr {
 		class Field;
 	}
-    struct Type;
+	class Type;
 	class Program;
 	
 }
@@ -70,7 +70,7 @@ public:
 
 
 
-	llvm::Type* GetType(AST::Type type);
+	llvm::Type* GetType(std::shared_ptr<AST::Type> type);
 
 	llvm::StoreInst* AlignStore(llvm::StoreInst* a);
 	llvm::LoadInst* AlignLoad(llvm::LoadInst* a);

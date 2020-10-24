@@ -1,10 +1,18 @@
 #ifndef TYPE_H
 #define TYPE_H
 #include <string>
+#include <vector>
+#include <memory>
 
 namespace AST {
-	struct Type {
+
+    class Type {
 	public:
+
+        enum {
+            // Basic, Custom, Tuple,Tensor
+        };
+
 		int ty = -1;
 		int array = -1;
 		std::string str = "";
@@ -30,7 +38,28 @@ namespace AST {
 			return *this;
 		}
 
-		static Type Match();
+		static std::shared_ptr<AST::Type> Match();
+	};
+
+	class  BasicType : public Type {
+	public:
+		static std::shared_ptr<AST::BasicType> Match();
+    };
+	class  CustomType : public Type {
+	public:
+		static std::shared_ptr<AST::CustomType> Match();
+	};
+	class  Tuple : public Type {
+	public:
+		std::vector<std::shared_ptr<AST::Type>> types;
+		static std::shared_ptr<AST::Type> Match();
+	};
+	class  Tensor : public Type {
+	public:
+		std::shared_ptr < AST::Type> base;
+		std::vector<int>shape;
+        Tensor(std::shared_ptr<AST::Type> base):base(base){}
+		static std::shared_ptr<AST::Tensor> Match(std::shared_ptr<AST::Type> base);
 	};
 }
 #endif

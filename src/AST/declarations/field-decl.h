@@ -14,9 +14,10 @@ namespace AST {
 		class FieldDecl : public stmt::Statement {
 			bool constant;
 			std::string name;
-			AST::Type type;
+			std::shared_ptr<AST::Type> type;
 			std::shared_ptr<expr::Expr> value;
 		public:
+			FieldDecl() { type = std::make_shared<AST::Type>(); }
 			void Gen(std::shared_ptr<DFContext>) override;
 			static std::shared_ptr<FieldDecl> Parse(bool is_const, bool skip_keyword_check = false, const std::string* field_name = nullptr);
 		};
