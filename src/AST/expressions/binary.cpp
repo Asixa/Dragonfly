@@ -44,9 +44,6 @@ namespace AST {
 				}
 			}
 		}
-
-		switch (op) {
-
 #define BASIC(f,i)[&](){                                                                                     \
 			if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)                        \
 				return ctx->builder->Create##f(lhs, rhs, #f"_tmp");                                  \
@@ -58,12 +55,15 @@ namespace AST {
 			return Debugger::ErrorV(std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Integer operands\n"),line,ch); \
 		}();
 
+		switch (op) {
+
+
 		case '+':return BASIC(FAdd, Add)
 		case '-':return BASIC(FSub, Sub)
 		case '*':return BASIC(FMul, Mul)
 		case '%':return BASIC(FRem, SRem)
 		case '<':return BASIC(FCmpULT, ICmpULT)
-		case '>':return BASIC(FCmpULT, ICmpULT)
+		case '>':return BASIC(FCmpUGT, ICmpUGT)
 		case Le:return BASIC(FCmpULE, ICmpULE)
 		case Ge:return BASIC(FCmpUGE, ICmpUGE)
 		case Eq:return BASIC(FCmpUEQ, ICmpEQ)
