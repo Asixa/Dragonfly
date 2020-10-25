@@ -29,7 +29,7 @@ namespace AST {
 		Lexer::Next();
 		Lexer::Match('(');
 		instance->init = Statement::Parse();
-		auto t = Lexer::token;
+		auto* t = Lexer::token;
 		instance->condition = expr::Binary::Parse();
 		Lexer::Match(';');
 		instance->post = expr::Binary::Parse();
@@ -44,7 +44,27 @@ namespace AST {
 	}
 
 	void For::Gen(std::shared_ptr<DFContext> context) {
-		init->Gen( context);
+		auto* const function = context->builder->GetInsertBlock()->getParent();
+
+		init->Gen(context);
+
+		auto* const cond_bb = llvm::BasicBlock::Create(context->context, "cond", function);
+		auto* const stmt_bb = llvm::BasicBlock::Create(context->context, "stmt", function);
+		auto* const end_bb = llvm::BasicBlock::Create(context->context, "end", function);
+
+		context->builder->CreateBr(cond_bb);
+		context->builder->SetInsertPoint(cond_bb);
+		auto* cond_v = condition->Gen(context);
+		
+		cond_v = context->builder->CreateICmpEQ(cond_v, context->True, "forcond");
+		context->builder->CreateCondBr(cond_v, stmt_bb, end_bb);
+
+		context->builder->SetInsertPoint(stmt_bb);
+		stmts->Gen(context);
+		post->Gen(context);
+		context->builder->CreateBr(cond_bb);
+
+		context->builder->SetInsertPoint(end_bb);
 	}
 
 	std::shared_ptr<ForIterator> ForIterator::Parse() {
