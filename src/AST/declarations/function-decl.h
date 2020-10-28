@@ -66,6 +66,9 @@ namespace AST {
 			static std::shared_ptr<FunctionDecl> CreateInit(std::shared_ptr<FuncParam> param);
 
 			void SetInternal(llvm::StructType* type);
+
+			void AnalysisHeader(std::shared_ptr<DFContext>) override;
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext>) override;
 

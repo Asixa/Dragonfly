@@ -10,5 +10,7 @@ namespace AST {
 		return instance;
 	}
 
-	void Throw::Gen(std::shared_ptr<DFContext> context) { }
+    void Throw::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Throw::Gen(std::shared_ptr<DFContext> context) { }
 }

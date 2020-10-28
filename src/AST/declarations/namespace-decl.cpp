@@ -112,6 +112,9 @@ void Name::Verify() {
     
 }
 
+void Namespace::AnalysisHeader(std::shared_ptr<DFContext>) {}
+void Namespace::Analysis(std::shared_ptr<DFContext>) {}
+
 void Namespace::Gen(std::shared_ptr<DFContext> context) {
     
 }

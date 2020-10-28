@@ -41,6 +41,8 @@ namespace AST {
 
 			void Gen(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext>) override;
+			void Analysis(std::shared_ptr<DFContext>) override;
+			void AnalysisHeader(std::shared_ptr<DFContext>) override;
 
 
             /** 

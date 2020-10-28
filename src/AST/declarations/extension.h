@@ -15,7 +15,10 @@ namespace AST {
 		public:
 			std::string name;
 			std::vector<std::shared_ptr<FunctionDecl>> functions;
+
 			static std::shared_ptr<Extension> Parse();
+			void AnalysisHeader(std::shared_ptr<DFContext>) override;
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext>) override;
 		};

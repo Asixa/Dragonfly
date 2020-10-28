@@ -76,6 +76,8 @@ namespace AST {
 		return instance;
 	}
 
+  
+
 	void ClassDecl::Instantiate(std::shared_ptr<DFContext> ctx,std::shared_ptr<GenericParam> param) {
 		const auto instance = new ClassDecl();
 		instance->fields = fields;
@@ -139,22 +141,20 @@ namespace AST {
 
 	}
 
+	void ClassDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
-
-    void ClassDecl::Gen(std::shared_ptr<DFContext> ctx) {
-       
 		if (is_template)return;
 		auto the_struct = ctx->module->getTypeByName(full_name);
-        if(!the_struct) {
+		if (!the_struct) {
 			Debugger::ErrorV((std::string("type") + full_name + " is not defined").c_str(), line, ch);
-            return;
-        }
+			return;
+		}
 		std::vector<llvm::Type*> field_tys;
 
 		if (!interfaces.empty()) {
 			llvm::Type* base_type = nullptr;
 			for (auto interface : interfaces) {
-				auto mangled_interface_name =interface->str;
+				auto mangled_interface_name = interface->str;
 				if (ctx->IsCustomType(mangled_interface_name)) {
 					const auto decl = ctx->types_table[mangled_interface_name];
 					if (!decl->category == kInterface) {
@@ -162,10 +162,10 @@ namespace AST {
 							base_type = ctx->module->getTypeByName(interface->str);
 							base_type_name = interface;
 						}
-						else Debugger::ErrorV("Inherit multiple classes is not allowed",line,ch);
+						else Debugger::ErrorV("Inherit multiple classes is not allowed", line, ch);
 					}
 				}
-				else  Debugger::ErrorV((Lexer::Str2W(mangled_interface_name) + L" is not defined"),line,ch);
+				else  Debugger::ErrorV((Lexer::Str2W(mangled_interface_name) + L" is not defined"), line, ch);
 			}
 			if (base_type != nullptr) {
 
@@ -177,4 +177,14 @@ namespace AST {
 		for (const auto& type : types)field_tys.push_back(ctx->GetType(type));
 		the_struct->setBody(field_tys);
 	}
+
+    void ClassDecl::Analysis(std::shared_ptr<DFContext>) {
+	    
+	}
+
+	void ClassDecl::AnalysisHeader(std::shared_ptr<DFContext>) {
+
+	}
+
+
 }

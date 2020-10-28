@@ -1,7 +1,7 @@
 #ifndef DECLARATION_H
 #define DECLARATION_H
 #include "AST/statements/statement.h"
-
+#include "frontend/symbol.h"
 namespace AST {
 	namespace decl {
 		/**
@@ -19,6 +19,7 @@ namespace AST {
 			 * \param ctx the DFContext object that requried to generate IR.
 			 */
 			virtual void GenHeader(std::shared_ptr<DFContext> ctx) = 0;
+			virtual void AnalysisHeader(std::shared_ptr<DFContext> ctx) = 0;
 		};
 	}
 }

@@ -33,7 +33,9 @@ namespace AST {
 		return instance;
 	}
 
-	void If::Gen(std::shared_ptr<DFContext>ctx) {
+    void If::Analysis(std::shared_ptr<DFContext>) {}
+
+    void If::Gen(std::shared_ptr<DFContext>ctx) {
 		auto cond_v = condition->Gen(ctx);
 		if (!cond_v) {
 			Debugger::ErrorNonBreak(L"Error in condititon");

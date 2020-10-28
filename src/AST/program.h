@@ -59,7 +59,8 @@ namespace AST {
 		std::vector<std::shared_ptr<decl::Declaration>> declarations;
 		std::vector<std::shared_ptr<decl::Declaration>> late_gen;
 		static std::shared_ptr<Program> Parse();
-        void Gen(std::shared_ptr<DFContext>);
+		void Gen(std::shared_ptr<DFContext>);
+		void Analysis();
     };
 	std::shared_ptr<Program> Parse();
 };

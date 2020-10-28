@@ -18,7 +18,10 @@ namespace AST {
 		*Debugger::out << "[Parsed] Return Statement\n";
 		return instance;
 	}
-	void Return::Gen(std::shared_ptr<DFContext> ctx) {
+
+    void Return::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Return::Gen(std::shared_ptr<DFContext> ctx) {
 		//////////////////////////////////////////////////////////////////////////////
 		/// State 1£¬ Gen the value, and check.
 		//////////////////////////////////////////////////////////////////////////////

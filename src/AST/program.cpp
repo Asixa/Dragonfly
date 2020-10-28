@@ -99,10 +99,11 @@ namespace AST {
 
 		verifyFunction(*main_func);
 	}
+
+    void Program::Analysis() {
+        
+    }
 }
 
        
-// 		Match(']');
-// 	}
-// 	return type;
-// }
+

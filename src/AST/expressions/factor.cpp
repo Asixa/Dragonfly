@@ -9,7 +9,9 @@ namespace AST {
 	    *Debugger::out << "[Factor]";
 	}
 
-	std::shared_ptr<Expr> Factor::Parse() {
+    std::shared_ptr<AST::Type> Factor::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
+    std::shared_ptr<Expr> Factor::Parse() {
 		std::shared_ptr<Expr> factor;
 		switch (Lexer::token->type) {
 		case '(': {

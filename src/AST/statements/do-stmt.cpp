@@ -21,7 +21,10 @@ namespace AST {
 		Lexer::Match(')');
 		return instance;
 	}
-	void Do::Gen(std::shared_ptr<DFContext> ctx) {
+
+    void Do::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Do::Gen(std::shared_ptr<DFContext> ctx) {
 		auto cond_v = condition->Gen(ctx);
 		if (!cond_v) {
 			Debugger::ErrorNonBreak(L"Error in condititon");

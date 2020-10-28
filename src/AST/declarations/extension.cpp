@@ -33,7 +33,10 @@ namespace AST {
 		return instance;
 	}
 
-	void Extension::Gen(std::shared_ptr<DFContext> ctx) {
+    void Extension::AnalysisHeader(std::shared_ptr<DFContext>) {}
+    void Extension::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Extension::Gen(std::shared_ptr<DFContext> ctx) {
 		const auto the_struct = ctx->module->getTypeByName(name);
 		for (auto& function : functions) {
 			function->SetInternal(the_struct);

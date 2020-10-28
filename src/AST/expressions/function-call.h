@@ -14,6 +14,7 @@ namespace AST {
 			llvm::Value* Gen(std::shared_ptr<DFContext>, const int cmd = 0) override;
 			std::shared_ptr<decl::GenericParam> generic;
 			std::vector<std::shared_ptr<Expr>> args;
+			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
 			llvm::Value* GenField(std::shared_ptr<DFContext>, llvm::Value* parent) override;
 			explicit FuncCall(std::string d) : Field(d) {}
 			static std::shared_ptr<FuncCall> Parse(std::string f);

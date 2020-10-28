@@ -10,6 +10,7 @@ namespace AST {
 			std::shared_ptr<expr::Expr> value;
 			std::shared_ptr<Statement> stmts;
 			static std::shared_ptr<Switch> Parse();
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 		};
 	}

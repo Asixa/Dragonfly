@@ -14,7 +14,10 @@ namespace AST {
 			return;
 		}
 	}
-	llvm::Value* expr::NumberConst::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+
+    std::shared_ptr<AST::Type> expr::NumberConst::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
+    llvm::Value* expr::NumberConst::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 		switch (type) {
 		case K_float: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(static_cast<float>(value)));
 		case K_double: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(value));

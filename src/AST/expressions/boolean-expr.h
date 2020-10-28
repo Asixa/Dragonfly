@@ -8,6 +8,7 @@ namespace AST {
 		class Boolean final : public Expr {
 		public:
 			void ToString() override;
+			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
 			llvm::Value* Gen(std::shared_ptr<DFContext>, const int cmd = 0) override;
 			bool value;
 			explicit Boolean(const bool d) : value(d) {}

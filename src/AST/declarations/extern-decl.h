@@ -20,6 +20,9 @@ namespace AST {
 			bool init;
 			Extern() { return_type = std::make_shared<Type>(); }
 			static std::shared_ptr<Extern>Parse();
+
+			void AnalysisHeader(std::shared_ptr<DFContext>) override;
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 		};

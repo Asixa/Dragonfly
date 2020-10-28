@@ -3,6 +3,8 @@
 
 namespace AST {
 	using namespace stmt;
+    void Statement::Analysis(std::shared_ptr<DFContext> ctx) {}
+
 	std::shared_ptr<Statement> Statement::Parse() {
 		Lexer::SkipNewlines();
 		switch (Lexer::token->type) {
@@ -18,6 +20,8 @@ namespace AST {
 		default:            return Empty::Parse();
 		}
 	}
+
+    void Statements::Analysis(std::shared_ptr<DFContext>) {}
 
 	void Statements::Gen(std::shared_ptr<DFContext> context) {
 		stmt1->Gen(context);

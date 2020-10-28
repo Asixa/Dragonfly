@@ -9,6 +9,7 @@ namespace AST {
 		class Break final :public Statement {
 		public:
 			static std::shared_ptr<Break> Parse();
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 		};
 	}

@@ -49,7 +49,11 @@ namespace AST{
 		else Debugger::Error(L"Expected class or func");
 		return instance;
 	}
-	void Extern::GenHeader(std::shared_ptr<DFContext> ctx) {
+
+    void Extern::AnalysisHeader(std::shared_ptr<DFContext>) {}
+    void Extern::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Extern::GenHeader(std::shared_ptr<DFContext> ctx) {
 		if (type == K_func) {
 			std::string func_name = name;
 			std::vector<llvm::Type*> arg_types;

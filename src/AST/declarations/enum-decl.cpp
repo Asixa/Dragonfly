@@ -1,5 +1,7 @@
 #include "AST/declarations/enum-decl.h"
 using namespace AST::decl;
+void EnumDecl::AnalysisHeader(std::shared_ptr<DFContext>) {}
+void EnumDecl::Analysis(std::shared_ptr<DFContext>) {}
 void AST::decl::EnumDecl::GenHeader(std::shared_ptr<DFContext> context) {}
 void AST::decl::EnumDecl::Gen(std::shared_ptr<DFContext> context) {}
 

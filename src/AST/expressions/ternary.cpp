@@ -14,7 +14,9 @@ namespace AST {
 		*Debugger::out << "]";
 	}
 
-	std::shared_ptr<expr::Expr> expr::Ternary::Parse() {
+    std::shared_ptr<AST::Type> expr::Ternary::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
+    std::shared_ptr<expr::Expr> expr::Ternary::Parse() {
 		const auto a = Binary::Sub7();
 		if (Lexer::token->type != '?')return a;
 		Lexer::Next();

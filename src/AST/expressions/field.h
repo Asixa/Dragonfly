@@ -19,6 +19,7 @@ namespace AST {
 			explicit Field(std::string d) : name(d) {}
 
 			// eg. "a.b"  a is b's parent.
+			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
 			virtual llvm::Value* GenField(std::shared_ptr<DFContext>, llvm::Value* parent);
 			static std::shared_ptr<Field>Parse();
 			static std::shared_ptr<Field>ParsePostfix();

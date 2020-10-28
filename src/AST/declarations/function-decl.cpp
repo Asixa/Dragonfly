@@ -132,7 +132,11 @@ namespace AST {
     void FunctionDecl::SetInternal(llvm::StructType* type) {
 		parent_type = type;
 	}
-	void FunctionDecl::Instantiate(std::shared_ptr<DFContext> ctx,std::shared_ptr <GenericParam> param) {
+
+    void FunctionDecl::AnalysisHeader(std::shared_ptr<DFContext>) {}
+    void FunctionDecl::Analysis(std::shared_ptr<DFContext>) {}
+
+    void FunctionDecl::Instantiate(std::shared_ptr<DFContext> ctx,std::shared_ptr <GenericParam> param) {
 		if (!generic)return;
 		const auto func_instance_name = param->ToString();
 		const auto function = ctx->module->getFunction(full_name + func_instance_name);

@@ -322,6 +322,12 @@ void DFContext::Gen() {
     }
 }
 
+void DFContext::Analysis() {
+	for (const auto& context : contexts) {
+		if (context->program)context->program->Gen(context);
+	}
+}
+
 std::shared_ptr<DFContext> DFContext::Create(std::shared_ptr<AST::Program> program) {
 	auto ptr = std::make_shared<DFContext>(program);
 	contexts.push_back(ptr);

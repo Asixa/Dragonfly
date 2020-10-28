@@ -25,6 +25,8 @@ namespace AST {
 		return ParsePostfix();
 	}
 
+    std::shared_ptr<AST::Type> expr::Unary::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
 	std::shared_ptr<expr::Expr> expr::Unary::ParsePrefix() {
 		switch (Lexer::token->type) {
 		case NewLine:

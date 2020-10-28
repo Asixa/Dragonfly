@@ -3,6 +3,7 @@
 #include "frontend/lexer.h"
 #include "frontend/debug.h"
 #include "LLVM/context.h"
+#include "frontend/symbol.h"
 
 namespace AST {
 	namespace stmt {
@@ -16,6 +17,7 @@ namespace AST {
 			}
 			virtual ~Statement() = default;
 			virtual void Gen(std::shared_ptr<DFContext>) = 0;
+			virtual void Analysis(std::shared_ptr<DFContext> ctx);
 			static std::shared_ptr<Statement> Parse();
 		};
 	}

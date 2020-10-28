@@ -14,4 +14,7 @@ namespace AST {
         frontend::Lexer::Match('}');
 		return nullptr;
 	}
+
+    void Switch::Analysis(std::shared_ptr<DFContext>) {}
+    void Switch::Gen(std::shared_ptr<DFContext>) {}
 }

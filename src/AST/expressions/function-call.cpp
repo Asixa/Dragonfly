@@ -36,6 +36,8 @@ namespace AST {
 		return GenField(context,nullptr);
 	}
 
+    std::shared_ptr<AST::Type> FuncCall::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
 	llvm::Value* FuncCall::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* parent) {
 		// TODO function call like a()()
         

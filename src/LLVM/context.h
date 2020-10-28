@@ -3,6 +3,8 @@
 #define DFContext_H
 
 #include "llvm/IR/IRBuilder.h"
+#include <stack>
+#include "frontend/symbol.h"
 
 // forward declaration
 namespace AST {
@@ -30,6 +32,11 @@ public:
 	std::unique_ptr<llvm::DataLayout> data_layout;
 
 	std::shared_ptr<AST::Program> program;
+
+	// std::stack<std::map<std::string,AST::Type>>symbols;
+
+
+
 	std::map<std::string, llvm::Value*> local_fields_table;
 	std::map<std::string, llvm::Value*> global_fields_table;
 	std::map<std::string, std::string> func_alias_table;
@@ -54,6 +61,7 @@ public:
 
     explicit DFContext(std::shared_ptr<AST::Program> program);
 	static void Gen();
+	static void Analysis();
 	static std::shared_ptr<DFContext> Create(std::shared_ptr<AST::Program> program);
 
 	AST::decl::ClassDecl* GetTemplateClass(std::string name);

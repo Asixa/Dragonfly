@@ -65,6 +65,8 @@ namespace AST {
 		return GenField(context,nullptr);
 	}
 
+    std::shared_ptr<AST::Type> Field::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
 	llvm::Value* Field::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* parent) {
 
 		llvm::Value* v = nullptr;

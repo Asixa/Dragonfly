@@ -19,6 +19,8 @@ void expr::New::ToString() {
     
 }
 
+std::shared_ptr<AST::Type> expr::New::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
 llvm::Value* expr::New::Gen(const std::shared_ptr<DFContext> ctx,const int cmd) {
 
     AST::decl::ClassDecl* decl = nullptr;

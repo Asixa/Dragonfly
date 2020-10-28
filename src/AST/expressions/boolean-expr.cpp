@@ -8,7 +8,10 @@ namespace AST {
 	void Boolean::ToString() {
 	    *frontend::Debugger::out << "[" << (value ? "true" : "false") << "]";
 	}
-	llvm::Value* Boolean::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+
+    std::shared_ptr<AST::Type> Boolean::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
+    llvm::Value* Boolean::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 		return value ? ctx->True : ctx->False;;
 	}
 }

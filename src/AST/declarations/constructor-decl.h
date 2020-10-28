@@ -15,6 +15,8 @@ namespace AST {
 		class ConstructorDecl final :public Declaration {
 			std::shared_ptr<FuncParam> args;
 			std::shared_ptr<Statement> statements;
+			void Analysis(std::shared_ptr<DFContext>) override;
+			void AnalysisHeader(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext>) override;
 			static std::shared_ptr<ConstructorDecl> Parse();

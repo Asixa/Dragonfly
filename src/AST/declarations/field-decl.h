@@ -18,6 +18,7 @@ namespace AST {
 			std::shared_ptr<expr::Expr> value;
 		public:
 			FieldDecl() { type = std::make_shared<AST::Type>(); }
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 			static std::shared_ptr<FieldDecl> Parse();
 

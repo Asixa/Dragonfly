@@ -10,7 +10,10 @@ namespace AST {
 			std::shared_ptr<Statement> init;
 			std::shared_ptr<expr::Expr> condition, post;
 			std::shared_ptr<Statement> stmts;
+
+
 			static std::shared_ptr<Statement> Parse();
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 		};
 
@@ -21,6 +24,7 @@ namespace AST {
 			std::shared_ptr<expr::Expr> collection;
 			std::shared_ptr<Statement> stmts;
 			static std::shared_ptr<ForIterator> Parse();
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 		};
 		

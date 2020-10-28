@@ -10,7 +10,10 @@ namespace AST {
 		RHS->ToString();
 		*Debugger::out << ")";
 	}
-	llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+
+	std::shared_ptr<AST::Type> Binary::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
+    llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 
 		const auto load_ptr = op == '=' || op >= AddAgn;
 		auto lhs = LHS->Gen(ctx,load_ptr);

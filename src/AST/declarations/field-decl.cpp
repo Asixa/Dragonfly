@@ -26,6 +26,8 @@ namespace AST {
 		return let;
 	}
 
+    void FieldDecl::Analysis(std::shared_ptr<DFContext>) {}
+
 	void FieldDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
 		const auto val = value->Gen(ctx);
