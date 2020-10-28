@@ -11,7 +11,7 @@ namespace AST {
 		class Declaration : public stmt::Statement {
 		public:
 			std::shared_ptr<Declaration>parent; ///< [untested] parent of this declaration. nullptr if there is no parent.
-
+			
             /**
 			 * \brief Generate the IR code.\n
 			 * will always be called before ``Gen()`` \n
@@ -20,6 +20,12 @@ namespace AST {
 			 */
 			virtual void GenHeader(std::shared_ptr<DFContext> ctx) = 0;
 			virtual void AnalysisHeader(std::shared_ptr<DFContext> ctx) = 0;
+			virtual std::string GetName() = 0;
+			std::string GetFullname() {
+				std::string full;
+				if (parent != nullptr)full = parent->GetFullname();
+				return full + JOINER_TAG + GetName();
+			};
 		};
 	}
 }

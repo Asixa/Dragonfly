@@ -1,4 +1,4 @@
-#include "AST/declarations/field-decl.h"
+#include "AST/declarations/variable-decl.h"
 #include "frontend/debug.h"
 #include "frontend/lexer.h"
 #include "AST/expressions/binary.h"
@@ -7,28 +7,30 @@
 namespace AST {
 
 	using namespace AST::decl;
-	std::shared_ptr<FieldDecl> FieldDecl::Parse() {
-		auto let = std::make_shared<FieldDecl>();
-		if (Lexer::Check(K_let)) let->constant = true;
-		else if (Lexer::Check(K_var)) let->constant = false;
-		Lexer::Match(let->constant ? K_let : K_var);
+	std::shared_ptr<VariableDecl> VariableDecl::Parse() {
+		auto decl = std::make_shared<VariableDecl>();
+
+		if (Lexer::Check(K_let)) decl->constant = true;
+		else if (Lexer::Check(K_var)) decl->constant = false;
+		Lexer::Match(decl->constant ? K_let : K_var);
 		
-		let->name = Lexer::string_val;
+		decl->name = Lexer::string_val;
 		Lexer::Match(Id);
 		
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			let->type = Type::Match();
+			decl->type = Type::Match();
 		}
+
 		Lexer::Match('=');
-		let->value = expr::Binary::Parse();
+		decl->value = expr::Binary::Parse();
 		Lexer::MatchSemicolon();
-		return let;
+		return decl;
 	}
 
-    void FieldDecl::Analysis(std::shared_ptr<DFContext>) {}
+    void VariableDecl::Analysis(std::shared_ptr<DFContext>) {}
 
-	void FieldDecl::Gen(std::shared_ptr<DFContext> ctx) {
+	void VariableDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
 		const auto val = value->Gen(ctx);
 		const auto ty = type->empty() ? val->getType() : ctx->GetType(type);

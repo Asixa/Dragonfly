@@ -8,6 +8,7 @@ namespace AST {
 	using namespace decl;
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
+        auto singleline = false;
 		instance->category = ty;
 		Lexer::Next();
 		instance->name =Lexer::string_val;
@@ -19,7 +20,7 @@ namespace AST {
 		if (Lexer::Check('(')) {
 			Lexer::Next();
             const auto param = FuncParam::Parse();
-			instance->one_line = true;
+			singleline = true;
 			instance->fields = param->names;
 			instance->types = param->types;
 			instance->functions.push_back(FunctionDecl::CreateInit(param));
@@ -36,7 +37,7 @@ namespace AST {
 				Lexer::Match(Id);
 			}
 		}
-        if(instance->one_line) {
+        if(singleline) {
 			Lexer::MatchSemicolon();
 			return instance;
         }
@@ -64,10 +65,10 @@ namespace AST {
 			case K_enum:        instance->declarations.push_back(EnumDecl::Parse()); break;
 			default:
 				if (instance->category == kInterface)break;
-				instance->fields.push_back(Lexer::string_val);
+				auto field_name=Lexer::string_val;
 				Lexer::Match(Id);
 				Lexer::Match(':');
-				instance->types.push_back(Type::Match());
+				instance->fieldsz.push_back(std::make_shared<ClassFieldDecl>(field_name,Type::Match()));
 				Lexer::MatchSemicolon();
 				Lexer::SkipNewlines();
 			}
@@ -76,10 +77,10 @@ namespace AST {
 		return instance;
 	}
 
-  
+ 
+	void ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> ctx,std::shared_ptr<GenericParam> param) {
 
-	void ClassDecl::Instantiate(std::shared_ptr<DFContext> ctx,std::shared_ptr<GenericParam> param) {
-		const auto instance = new ClassDecl();
+	    const auto instance = new ClassDecl();
 		instance->fields = fields;
 		instance->is_template = false;
 		instance->category = category;
@@ -89,6 +90,8 @@ namespace AST {
 		instance->constructor = constructor;
 		instance->generic = generic;
 		instance->destructor = destructor;
+
+
 		for (const auto& i : types)instance->types.push_back(i);
 		for (int i = 0, size = instance->types.size(); i < size; ++i) {
 			auto pos = std::find(generic->names.begin(), generic->names.end(), instance->types[i]->str);
@@ -185,6 +188,8 @@ namespace AST {
 	void ClassDecl::AnalysisHeader(std::shared_ptr<DFContext>) {
 
 	}
+
+	std::string ClassDecl::GetName() { return name; }
 
 
 }

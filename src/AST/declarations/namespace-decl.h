@@ -5,13 +5,14 @@
 namespace AST {
 	namespace decl {
 		class Namespace final : public Declaration {
-		public:
 			std::string name;
+		public:
 			std::vector<std::shared_ptr<Declaration>> declarations;
 			void AnalysisHeader(std::shared_ptr<DFContext>) override;
 			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext>) override;
+			std::string GetName()override;
 			static std::shared_ptr<Namespace>Parse();
 			void ParseSingle();
 		};

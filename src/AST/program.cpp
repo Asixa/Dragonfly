@@ -100,8 +100,14 @@ namespace AST {
 		verifyFunction(*main_func);
 	}
 
-    void Program::Analysis() {
-        
+    void Program::Analysis(std::shared_ptr<DFContext> context) {
+		for (auto i = 0; i < declarations.size(); i++)
+			try { declarations[i]->AnalysisHeader(context); }
+		catch (int e) {}
+
+		for (auto& declaration : declarations)
+			try { declaration->Analysis(context); }
+		catch (int e) {}
     }
 }
 

@@ -324,7 +324,7 @@ void DFContext::Gen() {
 
 void DFContext::Analysis() {
 	for (const auto& context : contexts) {
-		if (context->program)context->program->Gen(context);
+		if (context->program)context->program->Analysis(context);
 	}
 }
 

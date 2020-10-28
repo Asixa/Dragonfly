@@ -43,7 +43,19 @@ namespace AST {
 
 	class  BasicType : public Type {
 	public:
-		static std::shared_ptr<AST::BasicType> Match();
+        enum BasicTypeDetail{
+			BTy_UNSET, BTy_STRING,
+            BTy_F8, BTy_F16, BTy_F32, BTy_F64,
+			BTy_I1, BTy_I8, BTy_I16, BTy_I32, BTy_I64
+		};
+		BasicTypeDetail type;
+	    static std::shared_ptr<AST::BasicType> Match();
+		explicit BasicType(const BasicTypeDetail type) :type(type) {}
+		explicit BasicType():type(BTy_UNSET){}
+		static std::shared_ptr<AST::Type> string;
+		static std::shared_ptr<AST::Type> i32, i64;
+		static std::shared_ptr<AST::Type>  f32, f64;
+        
     };
 	class  CustomType : public Type {
 	public:
@@ -61,5 +73,14 @@ namespace AST {
         Tensor(std::shared_ptr<AST::Type> base):base(base){}
 		static std::shared_ptr<AST::Tensor> Match(std::shared_ptr<AST::Type> base);
 	};
+	class  FunctionType : public Type {
+	public:
+		std::vector<std::shared_ptr<AST::Type>> input;
+		std::shared_ptr < AST::Type> returnTy;
+
+		FunctionType(std::shared_ptr<AST::Type> base) :returnTy(base) {}
+		static std::shared_ptr<AST::Tensor> Match(std::shared_ptr<AST::Type> base);
+	};
+
 }
 #endif

@@ -11,16 +11,16 @@ namespace AST {
 		 * ``var NAME = EXPR``\n
 		 * ``let NAME : TYPE = EXPR`` <span style="color:red">**TODO**</span> \n
 		 */
-		class FieldDecl : public stmt::Statement {
+		class VariableDecl : public stmt::Statement {
 			bool constant;
 			std::string name;
 			std::shared_ptr<AST::Type> type;
 			std::shared_ptr<expr::Expr> value;
 		public:
-			FieldDecl() { type = std::make_shared<AST::Type>(); }
+			VariableDecl() { type = std::make_shared<AST::Type>(); }
 			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
-			static std::shared_ptr<FieldDecl> Parse();
+			static std::shared_ptr<VariableDecl> Parse();
 
 			// [for] [(] [var] [x] [of]  [Y] [)]
 			//                 ^   ^

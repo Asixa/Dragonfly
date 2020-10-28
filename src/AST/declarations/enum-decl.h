@@ -17,6 +17,7 @@ namespace AST {
 			void GenHeader(std::shared_ptr<DFContext> context) override;
 			void Gen(std::shared_ptr<DFContext> context) override;
 			static std::shared_ptr<EnumDecl>Parse();
+			std::string GetName() override;
 		};
 	}
 }

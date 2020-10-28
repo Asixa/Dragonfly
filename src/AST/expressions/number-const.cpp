@@ -15,7 +15,13 @@ namespace AST {
 		}
 	}
 
-    std::shared_ptr<AST::Type> expr::NumberConst::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+    std::shared_ptr<AST::Type> expr::NumberConst::Analysis(std::shared_ptr<DFContext>) {
+		switch (type) {
+		    case K_float: return BasicType::f32;
+		    case K_double: return BasicType::f64;
+		    case K_int: return BasicType::i32;
+		}
+	}
 
     llvm::Value* expr::NumberConst::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 		switch (type) {

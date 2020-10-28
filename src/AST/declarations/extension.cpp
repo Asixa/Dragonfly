@@ -49,4 +49,6 @@ namespace AST {
 		if (!the_struct)* Debugger::out << "Type " << name.c_str() << " is not defined" << std::endl;
 	}
 
+	std::string Extension::GetName() { return name; }
+
 }

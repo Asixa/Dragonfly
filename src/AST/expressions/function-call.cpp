@@ -70,7 +70,7 @@ namespace AST {
 			
 			const auto template_class_decl = ctx->GetTemplateClass(callee_name);
             if (template_class_decl != nullptr) {
-			    template_class_decl->Instantiate(ctx,generic);
+			    template_class_decl->InstantiateTemplate(ctx,generic);
 			}
             else {
 				const auto template_decl = ctx->GetTemplateFunc(callee_name);

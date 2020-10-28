@@ -79,6 +79,9 @@ return;}
 
 #define OTHER_KEYWORDS Num = 128,Str, Id, NewLine,
 
+# define JOINER_TAG "::"
+# define BUILTIN_TAG "$"
+
 enum {
 	OTHER_KEYWORDS
 #define ENUM(NAME) K_##NAME,

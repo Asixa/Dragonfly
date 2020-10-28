@@ -11,5 +11,5 @@ namespace AST {
 		return ctx->builder->CreateGlobalStringPtr(llvm::StringRef(frontend::Lexer::MangleStr(value)));
 	}
 
-    std::shared_ptr<AST::Type> expr::String::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+    std::shared_ptr<AST::Type> expr::String::Analysis(std::shared_ptr<DFContext>) { return BasicType::string; }
 }

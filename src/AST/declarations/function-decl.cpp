@@ -96,8 +96,12 @@ namespace AST {
 		return function;
 	}
 
+    std::string FunctionDecl::GetName() {
+		return "FUNCTION";
+	}
 
-	FunctionDecl::FunctionDecl(std::shared_ptr < FunctionDecl>  copy) {
+
+    FunctionDecl::FunctionDecl(std::shared_ptr < FunctionDecl>  copy) {
 		*this = *copy;
 		args = std::make_shared<FuncParam>(copy->args);
 	}

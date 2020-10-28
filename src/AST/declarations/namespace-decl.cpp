@@ -11,7 +11,10 @@ std::shared_ptr<AST::decl::Namespace> AST::decl::Namespace::Parse() {
 	Lexer::SkipNewlines();
 	Lexer::Match('{');
 	while (!Lexer::Check('}')) {
-		try {instance->ParseSingle();}
+		try {
+		    instance->ParseSingle();
+			instance->declarations[instance->declarations.size() - 1]->parent = instance;
+		}
 		catch (int error) {
 			while (Debugger::error_occurred) {
 				Debugger::error_occurred = false;
@@ -115,11 +118,8 @@ void Name::Verify() {
 void Namespace::AnalysisHeader(std::shared_ptr<DFContext>) {}
 void Namespace::Analysis(std::shared_ptr<DFContext>) {}
 
-void Namespace::Gen(std::shared_ptr<DFContext> context) {
-    
-}
-void Namespace::GenHeader(std::shared_ptr<DFContext> context) {
-    
-}
+void Namespace::Gen(std::shared_ptr<DFContext> context) {}
+void Namespace::GenHeader(std::shared_ptr<DFContext> context) {}
+std::string Namespace::GetName() { return name; }
 
 

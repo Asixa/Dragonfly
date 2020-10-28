@@ -76,6 +76,7 @@ namespace AST {
 			void Instantiate(std::shared_ptr<DFContext> context, std::shared_ptr <GenericParam> param);
 
 			static std::shared_ptr<FunctionDecl> Parse(bool ext = false);
+			std::string GetName() override;
 		};
 	}
 }

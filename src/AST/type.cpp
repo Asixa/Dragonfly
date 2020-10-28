@@ -1,19 +1,23 @@
 #include "AST/Type.h"
 #include "frontend/lexer.h"
 
+std::shared_ptr<AST::Type>
+AST::BasicType::string = std::make_shared<BasicType>(BTy_STRING),
+AST::BasicType::i32 = std::make_shared<BasicType>(BTy_STRING),
+AST::BasicType::i64 = std::make_shared<BasicType>(BTy_STRING),
+AST::BasicType::f32=std::make_shared<BasicType>(BTy_F32),
+AST::BasicType::f64=std::make_shared<BasicType>(BTy_F64);
+
 std::shared_ptr<AST::Type> AST::Type::Match() {
     auto type=std::make_shared<AST::Type>();
-
 	if (frontend::Lexer::IsBasicType()) 
 		type = BasicType::Match();
 	else if(frontend::Lexer::Check('(')) 
 		type = Tuple::Match();
 	else type = CustomType::Match();
-	
 	if (frontend::Lexer::Check('[')) 
 		type= Tensor::Match(type);
 	return type;
-
 }
 
 std::shared_ptr<AST::BasicType> AST::BasicType::Match() {

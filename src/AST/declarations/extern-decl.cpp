@@ -119,4 +119,6 @@ namespace AST{
 
 	}
 
+	std::string Extern::GetName() { return name; }
+
 }

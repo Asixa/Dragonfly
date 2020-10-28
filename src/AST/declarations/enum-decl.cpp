@@ -10,3 +10,5 @@ std::shared_ptr<AST::decl::EnumDecl> AST::decl::EnumDecl::Parse() {
 
 	return instance;
 }
+
+std::string EnumDecl::GetName() { return "[Enum not implented]"; }
