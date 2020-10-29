@@ -27,7 +27,7 @@ llvm::Value* expr::New::Gen(const std::shared_ptr<DFContext> ctx,const int cmd) 
 	const auto mangled_str = func->name;
 	for (auto i : ctx->types_table)
 		if (i.first == mangled_str)
-			decl = i.second;
+			decl = i.second->decl.get();
 	if (decl == nullptr)
 		return Debugger::ErrorV((std::string("unknown type A") + mangled_str).c_str(),line,ch);
 	// const auto the_function = CodeGen::builder.GetInsertBlock()->getParent();

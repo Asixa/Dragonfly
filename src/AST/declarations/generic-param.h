@@ -10,7 +10,7 @@ namespace AST {
 		class GenericParam {
 		public:
 			int size;
-			std::vector<std::string> names;
+			std::vector<std::string> typenames;
 			std::string ToString();
 			static std::shared_ptr<GenericParam> Parse();
 

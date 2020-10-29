@@ -1,12 +1,14 @@
 #include "AST/Type.h"
 #include "frontend/lexer.h"
-
+#include "LLVM/context.h"
+#include "AST/declarations/class-decl.h"
 std::shared_ptr<AST::Type>
 AST::BasicType::string = std::make_shared<BasicType>(BTy_STRING),
 AST::BasicType::i32 = std::make_shared<BasicType>(BTy_STRING),
 AST::BasicType::i64 = std::make_shared<BasicType>(BTy_STRING),
 AST::BasicType::f32=std::make_shared<BasicType>(BTy_F32),
-AST::BasicType::f64=std::make_shared<BasicType>(BTy_F64);
+AST::BasicType::f64 = std::make_shared<BasicType>(BTy_F64),
+AST::BasicType::Void=std::make_shared<AST::BasicType>(BTy_Void);
 
 std::shared_ptr<AST::Type> AST::Type::Match() {
     auto type=std::make_shared<AST::Type>();
@@ -54,6 +56,10 @@ std::shared_ptr<AST::CustomType> AST::CustomType::Match() {
 		type->str += ">";
 	}
 	return type;
+}
+
+llvm::Type* AST::CustomType::ToLLVM(std::shared_ptr<DFContext> ctx) {
+	return ctx->module->getTypeByName(decl->GetFullname());
 }
 
 std::shared_ptr<AST::Type> AST::Tuple::Match() {

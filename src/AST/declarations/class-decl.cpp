@@ -6,6 +6,28 @@
 
 namespace AST {
 	using namespace decl;
+
+    std::string FieldList::ToGenericString() {
+		std::string str = "<";
+		for (int i = 0, size = fields.size(); i < size; i++)
+			str += fields[i].type->str + ((i == size - 1) ? "" : ",");
+		return str + ">";
+    }
+    // copy from
+    ClassDecl::ClassDecl(ClassDecl* from) {
+		fields = from->fields;
+		is_template = from->is_template;
+		category = from->category;
+		name = from->name;
+		base_type = from->base_type;
+		interfaces = from->interfaces;
+		constructor = from->constructor;
+		generic = from->generic;
+		destructor = from->destructor;
+    }
+
+
+#pragma region Parse
 	std::shared_ptr<ClassDecl> ClassDecl::Parse(int ty) {
 		auto instance = std::make_shared<ClassDecl>();
         auto singleline = false;
@@ -13,16 +35,17 @@ namespace AST {
 		Lexer::Next();
 		instance->name =Lexer::string_val;
 		Lexer::Match(Id);
-		if (Lexer::Check('<')) {
+		if (Lexer::Check('<')) {        //Check if is a template
 			instance->is_template = true;
 			instance->generic = GenericParam::Parse();
 		}
+
+        // check class A(a:X,b:X) grammar
 		if (Lexer::Check('(')) {
 			Lexer::Next();
             const auto param = FuncParam::Parse();
 			singleline = true;
-			instance->fields = param->names;
-			instance->types = param->types;
+			instance->fields = param->fields;
 			instance->functions.push_back(FunctionDecl::CreateInit(param));
 			Lexer::Match(')');
 		}
@@ -68,7 +91,7 @@ namespace AST {
 				auto field_name=Lexer::string_val;
 				Lexer::Match(Id);
 				Lexer::Match(':');
-				instance->fieldsz.push_back(std::make_shared<ClassFieldDecl>(field_name,Type::Match()));
+				instance->fields.push_back(std::make_shared<FieldDecl>(field_name,Type::Match()));
 				Lexer::MatchSemicolon();
 				Lexer::SkipNewlines();
 			}
@@ -76,120 +99,90 @@ namespace AST {
 		Lexer::Match('}');
 		return instance;
 	}
-
+#pragma endregion    Stage 1: Parsing
  
-	void ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> ctx,std::shared_ptr<GenericParam> param) {
-
-	    const auto instance = new ClassDecl();
-		instance->fields = fields;
-		instance->is_template = false;
-		instance->category = category;
-		instance->name = name;
-		instance->base_type_name = base_type_name;
-		instance->interfaces = interfaces;
-		instance->constructor = constructor;
-		instance->generic = generic;
-		instance->destructor = destructor;
-
-
-		for (const auto& i : types)instance->types.push_back(i);
-		for (int i = 0, size = instance->types.size(); i < size; ++i) {
-			auto pos = std::find(generic->names.begin(), generic->names.end(), instance->types[i]->str);
-			if (pos != generic->names.end())
-				instance->types[i] = std::make_shared<Type>(param->names[i]);//TODO
-		}
-        const auto posfix = param->ToString();
-		const auto full_name = name + posfix;
-		auto the_struct = ctx->module->getTypeByName(full_name);
-		if (the_struct) {
-			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
-			return;
-		}
-
-		the_struct = llvm::StructType::create(ctx->context, full_name);
-		ctx->types_table[full_name] = instance;
-		instance->full_name = full_name;
-		instance->Gen(ctx);
-        for(auto i=0;i<functions.size();i++) {
-			instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
-        }
-
-		for (auto& function : instance->functions) {
-			function->SetInternal(the_struct);
-			function->PassGeneric(param,generic);
-			function->GenHeader(ctx);
-			ctx->program->late_gen.push_back(function);
-		}
-	}
-
-	void ClassDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
-		full_name = name;
-		auto the_struct = ctx->module->getTypeByName(full_name);
-		if (!the_struct) {
-            if(is_template) {
-				ctx->template_types_table[full_name] = this;
-                return;
-            }
-		    the_struct = llvm::StructType::create(ctx->context, name);
-		}
-		else {
-			*Debugger::out << "Type " << name.c_str() << " already defined" << std::endl;
-			return;
-		}
-		ctx->types_table[the_struct->getName().str()] = this;
-		for (auto& function : functions) {
-			function->SetInternal(the_struct);
-			ctx->program->declarations.push_back(function);
-		}
-
-	}
-
-	void ClassDecl::Gen(std::shared_ptr<DFContext> ctx) {
-
+#pragma region  Analysis
+	void ClassDecl::AnalysisHeader(std::shared_ptr<DFContext>ctx) {
 		if (is_template)return;
-		auto the_struct = ctx->module->getTypeByName(full_name);
-		if (!the_struct) {
+        const auto full_name = GetFullname();
+
+		// Check duplicated class
+		if (ctx->ExistClass(full_name)) {
 			Debugger::ErrorV((std::string("type") + full_name + " is not defined").c_str(), line, ch);
 			return;
 		}
-		std::vector<llvm::Type*> field_tys;
+		ctx->types_table[full_name] = GetType();
+        const auto this_ptr = std::shared_ptr<ClassDecl>(this);
+		// Add subfunction to global decalarations
+		for (auto& function : functions) {
+			function->parent= this_ptr;
+			if (generic_info)function->PassGeneric(generic_info);
+			ctx->program->declarations.push_back(function);
+		}
+	}
 
+
+    void ClassDecl::Analysis(std::shared_ptr<DFContext>ctx) {
 		if (!interfaces.empty()) {
-			llvm::Type* base_type = nullptr;
-			for (auto interface : interfaces) {
-				auto mangled_interface_name = interface->str;
-				if (ctx->IsCustomType(mangled_interface_name)) {
-					const auto decl = ctx->types_table[mangled_interface_name];
-					if (!decl->category == kInterface) {
-						if (base_type == nullptr) {
-							base_type = ctx->module->getTypeByName(interface->str);
-							base_type_name = interface;
-						}
-						else Debugger::ErrorV("Inherit multiple classes is not allowed", line, ch);
+            for(auto i=0;i<interfaces.size();i++) {
+				auto inherit = interfaces[i];
+                if(inherit->Catagory== Type::Custom) {
+					auto cast = std::static_pointer_cast<CustomType>(inherit);
+					if (i <= 0) {
+						base_type = cast;
+						fields.insert(fields.begin(), std::make_shared<FieldDecl>("$base", base_type));
 					}
-				}
-				else  Debugger::ErrorV((Lexer::Str2W(mangled_interface_name) + L" is not defined"), line, ch);
-			}
-			if (base_type != nullptr) {
+                        
+                    else if (cast->decl->category != kInterface)
+                         Debugger::ErrorV("Multiple inherting is not allowed,it must be interface", line, ch);
+                }
+                else  Debugger::ErrorV("this Type is not inheritable", line, ch);
+            }
+		}
+	}
 
-				fields.insert(fields.begin(), "base");
-				field_tys.insert(field_tys.begin(), base_type);
-			}
+
+    // Called at Analysis State
+	void ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> context,std::shared_ptr<FieldList> replace_by) {
+
+		const auto instance = std::shared_ptr<ClassDecl>(this);
+		instance->generic_info = replace_by;
+		// Here replace all Generic Types to Real Types, instance.fields will be change, also the generic functions
+		for (int i = 0, size = fields.size(); i < size; ++i) {
+			auto pos = std::find(generic->typenames.begin(), generic->typenames.end(), fields[i]->type->str);
+			auto type = fields[i]->type;
+			if (pos != generic->typenames.end()) type = replace_by->fields[i].type;
+			instance->fields.push_back(std::make_shared<FieldDecl>(fields[i]->name, type));
 		}
 
-		for (const auto& type : types)field_tys.push_back(ctx->GetType(type));
-		the_struct->setBody(field_tys);
+		const auto full_name = instance->GetFullname() + replace_by->ToGenericString();      //eg:  "NAMESPACE::CLASSNAME<int,float>"
+		if (!context->ExistClass(full_name)) {
+			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
+			return;
+		}
+		context->program->declarations.push_back(instance);
+		instance->AnalysisHeader(context);
 	}
 
-    void ClassDecl::Analysis(std::shared_ptr<DFContext>) {
-	    
+    std::shared_ptr<CustomType> ClassDecl::GetType() {
+		return std::make_shared<CustomType>(std::shared_ptr<ClassDecl>(this));
+    }
+
+#pragma endregion Stage 2: Semantic Analysis
+
+#pragma region  CodeGen
+	void ClassDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
+        auto the_struct = llvm::StructType::create(ctx->context, GetFullname());
 	}
 
-	void ClassDecl::AnalysisHeader(std::shared_ptr<DFContext>) {
-
+	void ClassDecl::Gen(const std::shared_ptr<DFContext> ctx) {
+		auto the_struct = ctx->module->getTypeByName(GetFullname());    //Get the LLVM::Struct
+		std::vector<llvm::Type*> llvm_class_field_types;
+		for (const auto& field: fields) llvm_class_field_types.push_back(field->type->ToLLVM(ctx));
+		the_struct->setBody(llvm_class_field_types);
 	}
 
-	std::string ClassDecl::GetName() { return name; }
+	std::string ClassDecl::GetName() { return name+(generic_info==nullptr?"":generic_info->ToGenericString()); }
 
-
+#pragma endregion  State 3: Code Generating
 }

@@ -33,14 +33,14 @@ namespace AST {
 	void VariableDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
 		const auto val = value->Gen(ctx);
-		const auto ty = type->empty() ? val->getType() : ctx->GetType(type);
+		const auto ty = type->empty() ? val->getType() : type->ToLLVM(ctx);
 		if (!val) return;
 
 		if (constant) {
-            // TODO ERROR, constant not supported yet! 
-			const auto v = ctx->CreateGlob(name, ty);
+            // TODO ERROR, constant not supported yet!  current problem is constant object
+			const auto v = ctx->CreateGlob(name, ty); 
 			// v->setInitializer(val);
-			ctx->local_fields_table[name] = v;
+			ctx->llvm->AddField(name,v);
 		}
 		else {
 			const auto the_function = ctx->builder->GetInsertBlock()->getParent();
@@ -48,13 +48,13 @@ namespace AST {
 				// All fields in main function are stored in heap. 
 				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name, the_function);
 				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
-				ctx->global_fields_table[name] = alloca;
+				ctx->llvm->AddField(name,alloca);
 			}
 			else {
 				// otherwise the local field store on stack. // TODO
 				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name,the_function);
 				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
-				ctx->local_fields_table[name] = alloca;
+				ctx->llvm->AddField(name, alloca);
 			}
 		}
 	}

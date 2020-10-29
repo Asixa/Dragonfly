@@ -3,18 +3,23 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <llvm/IR/Type.h>
+// forward decl
+class DFContext;
 
 namespace AST {
-
+    
+    namespace decl {class ClassDecl;}
     class Type {
 	public:
 
-        enum {
-            // Basic, Custom, Tuple,Tensor
+        enum TypeType {
+            Basic, Custom, Tuple,Tensor
         };
 
 		int ty = -1;
 		int array = -1;
+		TypeType Catagory;
 		std::string str = "";
 
 
@@ -38,13 +43,17 @@ namespace AST {
 			return *this;
 		}
 
+	    virtual llvm::Type* ToLLVM(std::shared_ptr<DFContext>) {
+			return  nullptr;
+		}
+
 		static std::shared_ptr<AST::Type> Match();
 	};
 
 	class  BasicType : public Type {
 	public:
         enum BasicTypeDetail{
-			BTy_UNSET, BTy_STRING,
+			BTy_UNSET, BTy_STRING, BTy_Void,
             BTy_F8, BTy_F16, BTy_F32, BTy_F64,
 			BTy_I1, BTy_I8, BTy_I16, BTy_I32, BTy_I64
 		};
@@ -55,11 +64,16 @@ namespace AST {
 		static std::shared_ptr<AST::Type> string;
 		static std::shared_ptr<AST::Type> i32, i64;
 		static std::shared_ptr<AST::Type>  f32, f64;
+		static std::shared_ptr<AST::Type>  Void;
         
     };
 	class  CustomType : public Type {
 	public:
+		std::shared_ptr<decl::ClassDecl>decl;
 		static std::shared_ptr<AST::CustomType> Match();
+		explicit CustomType(const std::shared_ptr<decl::ClassDecl>decl) :decl(decl) {}
+		explicit CustomType():decl(nullptr){}
+		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
 	};
 	class  Tuple : public Type {
 	public:

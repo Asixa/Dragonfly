@@ -14,7 +14,7 @@ namespace AST {
 		public:
 			int type = 0;
 			std::string name;
-			std::shared_ptr<Name> alias;
+			std::shared_ptr<NestedName> alias;
 			std::shared_ptr<FuncParam> args;
 			std::shared_ptr<AST::Type> return_type;
 			bool init;

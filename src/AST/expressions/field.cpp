@@ -78,7 +78,7 @@ namespace AST {
 			// TODO load once is not safe, should loop untill it is first-level-pointer.
 			if (ctx->GetPtrDepth(parent) > 1)
 				parent = ctx->builder->CreateLoad(parent);
-			v = ctx->FindMemberField(parent, name);
+			v = ctx->llvm->GetMemberField(parent, name);
 		}
 
 		// if this field is not done yet. finish it.

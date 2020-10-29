@@ -16,6 +16,7 @@ namespace AST {
 		class Field;
 	}
 	class Type;
+	class CustomType;
 	class Program;
 	
 }
@@ -35,14 +36,18 @@ public:
 
 	// std::stack<std::map<std::string,AST::Type>>symbols;
 
+	std::shared_ptr<frontend::Symbol> ast;
+	std::shared_ptr<frontend::LLVMSymbol> llvm;
 
-
-	std::map<std::string, llvm::Value*> local_fields_table;
-	std::map<std::string, llvm::Value*> global_fields_table;
+	// std::map<std::string, llvm::Value*> local_fields_table;
+	// std::map<std::string, llvm::Value*> global_fields_table;
 	std::map<std::string, std::string> func_alias_table;
+
 	std::map<std::string, AST::decl::ClassDecl*> template_types_table;
 	std::map<std::string, AST::decl::FunctionDecl*> template_function_table;
-	std::map<std::string, AST::decl::ClassDecl*> types_table;
+
+	std::map<std::string, std::shared_ptr<AST::CustomType>> types_table;
+	std::map<std::string, std::shared_ptr<AST::decl::FunctionDecl>> functions_table;
 
 
 	llvm::Value* True;
@@ -59,35 +64,39 @@ public:
 	llvm::BasicBlock* block_end;
 	AST::decl::FunctionDecl* current_function;
 
+	bool ExistClass(std::string){return false;}
+
+
     explicit DFContext(std::shared_ptr<AST::Program> program);
 	static void Gen();
 	static void Analysis();
+
 	static std::shared_ptr<DFContext> Create(std::shared_ptr<AST::Program> program);
 
-	AST::decl::ClassDecl* GetTemplateClass(std::string name);
-	AST::decl::FunctionDecl* GetTemplateFunc(std::string name);
+	AST::decl::ClassDecl* GetTemplateClass(std::string name) { return nullptr; }
+	AST::decl::FunctionDecl* GetTemplateFunc(std::string name) { return nullptr; }
 
-	llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty);
-	llvm::ConstantInt* CreateConstant(int value);
+	llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty) { return nullptr; }
+	llvm::ConstantInt* CreateConstant(int value) { return nullptr; }
 
-	llvm::Function* CreateMainFunc();
+	llvm::Function* CreateMainFunc() { return nullptr; }
 
-	llvm::BasicBlock* CreateBasicBlock(llvm::Function* func, const std::string name);
+	llvm::BasicBlock* CreateBasicBlock(llvm::Function* func, const std::string name){return nullptr;}
 
-	llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Type* type, const std::string& var_name, llvm::Function* the_function = nullptr);
+	llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Type* type, const std::string& var_name, llvm::Function* the_function = nullptr) { return nullptr; }
 
 
 
-	llvm::Type* GetType(std::shared_ptr<AST::Type> type);
+	// llvm::Type* GetType(std::shared_ptr<AST::Type> type);
 
-	llvm::StoreInst* AlignStore(llvm::StoreInst* a);
-	llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
+	llvm::StoreInst* AlignStore(llvm::StoreInst* a) { return nullptr; };
+	llvm::LoadInst* AlignLoad(llvm::LoadInst* a) { return nullptr; };
 
 	int GetPtrDepth(llvm::Value* value);
 	int GetPtrDepth(llvm::Type* type);
 
-	std::string GetStructName(llvm::Value* value);
-	std::string GetStructName(llvm::Type* type);
+	std::string GetStructName(llvm::Value* value) { return ""; };
+	std::string GetStructName(llvm::Type* type) { return ""; };
 
 	llvm::Function* GetFunction(std::string name);
 
@@ -105,14 +114,8 @@ public:
 	 */
 	llvm::Value* Malloc(llvm::Type* type, bool cast = true);
 	void Free(llvm::Value* value);
-	/**
-	 * \brief Accpet a ptr value, and get it field'value by name.
-	 * if you only have a value but not ptr. store it to an alloca.
-	 * \param obj the object member.
-	 * \param name the name of its field
-	 * \return The value of the field, in...
-	 */
-	llvm::Value* FindMemberField(llvm::Value* obj, const std::string name);
+
+
 
 	/**
 	 * \brief Find the field in current scope.
@@ -122,25 +125,25 @@ public:
 	 * \param warn throw a error in not found.
 	 * \return The value of the field. in wanted type
 	 */
-	llvm::Value* FindField(const std::string name, int cmd = 0, bool warn = true);
+	llvm::Value* FindField(const std::string name, int cmd = 0, bool warn = true){return nullptr;}
 
 
-	// true if the name is a custom type.
-	bool IsCustomType(std::string name);
+	// // true if the name is a custom type.
+	// bool IsCustomType(std::string name);
 
 	/**
 	 * \brief find the category of a type
 	 * \param ty type of the custom type
 	 * \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
 	 */
-	int GetCustomTypeCategory(llvm::Type* ty);
-
-	/**
-	* \brief find the category of a type
-	* \param ty name of the custom type
-	* \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
-	*/
-	int GetCustomTypeCategory(std::string ty);
+	// int GetCustomTypeCategory(llvm::Type* ty);
+	//
+	// /**
+	// * \brief find the category of a type
+	// * \param ty name of the custom type
+	// * \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
+	// */
+	// int GetCustomTypeCategory(std::string ty);
 
 	void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false);
 	// Write human-readable ir to file , for debug and testing.

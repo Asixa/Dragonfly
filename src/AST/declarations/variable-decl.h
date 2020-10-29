@@ -22,8 +22,7 @@ namespace AST {
 			void Gen(std::shared_ptr<DFContext>) override;
 			static std::shared_ptr<VariableDecl> Parse();
 
-			// [for] [(] [var] [x] [of]  [Y] [)]
-			//                 ^   ^
+		
 		};
 	}
 }

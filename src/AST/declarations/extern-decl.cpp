@@ -1,5 +1,5 @@
 #include "AST/declarations/extern-decl.h"
-#include <iostream>
+#include "AST/declarations/class-decl.h"
 using namespace frontend;
 namespace AST{
 
@@ -14,7 +14,7 @@ namespace AST{
 			Lexer::Match(Id);
 			if (Lexer::Check(K_as)) {
 				Lexer::Next();
-				instance->alias = Name::Parse(Name::kClass);
+				instance->alias = NestedName::Parse(NestedName::kClass);
 			}
 			Lexer::MatchSemicolon();
 		}
@@ -34,12 +34,12 @@ namespace AST{
 			else instance->return_type->ty = K_void;
 			if (Lexer::Check(K_as)) {
 				Lexer::Next();
-				instance->alias = Name::Parse(Name::kFunction);
+				instance->alias = NestedName::Parse(NestedName::kFunction);
 				if (Lexer::Check(':')) {
 					Lexer::Match(':');
 					Lexer::Match(':');
 					instance->init = true;
-					instance->alias->type = Name::kClass;
+					instance->alias->type = NestedName::kClass;
 					Lexer::Match(K_init);
 				}
 
@@ -58,7 +58,7 @@ namespace AST{
 			std::string func_name = name;
 			std::vector<llvm::Type*> arg_types;
 			for (auto i = 0; i < args->size; i++)
-				arg_types.push_back(ctx->GetType(args->types[i]));
+				arg_types.push_back(args->fields[i]->type->ToLLVM(ctx));
 			std::string param_name = "";
 			
 			llvm::Type* parent_type = nullptr;
@@ -95,11 +95,11 @@ namespace AST{
 
 			auto the_function = ctx->module->getFunction(name);
 			if (!the_function) {
-				const auto func_type = llvm::FunctionType::get(ctx->GetType(return_type), arg_types, args->is_var_arg);
+				const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), arg_types, args->is_var_arg);
 				the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name, ctx->module.get());
 				unsigned idx = 0;
 				for (auto& arg : the_function->args())
-					arg.setName(args->names[idx++]);
+					arg.setName(args->fields[idx++]->name);
 			}
 			else  Debugger::ErrorV((std::string("function ") + name + std::string(" already defined\n")).c_str(), line, ch);
 		}

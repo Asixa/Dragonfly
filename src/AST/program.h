@@ -36,7 +36,6 @@
 #include "AST/declarations/function-decl.h"
 #include "AST/declarations/variable-decl.h"
 #include "AST/declarations/class-decl.h"
-#include "AST/declarations/extension.h"
 
 #include "AST/statements/statement.h"
 #include "AST/statements/statements.h"

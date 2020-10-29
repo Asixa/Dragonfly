@@ -18,13 +18,13 @@ namespace AST {
 		};
 
 
-		class Name {
+		class NestedName {
 
 		public:
 			enum { kClass, kFunction, kNamespace };
 			int type = kClass;
 			std::vector<std::string>names;
-			static std::shared_ptr<Name>Parse(int ty);
+			static std::shared_ptr<NestedName>Parse(int ty);
 
 			std::string GetFunctionName();
 			std::string GetClassName();
