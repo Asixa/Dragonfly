@@ -10,7 +10,7 @@ namespace AST {
     std::string FieldList::ToGenericString() {
 		std::string str = "<";
 		for (int i = 0, size = fields.size(); i < size; i++)
-			str += fields[i].type->str + ((i == size - 1) ? "" : ",");
+			str += fields[i].type->ToString()+ ((i == size - 1) ? "" : ",");
 		return str + ">";
     }
     // copy from
@@ -52,11 +52,11 @@ namespace AST {
 
 		if (Lexer::Check(':')) {
 			Lexer::Next();
-			instance->interfaces.push_back(std::make_shared<Type>(Lexer::string_val));
+			instance->interfaces.push_back(Type::Match());
 			Lexer::Next();
 			while (Lexer::Check(',')) {
 				Lexer::Next();
-				instance->interfaces.push_back(std::make_shared<Type>(Lexer::string_val));
+				instance->interfaces.push_back(Type::Match());
 				Lexer::Match(Id);
 			}
 		}
@@ -126,7 +126,7 @@ namespace AST {
 		if (!interfaces.empty()) {
             for(auto i=0;i<interfaces.size();i++) {
 				auto inherit = interfaces[i];
-                if(inherit->Catagory== Type::Custom) {
+                if(inherit->category== Type::Custom) {
 					auto cast = std::static_pointer_cast<CustomType>(inherit);
 					if (i <= 0) {
 						base_type = cast;
@@ -149,7 +149,7 @@ namespace AST {
 		instance->generic_info = replace_by;
 		// Here replace all Generic Types to Real Types, instance.fields will be change, also the generic functions
 		for (int i = 0, size = fields.size(); i < size; ++i) {
-			auto pos = std::find(generic->typenames.begin(), generic->typenames.end(), fields[i]->type->str);
+			auto pos = std::find(generic->typenames.begin(), generic->typenames.end(), fields[i]->type->ToString());
 			auto type = fields[i]->type;
 			if (pos != generic->typenames.end()) type = replace_by->fields[i].type;
 			instance->fields.push_back(std::make_shared<FieldDecl>(fields[i]->name, type));

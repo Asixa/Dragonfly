@@ -58,7 +58,7 @@ namespace AST {
 			std::shared_ptr<FunctionDecl> destructor;               ///< a decl represents the destructor. null if there is no destuctor.
 
 
-			ClassDecl() { base_type = std::make_shared<AST::Type>(); }
+			ClassDecl() {  }
             explicit ClassDecl(ClassDecl*);
 
 

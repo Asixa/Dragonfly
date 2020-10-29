@@ -31,7 +31,7 @@ namespace AST{
 				Lexer::Next();
 				instance->return_type = Type::Match();
 			}
-			else instance->return_type->ty = K_void;
+			else instance->return_type=BasicType::Void;
 			if (Lexer::Check(K_as)) {
 				Lexer::Next();
 				instance->alias = NestedName::Parse(NestedName::kFunction);

@@ -10,90 +10,92 @@ class DFContext;
 namespace AST {
     
     namespace decl {class ClassDecl;}
+
+
     class Type {
+		
 	public:
-
-        enum TypeType {
-            Basic, Custom, Tuple,Tensor
-        };
-
-		int ty = -1;
-		int array = -1;
-		TypeType Catagory;
-		std::string str = "";
+		enum TypeType { Basic, Custom, Tuple, Tensor, Function };
+		Type(TypeType ty) :category(ty) {}
+		TypeType category;
+		// int ty = -1;
+		// int array = -1;
+		
+		// std::string str = "";
 
 
-		explicit Type() :array(-1), ty(-1) { }
-		explicit Type(const std::string s) :str(s), ty(0), array(-1) { }
-		explicit Type(const int t) :ty(t), array(-1) {};
-		bool empty() const {
-			return ty == -1 || (ty == 0 && str.empty());
-		}
-		bool operator==(const Type& rhs)
-		{
-			return ty == rhs.ty && str == rhs.str && array == rhs.array;
-		}
+		// explicit Type()  { }
+		// explicit Type(const std::string s) :str(s), ty(0) { }
+		// explicit Type(const int t) :ty(t) {};
 
-		Type& operator=(Type& copy)
-			//    ^^^^  Notice the double &&
-		{
-			ty = copy.ty;
-			array = copy.array;
-			str = copy.str;
-			return *this;
-		}
+		// virtual bool operator==(const Type& rhs)=0;
+		//
+		// Type& operator=(Type& copy)
+		// 	//    ^^^^  Notice the double &&
+		// {
+		// 	// ty = copy.ty;
+		// 	str = copy.str;
+		// 	return *this;
+		// }
 
-	    virtual llvm::Type* ToLLVM(std::shared_ptr<DFContext>) {
-			return  nullptr;
-		}
-
+		virtual llvm::Type* ToLLVM(std::shared_ptr<DFContext>) = 0;
+		virtual std::string ToString() = 0;
 		static std::shared_ptr<AST::Type> Match();
 	};
 
 	class  BasicType : public Type {
+		
+		
 	public:
-        enum BasicTypeDetail{
-			BTy_UNSET, BTy_STRING, BTy_Void,
-            BTy_F8, BTy_F16, BTy_F32, BTy_F64,
-			BTy_I1, BTy_I8, BTy_I16, BTy_I32, BTy_I64
-		};
-		BasicTypeDetail type;
+		int detail;
+		explicit BasicType() :Type(Basic), detail(0) {}
+		explicit BasicType(const int detail) :Type(Basic), detail(detail) {}
 	    static std::shared_ptr<AST::BasicType> Match();
-		explicit BasicType(const BasicTypeDetail type) :type(type) {}
-		explicit BasicType():type(BTy_UNSET){}
-		static std::shared_ptr<AST::Type> string;
-		static std::shared_ptr<AST::Type> i32, i64;
-		static std::shared_ptr<AST::Type>  f32, f64;
-		static std::shared_ptr<AST::Type>  Void;
-        
+		static std::shared_ptr<AST::Type> string,i32, i64,f32, f64,Void,boolean;
+		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
+		std::string ToString()override;
     };
 	class  CustomType : public Type {
+		std::string str = "";
 	public:
+		explicit CustomType(const std::shared_ptr<decl::ClassDecl>decl) :decl(decl), Type(Custom) {}
+		explicit CustomType() :decl(nullptr), Type(Custom) {}
 		std::shared_ptr<decl::ClassDecl>decl;
+		
+
 		static std::shared_ptr<AST::CustomType> Match();
-		explicit CustomType(const std::shared_ptr<decl::ClassDecl>decl) :decl(decl) {}
-		explicit CustomType():decl(nullptr){}
+
 		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
+		std::string ToString()override;
+
 	};
 	class  Tuple : public Type {
 	public:
 		std::vector<std::shared_ptr<AST::Type>> types;
+
+        Tuple():Type(TypeType::Tuple){}
 		static std::shared_ptr<AST::Type> Match();
+		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
+		std::string ToString()override;
 	};
 	class  Tensor : public Type {
 	public:
 		std::shared_ptr < AST::Type> base;
 		std::vector<int>shape;
-        Tensor(std::shared_ptr<AST::Type> base):base(base){}
+        Tensor(std::shared_ptr<AST::Type> base):base(base), Type(TypeType::Tensor) {}
 		static std::shared_ptr<AST::Tensor> Match(std::shared_ptr<AST::Type> base);
+		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
+		std::string ToString()override;
 	};
 	class  FunctionType : public Type {
 	public:
 		std::vector<std::shared_ptr<AST::Type>> input;
 		std::shared_ptr < AST::Type> returnTy;
 
-		FunctionType(std::shared_ptr<AST::Type> base) :returnTy(base) {}
+		FunctionType(std::shared_ptr<AST::Type> base) :returnTy(base), Type(Function) {}
 		static std::shared_ptr<AST::Tensor> Match(std::shared_ptr<AST::Type> base);
+		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
+		std::string ToString()override;
 	};
 
 }

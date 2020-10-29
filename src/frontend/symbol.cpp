@@ -3,7 +3,7 @@
 #include "AST/declarations/class-decl.h"
 
 void frontend::Symbol::CreateScope() {
-	fields.push_back(std::map<std::string, AST::Type*>());
+	fields.emplace_back(std::map<std::string, AST::Type*>());
 }
 void frontend::Symbol::EndScope() {
 	fields.pop_back();
@@ -33,7 +33,7 @@ void frontend::LLVMSymbol::AddField(std::string k, llvm::Value* v) {
 	fields.back()[k] = v;
 }
 
-llvm::Value* frontend::LLVMSymbol::GetField(std::string k) {
+llvm::Value* frontend::LLVMSymbol::GetField(std::string k,int wanted) {
     for (auto i=fields.size()-1;i>0;i--) {
 		if (fields[i].find(k) != fields[i].end())
 			return fields[i][k];
@@ -42,7 +42,7 @@ llvm::Value* frontend::LLVMSymbol::GetField(std::string k) {
 }
 
 llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string name) {
-	const auto obj_type_name = GetStructName(obj->getType());
+	const auto obj_type_name = ctx->GetStructName(obj->getType());
 
 	// get the this's type and check if it contains the field
 	auto decl = ctx->types_table[obj_type_name]->decl;
@@ -56,8 +56,8 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
 
 	// get the base's type and check if it contains the field
 	if (idx == -1) {
-		if (!decl->base_type->empty()) {
-			auto base_decl = ctx->types_table[decl->base_type->str]->decl;
+		if (decl->base_type!=nullptr) {
+			auto base_decl = ctx->types_table[decl->base_type->ToString()]->decl;
 			for (int id = 0, n = decl->fields.size(); id < n; id++) {
 				if (base_decl->fields[id]->name == name) {
 					idx = id;
@@ -74,20 +74,3 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
 	return  ctx->builder->CreateStructGEP(obj, idx);
 }
 
-std::string frontend::LLVMSymbol::GetStructName(llvm::Type* type) {
-	if (type == ctx->void_ptr)return "void*";
-	while (type->getTypeID() == llvm::Type::PointerTyID)
-		type = type->getPointerElementType();
-	switch (type->getTypeID()) {
-	case llvm::Type::DoubleTyID:
-		return "double";
-	case llvm::Type::IntegerTyID:
-		return "int";
-	case llvm::Type::FloatTyID:
-		return "float";
-	case llvm::Type::VoidTyID:
-		return "void";
-	default:
-		return type->getStructName();
-	}
-}

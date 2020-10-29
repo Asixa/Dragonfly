@@ -3,15 +3,16 @@
 #include "LLVM/context.h"
 #include "AST/declarations/class-decl.h"
 std::shared_ptr<AST::Type>
-AST::BasicType::string = std::make_shared<BasicType>(BTy_STRING),
-AST::BasicType::i32 = std::make_shared<BasicType>(BTy_STRING),
-AST::BasicType::i64 = std::make_shared<BasicType>(BTy_STRING),
-AST::BasicType::f32=std::make_shared<BasicType>(BTy_F32),
-AST::BasicType::f64 = std::make_shared<BasicType>(BTy_F64),
-AST::BasicType::Void=std::make_shared<AST::BasicType>(BTy_Void);
+AST::BasicType::string = std::make_shared<BasicType>(K_string),
+AST::BasicType::i32 = std::make_shared<BasicType>(K_int32),
+AST::BasicType::i64 = std::make_shared<BasicType>(K_int64),
+AST::BasicType::f32=std::make_shared<BasicType>(K_float32),
+AST::BasicType::f64 = std::make_shared<BasicType>(K_float64),
+AST::BasicType::Void = std::make_shared<AST::BasicType>(K_void),
+AST::BasicType::boolean = std::make_shared<AST::BasicType>(K_bool);
 
 std::shared_ptr<AST::Type> AST::Type::Match() {
-    auto type=std::make_shared<AST::Type>();
+	std::shared_ptr<AST::Type> type=nullptr;
 	if (frontend::Lexer::IsBasicType()) 
 		type = BasicType::Match();
 	else if(frontend::Lexer::Check('(')) 
@@ -23,16 +24,46 @@ std::shared_ptr<AST::Type> AST::Type::Match() {
 }
 
 std::shared_ptr<AST::BasicType> AST::BasicType::Match() {
-	auto type = std::make_shared<BasicType>();
-	type->ty = frontend::Lexer::token->type;
-	type->str = "";
-	frontend::Lexer::Next();
+	auto type = std::make_shared<BasicType>(frontend::Lexer::token->type);
+	frontend::Lexer::Next(); 
 	return type;
+}
+
+llvm::Type* AST::BasicType::ToLLVM(std::shared_ptr<DFContext>context) {
+	llvm::Type* llvm_type = nullptr;
+	switch (detail) {
+	    case K_void:
+	    case 1:             llvm_type = llvm::Type::getVoidTy(context->context); break;
+	    case K_byte:        llvm_type = llvm::Type::getInt8Ty(context->context); break;
+	    case K_short:       llvm_type = llvm::Type::getInt16Ty(context->context); break;
+	    case K_int:         llvm_type = llvm::Type::getInt32Ty(context->context); break;
+	    case K_long:        llvm_type = llvm::Type::getInt64Ty(context->context); break;
+	    case K_float:       llvm_type = llvm::Type::getFloatTy(context->context); break;
+	    case K_double:      llvm_type = llvm::Type::getDoubleTy(context->context); break;
+	    case K_bool:        llvm_type = llvm::Type::getInt1Ty(context->context); break;
+	    case K_string:      llvm_type = llvm::Type::getInt8PtrTy(context->context); break;
+	}
+	return llvm_type;
+}
+
+std::string AST::BasicType::ToString() {
+    switch (detail) {
+	    case K_void:
+	    case 1:             return "void";
+	    case K_byte:        return "byte";
+	    case K_short:       return "int16";
+	    case K_int:         return "int32";
+	    case K_long:        return "int64";
+	    case K_float:       return "float";
+	    case K_double:      return "double";
+	    case K_bool:        return "bppl";
+	    case K_string:      return "string";
+	    default:return  "ERRIR";
+	}
 }
 
 std::shared_ptr<AST::CustomType> AST::CustomType::Match() {
 	auto type = std::make_shared<AST::CustomType>();
-	type->ty = 0;
 	type->str = frontend::Lexer::string_val;
 	frontend::Lexer::Match(Id);
 	while (frontend::Lexer::Check('.')) {
@@ -59,8 +90,23 @@ std::shared_ptr<AST::CustomType> AST::CustomType::Match() {
 }
 
 llvm::Type* AST::CustomType::ToLLVM(std::shared_ptr<DFContext> ctx) {
-	return ctx->module->getTypeByName(decl->GetFullname());
+	llvm::Type* llvm_type = nullptr;
+	if (ctx->IsCustomType(str)) {
+		const auto ty = ctx->module->getTypeByName(str);
+		llvm_type = ctx->types_table[str]->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
+	}
+	else {
+
+		llvm_type = ctx->module->getTypeByName(decl->GetFullname());
+		if (llvm_type == nullptr) {
+            frontend::Debugger::ErrorV((std::string("Unknown Type: ") + str + "\n").c_str(), -1, -1);
+			return nullptr;
+		}
+	}
+	return llvm_type;
 }
+
+std::string AST::CustomType::ToString() { return  str; }
 
 std::shared_ptr<AST::Type> AST::Tuple::Match() {
 	auto type = std::make_shared<AST::Tuple>();
@@ -71,7 +117,11 @@ std::shared_ptr<AST::Type> AST::Tuple::Match() {
 		type->types.push_back(AST::Type::Match());
 	frontend::Lexer::Match(')');
 	return std::static_pointer_cast<AST::Type>(type);
-	}
+}
+
+llvm::Type* AST::Tuple::ToLLVM(std::shared_ptr<DFContext>) {return nullptr;}
+
+std::string AST::Tuple::ToString() { return "NOT_IMPLMENTED"; }
 
 
 std::shared_ptr<AST::Tensor> AST::Tensor::Match(std::shared_ptr<AST::Type> base) {
@@ -83,12 +133,20 @@ std::shared_ptr<AST::Tensor> AST::Tensor::Match(std::shared_ptr<AST::Type> base)
 			frontend::Debugger::Error(L"Value in side a array operator shoule be integer.");
 			return nullptr;
 		}
-		type->array = frontend::Lexer::number_val;
+		// type->array = frontend::Lexer::number_val;
 		frontend::Lexer::Next();
 	}
 	else {
-		type->array = -2;
+		// type->array = -2;
 	}
 	frontend::Lexer::Match(']');
 	return  type;
 }
+
+llvm::Type* AST::Tensor::ToLLVM(std::shared_ptr<DFContext>) {
+    return nullptr;
+}
+
+std::string AST::Tensor::ToString() { return "NOT_IMPLMENTED"; }
+llvm::Type* AST::FunctionType::ToLLVM(std::shared_ptr<DFContext>) { return nullptr; }
+std::string AST::FunctionType::ToString() { return "NOT_IMPLMENTED"; }

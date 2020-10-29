@@ -43,7 +43,7 @@ namespace frontend {
 		void CreateScope();
 		void EndScope();
 		void AddField(std::string, llvm::Value*);
-		llvm::Value* GetField(std::string);
+		llvm::Value* GetField(std::string,int wanted);
 		/**
          * \brief Accpet a ptr value, and get it field'value by name.
          * if you only have a value but not ptr. store it to an alloca.
@@ -52,7 +52,7 @@ namespace frontend {
          * \return The value of the field, in...
          */
 		llvm::Value* GetMemberField(llvm::Value* obj,std::string name);
-		std::string GetStructName(llvm::Type* type);
+		// std::string GetStructName(llvm::Type* type);
 	};
 }
 #endif

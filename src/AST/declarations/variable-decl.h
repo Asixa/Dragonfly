@@ -17,7 +17,7 @@ namespace AST {
 			std::shared_ptr<AST::Type> type;
 			std::shared_ptr<expr::Expr> value;
 		public:
-			VariableDecl() { type = std::make_shared<AST::Type>(); }
+			VariableDecl() { }
 			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 			static std::shared_ptr<VariableDecl> Parse();

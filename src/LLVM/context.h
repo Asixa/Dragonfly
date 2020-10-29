@@ -73,30 +73,28 @@ public:
 
 	static std::shared_ptr<DFContext> Create(std::shared_ptr<AST::Program> program);
 
-	AST::decl::ClassDecl* GetTemplateClass(std::string name) { return nullptr; }
-	AST::decl::FunctionDecl* GetTemplateFunc(std::string name) { return nullptr; }
+	AST::decl::ClassDecl* GetClassTemplate(std::string name);
+	AST::decl::FunctionDecl* GetFuncTemplate(std::string name);
 
-	llvm::GlobalVariable* CreateGlob(const std::string name, llvm::Type* ty) { return nullptr; }
-	llvm::ConstantInt* CreateConstant(int value) { return nullptr; }
+	llvm::GlobalVariable* CreateGlobal(const std::string name, llvm::Type* ty);
+	// llvm::ConstantInt* CreateConstant(int value);
 
-	llvm::Function* CreateMainFunc() { return nullptr; }
-
-	llvm::BasicBlock* CreateBasicBlock(llvm::Function* func, const std::string name){return nullptr;}
-
-	llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Type* type, const std::string& var_name, llvm::Function* the_function = nullptr) { return nullptr; }
+	llvm::Function* CreateMainFunc();
+	llvm::BasicBlock* CreateBasicBlock(llvm::Function* func, const std::string name);
+	llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Type* type, const std::string& var_name, llvm::Function* the_function = nullptr);
 
 
 
 	// llvm::Type* GetType(std::shared_ptr<AST::Type> type);
 
-	llvm::StoreInst* AlignStore(llvm::StoreInst* a) { return nullptr; };
-	llvm::LoadInst* AlignLoad(llvm::LoadInst* a) { return nullptr; };
+	llvm::StoreInst* AlignStore(llvm::StoreInst* a);
+	llvm::LoadInst* AlignLoad(llvm::LoadInst* a);
 
 	int GetPtrDepth(llvm::Value* value);
 	int GetPtrDepth(llvm::Type* type);
 
-	std::string GetStructName(llvm::Value* value) { return ""; };
-	std::string GetStructName(llvm::Type* type) { return ""; };
+	std::string GetStructName(llvm::Value* value);
+	std::string GetStructName(llvm::Type* type);
 
 	llvm::Function* GetFunction(std::string name);
 
@@ -117,37 +115,27 @@ public:
 
 
 
-	/**
-	 * \brief Find the field in current scope.
-	 * \param name The name of the field want to find.
-	 * \param cmd The wanted type.  'kConstantWanted' by default,
-	 *  should be 'kPtrWanted'  when it is LHS of assignment operation.
-	 * \param warn throw a error in not found.
-	 * \return The value of the field. in wanted type
-	 */
-	llvm::Value* FindField(const std::string name, int cmd = 0, bool warn = true){return nullptr;}
 
-
-	// // true if the name is a custom type.
-	// bool IsCustomType(std::string name);
+	// true if the name is a custom type.
+	bool IsCustomType(std::string name);
 
 	/**
 	 * \brief find the category of a type
 	 * \param ty type of the custom type
 	 * \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
 	 */
-	// int GetCustomTypeCategory(llvm::Type* ty);
-	//
-	// /**
-	// * \brief find the category of a type
-	// * \param ty name of the custom type
-	// * \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
-	// */
-	// int GetCustomTypeCategory(std::string ty);
+	int GetCustomTypeCategory(llvm::Type* ty);
+	
+	/**
+	* \brief find the category of a type
+	* \param ty name of the custom type
+	* \return  kClass, kStruct, kInterface or -1 if the type is not a custom type.
+	*/
+	int GetCustomTypeCategory(std::string ty);
 
-	void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false);
+	void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false) const;
 	// Write human-readable ir to file , for debug and testing.
-	void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
+    static void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
 	// Write compilable ir to file , for further compilation.
 	void WriteBitCodeIr(llvm::Module* module, const char* file);
 

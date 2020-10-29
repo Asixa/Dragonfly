@@ -71,7 +71,7 @@ namespace AST {
 
 		llvm::Value* v = nullptr;
 		// if the parent is null, then we find this field in the scope.
-		if (parent == nullptr)v = ctx->FindField(name, cmd);
+		if (parent == nullptr)v = ctx->llvm->GetField(name, cmd);
 		// if the parent is not, then we find this field in the parent.
 		else {
 			// we find parent's first-level-pointer.

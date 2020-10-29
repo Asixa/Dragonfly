@@ -18,7 +18,7 @@ namespace AST {
 			std::shared_ptr<FuncParam> args;
 			std::shared_ptr<AST::Type> return_type;
 			bool init;
-			Extern() { return_type = std::make_shared<Type>(); }
+			Extern() {  }
 			static std::shared_ptr<Extern>Parse();
 
 			void AnalysisHeader(std::shared_ptr<DFContext>) override;

@@ -11,7 +11,7 @@ namespace AST {
 		std::string str = "(";
         for(int i=0,size= fields.size();i<size;i++)
             if(std::string(1, fields[i]->name[0])!=BUILTIN_TAG)         //skip builtin arg
-			    str += fields[i]->type->str+((i== size-1)?"":",");
+			    str += fields[i]->type->ToString()+((i== size-1)?"":",");
 		return str + ")";
 	}
 
@@ -22,7 +22,7 @@ namespace AST {
 			args->ToString();
 	}
 
-    FunctionDecl::FunctionDecl() { keyword = 0; return_type = std::make_shared<AST::Type>(); }
+    FunctionDecl::FunctionDecl() { keyword = 0;  }
 
 	FunctionDecl::FunctionDecl(std::shared_ptr < FunctionDecl>  copy) {
 		*this = *copy;
@@ -89,7 +89,7 @@ namespace AST {
 		function->args = FuncParam::Parse();
 		Lexer::Match(')');
 
-		function->return_type->ty = 1;
+		function->return_type = BasicType::Void;
 		if (Lexer::Check(':')) {
 			Lexer::Next();
 			function->return_type = Type::Match();
@@ -162,13 +162,13 @@ namespace AST {
 		if (key == nullptr)key = generic;
         if(!key)return;
 		for (auto i = 0, size = args->size; i < size; ++i) {
-				auto pos = std::find(key->typenames.begin(), key->typenames.end(), args->fields[i]->type->str);
+				auto pos = std::find(key->typenames.begin(), key->typenames.end(), args->fields[i]->type->ToString());
 				if (pos != key->typenames.end())
 					args->fields[i]->type = val->fields[std::distance(key->typenames.begin(), pos)].type;
 		}
 
         //Replace Return Type
-		const auto pos = std::find(key->typenames.begin(), key->typenames.end(), return_type->str);
+		const auto pos = std::find(key->typenames.begin(), key->typenames.end(), return_type->ToString());
 		if (pos != key->typenames.end())
 			return_type = val->fields[std::distance(key->typenames.begin(), pos)].type;
 	}
@@ -182,7 +182,7 @@ namespace AST {
 
 		if (is_generic_template) {
 			for (auto i = 0; i < args->size; i++) {
-				auto pos = std::find(generic->typenames.begin(), generic->typenames.end(), args->fields[i]->type->str);
+				auto pos = std::find(generic->typenames.begin(), generic->typenames.end(), args->fields[i]->type->ToString());
 				if (pos != generic->typenames.end())
 					args->generic_id.push_back(std::distance(generic->typenames.begin(), pos));
 				else  args->generic_id.push_back(-1);
@@ -261,7 +261,7 @@ namespace AST {
 		// if 'this' have a base. then we create an alloca for the base.
 		if (parent != nullptr) {
 			const auto self_decl = std::static_pointer_cast<ClassDecl>(parent);
-			if (!self_decl->base_type->empty()) {
+			if (self_decl->base_type!=nullptr) {
 				const auto alloca = ctx->CreateEntryBlockAlloca(self_decl->base_type->ToLLVM(ctx), BUILTIN_TAG"base", function);
 				const auto base = ctx->llvm->GetMemberField(function->getArg(0), BUILTIN_TAG"base");
 				ctx->AlignStore(ctx->builder->CreateStore(base, alloca));

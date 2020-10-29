@@ -28,17 +28,23 @@ namespace AST {
 		return decl;
 	}
 
-    void VariableDecl::Analysis(std::shared_ptr<DFContext>) {}
+	void VariableDecl::Analysis(std::shared_ptr<DFContext> ctx) {
+		if (ctx->ast->GetField(name) != nullptr)
+		{
+            //ERROR
+		}
+		type = value->Analysis(ctx);
+	}
 
 	void VariableDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
 		const auto val = value->Gen(ctx);
-		const auto ty = type->empty() ? val->getType() : type->ToLLVM(ctx);
+		const auto ty = type==nullptr ? val->getType() : type->ToLLVM(ctx);
 		if (!val) return;
 
 		if (constant) {
             // TODO ERROR, constant not supported yet!  current problem is constant object
-			const auto v = ctx->CreateGlob(name, ty); 
+			const auto v = ctx->CreateGlobal(name, ty); 
 			// v->setInitializer(val);
 			ctx->llvm->AddField(name,v);
 		}

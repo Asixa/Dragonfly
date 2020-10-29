@@ -19,6 +19,8 @@
 	F(string) F(number) F(bool)									\
 	F(int) F(short) F(long) F(float) F(byte) F(void)			\
 	F(uint) F(ushort) F(ulong) F(double)						\
+    F(int8) F(int32) F(int64) F(int128)				            \
+    F(float32) F(float64) F(float128) 				            \
 	F(true) F(false) F(null)									\
 	F(if) F(else) F(elif) F(for) F(while)  F(do)			    \
 	F(switch) F(case) F(default)								\
