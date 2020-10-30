@@ -15,7 +15,7 @@ namespace AST {
 			int type = 0;
 			std::string name;
 			std::shared_ptr<NestedName> alias;
-			std::shared_ptr<FuncParam> args;
+			std::shared_ptr<FieldList> args;
 			std::shared_ptr<AST::Type> return_type;
 			bool init;
 			Extern() {  }

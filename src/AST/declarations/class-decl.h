@@ -4,28 +4,9 @@
 #include "AST/expressions/expr.h"
 #include "frontend/lexer.h"
 #include "function-decl.h"
-
+#include "AST/declarations/field-list.h"
 namespace AST {
 	namespace decl {
-		class FieldDecl {
-		public:
-            std::string name;
-            std::shared_ptr<AST::Type> type;
-			bool used_generic;
-			// static std::shared_ptr<FieldDecl> Parse();
-			FieldDecl(std::string name, std::shared_ptr<AST::Type> type) :name(name), type(type),used_generic(false) {}
-
-		};
-
-
-        class FieldList {
-        public:
-			std::vector<FieldDecl>fields;
-			std::string ToGenericString();
-
-        };
-
-     
 
         /**
 		 * \brief  class for matching class declaration.\n
@@ -48,17 +29,17 @@ namespace AST {
 			std::shared_ptr<AST::Type> base_type;                               ///< return type of this class.
 			//std::vector<std::string> fields;                        ///< a list contains all fields'names, mapped with types
 			//std::vector<std::shared_ptr<AST::Type>> types;                           ///< a list contains all fields' type, mapped with fields
-			std::vector<std::shared_ptr<FieldDecl>>fields;
-
+			std::shared_ptr < FieldList>fields;
+			
 			std::vector<std::shared_ptr<AST::Type>> interfaces;                      ///< a list contains all interfaces' type, empty if there no interface used.
 			std::vector<std::shared_ptr<Declaration>> declarations; ///< a list contains all sub declaration like enums, sub classes.
 			std::vector<std::shared_ptr<FunctionDecl>> functions;   ///< a list contains all sub functions
 			std::vector<std::shared_ptr<FunctionDecl>> constructor; ///< a list contains all constructors, \n constructors overloading is allowed, therefore it is a list.
-			std::shared_ptr<GenericParam> generic;                  ///< a struct represents all generic types, ``.names`` is empty if this is not a generic class. \n eg. ``class A<T,V>{}``. then this list is {T,V}
+			std::shared_ptr < FieldList> generic;                  ///< a struct represents all generic types, ``.names`` is empty if this is not a generic class. \n eg. ``class A<T,V>{}``. then this list is {T,V}
 			std::shared_ptr<FunctionDecl> destructor;               ///< a decl represents the destructor. null if there is no destuctor.
 
 
-			ClassDecl() {  }
+			ClassDecl() = default;
             explicit ClassDecl(ClassDecl*);
 
 

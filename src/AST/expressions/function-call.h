@@ -2,7 +2,7 @@
 #define FUNCTION_CALL_H
 #include "AST/expressions/field.h"
 #include "frontend/lexer.h"
-#include "AST/declarations/generic-param.h"
+#include "AST/declarations/field-list.h"
 
 namespace AST {
 	namespace expr {
@@ -12,7 +12,7 @@ namespace AST {
 
 			void ToString() override;
 			llvm::Value* Gen(std::shared_ptr<DFContext>, const int cmd = 0) override;
-			std::shared_ptr<decl::GenericParam> generic;
+			std::shared_ptr<decl::FieldList> generic;
 			std::vector<std::shared_ptr<Expr>> args;
 			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
 			llvm::Value* GenField(std::shared_ptr<DFContext>, llvm::Value* parent) override;

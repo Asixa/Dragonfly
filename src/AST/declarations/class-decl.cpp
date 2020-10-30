@@ -1,18 +1,12 @@
 #include "AST/declarations/class-decl.h"
-
 #include <sstream>
 #include "AST/declarations/enum-decl.h"
 #include "AST/program.h"
-
+#include "AST/declarations/field-list.h"
 namespace AST {
 	using namespace decl;
 
-    std::string FieldList::ToGenericString() {
-		std::string str = "<";
-		for (int i = 0, size = fields.size(); i < size; i++)
-			str += fields[i].type->ToString()+ ((i == size - 1) ? "" : ",");
-		return str + ">";
-    }
+   
     // copy from
     ClassDecl::ClassDecl(ClassDecl* from) {
 		fields = from->fields;
@@ -37,16 +31,16 @@ namespace AST {
 		Lexer::Match(Id);
 		if (Lexer::Check('<')) {        //Check if is a template
 			instance->is_template = true;
-			instance->generic = GenericParam::Parse();
+			instance->generic = FieldList::ParseGenericDecl();
 		}
 
         // check class A(a:X,b:X) grammar
 		if (Lexer::Check('(')) {
 			Lexer::Next();
-            const auto param = FuncParam::Parse();
+			const auto args = FieldList::ParseArguments(false, false);
 			singleline = true;
-			instance->fields = param->fields;
-			instance->functions.push_back(FunctionDecl::CreateInit(param));
+			instance->fields = args;
+			instance->functions.push_back(FunctionDecl::CreateInit(args));
 			Lexer::Match(')');
 		}
 
@@ -91,7 +85,7 @@ namespace AST {
 				auto field_name=Lexer::string_val;
 				Lexer::Match(Id);
 				Lexer::Match(':');
-				instance->fields.push_back(std::make_shared<FieldDecl>(field_name,Type::Match()));
+				instance->fields->fields.push_back(FieldDecl(field_name,Type::Match()));
 				Lexer::MatchSemicolon();
 				Lexer::SkipNewlines();
 			}
@@ -130,7 +124,7 @@ namespace AST {
 					auto cast = std::static_pointer_cast<CustomType>(inherit);
 					if (i <= 0) {
 						base_type = cast;
-						fields.insert(fields.begin(), std::make_shared<FieldDecl>("$base", base_type));
+						fields->fields.insert(fields->fields.begin(), FieldDecl("$base", base_type));
 					}
                         
                     else if (cast->decl->category != kInterface)
@@ -148,14 +142,14 @@ namespace AST {
 		const auto instance = std::shared_ptr<ClassDecl>(this);
 		instance->generic_info = replace_by;
 		// Here replace all Generic Types to Real Types, instance.fields will be change, also the generic functions
-		for (int i = 0, size = fields.size(); i < size; ++i) {
-			auto pos = std::find(generic->typenames.begin(), generic->typenames.end(), fields[i]->type->ToString());
-			auto type = fields[i]->type;
-			if (pos != generic->typenames.end()) type = replace_by->fields[i].type;
-			instance->fields.push_back(std::make_shared<FieldDecl>(fields[i]->name, type));
+		for (int i = 0, size = fields->fields.size(); i < size; ++i) {
+            const auto pos = generic->FindByName(fields->fields[i].type->ToString());
+			auto type = fields->fields[i].type;
+			if (pos != -1) type = replace_by->fields[i].type;
+			instance->fields->fields.emplace_back(fields->fields[i].name, type);
 		}
 
-		const auto full_name = instance->GetFullname() + replace_by->ToGenericString();      //eg:  "NAMESPACE::CLASSNAME<int,float>"
+		const auto full_name = instance->GetFullname() + replace_by->ToString();      //eg:  "NAMESPACE::CLASSNAME<int,float>"
 		if (!context->ExistClass(full_name)) {
 			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
 			return;
@@ -178,11 +172,11 @@ namespace AST {
 	void ClassDecl::Gen(const std::shared_ptr<DFContext> ctx) {
 		auto the_struct = ctx->module->getTypeByName(GetFullname());    //Get the LLVM::Struct
 		std::vector<llvm::Type*> llvm_class_field_types;
-		for (const auto& field: fields) llvm_class_field_types.push_back(field->type->ToLLVM(ctx));
+		for (const auto& field: fields->fields) llvm_class_field_types.push_back(field.type->ToLLVM(ctx));
 		the_struct->setBody(llvm_class_field_types);
 	}
 
-	std::string ClassDecl::GetName() { return name+(generic_info==nullptr?"":generic_info->ToGenericString()); }
+	std::string ClassDecl::GetName() { return name+(generic_info==nullptr?"":generic_info->ToString()); }
 
 #pragma endregion  State 3: Code Generating
 }

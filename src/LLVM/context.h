@@ -66,7 +66,7 @@ public:
 
 	bool ExistClass(std::string){return false;}
 
-
+	explicit DFContext(){}
     explicit DFContext(std::shared_ptr<AST::Program> program);
 	static void Gen();
 	static void Analysis();

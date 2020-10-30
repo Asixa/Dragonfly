@@ -1,7 +1,7 @@
 #include "symbol.h"
 #include "debug.h"
 #include "AST/declarations/class-decl.h"
-
+#include "AST/declarations/field-list.h"
 void frontend::Symbol::CreateScope() {
 	fields.emplace_back(std::map<std::string, AST::Type*>());
 }
@@ -47,8 +47,8 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
 	// get the this's type and check if it contains the field
 	auto decl = ctx->types_table[obj_type_name]->decl;
 	auto idx = -1;
-	for (int id = 0, n = decl->fields.size(); id < n; id++) {
-		if (decl->fields[id]->name == name) {
+	for (int id = 0, n = decl->fields->fields.size(); id < n; id++) {
+		if (decl->fields->fields[id].name == name) {
 			idx = id;
 			break;
 		}
@@ -58,8 +58,8 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
 	if (idx == -1) {
 		if (decl->base_type!=nullptr) {
 			auto base_decl = ctx->types_table[decl->base_type->ToString()]->decl;
-			for (int id = 0, n = decl->fields.size(); id < n; id++) {
-				if (base_decl->fields[id]->name == name) {
+			for (int id = 0, n = decl->fields->fields.size(); id < n; id++) {
+				if (base_decl->fields->fields[id].name == name) {
 					idx = id;
 					break;
 				}

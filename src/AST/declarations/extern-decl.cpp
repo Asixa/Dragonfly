@@ -1,5 +1,6 @@
 #include "AST/declarations/extern-decl.h"
 #include "AST/declarations/class-decl.h"
+#include "AST/declarations/field-list.h"
 using namespace frontend;
 namespace AST{
 
@@ -23,10 +24,7 @@ namespace AST{
 			instance->name = Lexer::string_val;
 			instance->type = K_func;
 			Lexer::Match(Id);
-
-			Lexer::Match('(');
-			instance->args = FuncParam::Parse();
-			Lexer::Match(')');
+            instance->args = FieldList::ParseArguments(true,true);
 			if (Lexer::Check(':')) {
 				Lexer::Next();
 				instance->return_type = Type::Match();
@@ -57,8 +55,8 @@ namespace AST{
 		if (type == K_func) {
 			std::string func_name = name;
 			std::vector<llvm::Type*> arg_types;
-			for (auto i = 0; i < args->size; i++)
-				arg_types.push_back(args->fields[i]->type->ToLLVM(ctx));
+			for (int i = 0,size= args->fields.size(); i <size ; i++)
+				arg_types.push_back(args->fields[i].type->ToLLVM(ctx));
 			std::string param_name = "";
 			
 			llvm::Type* parent_type = nullptr;
@@ -95,11 +93,11 @@ namespace AST{
 
 			auto the_function = ctx->module->getFunction(name);
 			if (!the_function) {
-				const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), arg_types, args->is_var_arg);
+				const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), arg_types, args->IsVariableArgument());
 				the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name, ctx->module.get());
 				unsigned idx = 0;
 				for (auto& arg : the_function->args())
-					arg.setName(args->fields[idx++]->name);
+					arg.setName(args->fields[idx++].name);
 			}
 			else  Debugger::ErrorV((std::string("function ") + name + std::string(" already defined\n")).c_str(), line, ch);
 		}

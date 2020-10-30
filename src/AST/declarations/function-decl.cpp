@@ -4,21 +4,15 @@
 #include <sstream>
 #include "AST/program.h"
 #include "llvm/IR/Verifier.h"
+#include "field-list.h"
 namespace AST {
 
 	using namespace AST::decl;
-	std::string FuncParam::ToString() {
-		std::string str = "(";
-        for(int i=0,size= fields.size();i<size;i++)
-            if(std::string(1, fields[i]->name[0])!=BUILTIN_TAG)         //skip builtin arg
-			    str += fields[i]->type->ToString()+((i== size-1)?"":",");
-		return str + ")";
-	}
 
     // returns NAME<X,X>(X,X)
 	std::string FunctionDecl::GetName() {
 		return nested_name->GetFunctionName()+ 
-			(generic_instance_info == nullptr ? "" : generic_instance_info->ToGenericString())+
+			(generic_instance_info == nullptr ? "" : generic_instance_info->ToString())+
 			args->ToString();
 	}
 
@@ -26,32 +20,11 @@ namespace AST {
 
 	FunctionDecl::FunctionDecl(std::shared_ptr < FunctionDecl>  copy) {
 		*this = *copy;
-		args = std::make_shared<FuncParam>(copy->args);
+		args =copy->args;
 	}
 
 
 #pragma region Parse
-	std::shared_ptr<FuncParam> FuncParam::Parse() {
-		auto param = std::make_shared<FuncParam>();
-		while (Lexer::token->type != ')') {
-			param->size++;
-			if (Lexer::Check('.'))		// Parse three dots '...' for variable argument.
-			{
-				Lexer::Next();
-				Lexer::Match('.');
-				Lexer::Match('.');
-				param->size--;
-				param->is_var_arg = true;
-				return param;
-			}
-			auto field_name = Lexer::string_val;
-			Lexer::Match(Id);
-			Lexer::Match(':');
-			param->fields.push_back(std::make_shared<FieldDecl>(field_name, Type::Match()));
-			if (Lexer::Check(',')) Lexer::Match(',');
-		}
-		return param;
-	}
 
     std::shared_ptr<FunctionDecl> FunctionDecl::Parse(const bool ext) {
 		auto has_name = true;
@@ -81,12 +54,12 @@ namespace AST {
 			}
 			else {
 				if (ext)Debugger::Error(L" extern function cannot be generic");
-				else function->generic = GenericParam::Parse();
+				else function->generic = FieldList::ParseGenericDecl();
 			}
 		}
 
 		Lexer::Match('(');
-		function->args = FuncParam::Parse();
+		function->args = FieldList::ParseArguments(true,true);
 		Lexer::Match(')');
 
 		function->return_type = BasicType::Void;
@@ -116,16 +89,16 @@ namespace AST {
 	}
 
 	// Called by ClassDecl::Parse
-	std::shared_ptr<FunctionDecl> FunctionDecl::CreateInit(const std::shared_ptr<FuncParam>& init_field) {
+	std::shared_ptr<FunctionDecl> FunctionDecl::CreateInit(const std::shared_ptr<FieldList>& init_field) {
 		auto instance = std::make_shared<FunctionDecl>();
 		instance->nested_name = std::make_shared<NestedName>();
 		instance->nested_name->Set(JOINER_TAG"init");
 		instance->nested_name->type = NestedName::kFunction;
 
 		std::vector<std::shared_ptr<stmt::Statement>>statements;
-		for (auto i = 0; i < init_field->size; i++)
+		for (int i = 0,size= init_field->fields.size(); i <size ; i++)
 			statements.push_back(std::make_shared<stmt::Empty>(
-				std::make_shared<expr::Binary>(init_field->fields[i]->name, init_field->fields[i]->name, '=')));
+				std::make_shared<expr::Binary>(init_field->fields[i].name, init_field->fields[i].name, '=')));
 
 		// List to binary tree
 		if (!statements.empty()) {
@@ -144,33 +117,33 @@ namespace AST {
 #pragma region Analysis_Template
     void FunctionDecl::InstantiateTemplate(std::shared_ptr<DFContext> ctx, std::shared_ptr<FieldList> param) {
 		if (!generic)return;
-		const auto func_instance_name = param->ToGenericString();
+		const auto func_instance_name = param->ToString();
 
         // TODO check dupulication
 		// const auto function = ctx->module->getFunction(full_name + func_instance_name);
 		// if (function)return;
 		const auto instance = std::make_shared<FunctionDecl>();
 		*instance = *this;
-		instance->args.swap(std::make_shared<FuncParam>(args)); //deep copy
+		instance->args.swap(std::make_shared<FieldList>(args)); //deep copy
 		instance->PassGeneric(param);
 		instance->is_generic_template = false;
 		instance->AnalysisHeader(ctx);
 		ctx->program->late_gen.push_back(instance);
 	}
-	void FunctionDecl::PassGeneric(std::shared_ptr<FieldList> val, std::shared_ptr<GenericParam> key) {
-		if (val->fields.empty())return;
-		if (key == nullptr)key = generic;
-        if(!key)return;
-		for (auto i = 0, size = args->size; i < size; ++i) {
-				auto pos = std::find(key->typenames.begin(), key->typenames.end(), args->fields[i]->type->ToString());
-				if (pos != key->typenames.end())
-					args->fields[i]->type = val->fields[std::distance(key->typenames.begin(), pos)].type;
+	void FunctionDecl::PassGeneric(std::shared_ptr<FieldList> generic_instance, std::shared_ptr<FieldList> generic_decl) {
+		if (generic_instance->fields.empty())return;
+		if (generic_decl == nullptr)generic_decl = generic;
+        if(!generic_decl)return;
+		for (int i = 0, size = args->fields.size(); i < size; ++i) {
+            const auto pos = generic_decl->FindByType(args->fields[i].type->ToString());
+			if (pos != -1)
+				args->fields[i].type = generic_instance->fields[pos].type;
 		}
 
         //Replace Return Type
-		const auto pos = std::find(key->typenames.begin(), key->typenames.end(), return_type->ToString());
-		if (pos != key->typenames.end())
-			return_type = val->fields[std::distance(key->typenames.begin(), pos)].type;
+		const auto pos = generic_decl->FindByType(return_type->ToString());
+		if (pos != -1)
+			return_type = generic_instance->fields[pos].type;
 	}
 #pragma endregion
 
@@ -181,12 +154,8 @@ namespace AST {
 	    const auto full_name = is_member_function? GetFullname():nested_name->GetFullName();
 
 		if (is_generic_template) {
-			for (auto i = 0; i < args->size; i++) {
-				auto pos = std::find(generic->typenames.begin(), generic->typenames.end(), args->fields[i]->type->ToString());
-				if (pos != generic->typenames.end())
-					args->generic_id.push_back(std::distance(generic->typenames.begin(), pos));
-				else  args->generic_id.push_back(-1);
-			}
+			for (int i = 0,size= args->fields.size(); i <size; i++) 
+                args->fields[i].generic = generic->FindByType(args->fields[i].type->ToString());
 			ctx->template_function_table[full_name] = this;
 			return;
 		}
@@ -207,24 +176,24 @@ namespace AST {
 		// added $this in the argument list
 		if (is_member_function) {
 			args->fields.insert(args->fields.begin(), 
-				std::make_shared<FieldDecl>(BUILTIN_TAG"this",std::static_pointer_cast<ClassDecl>(parent)->GetType()));
+				FieldDecl(BUILTIN_TAG"this",std::static_pointer_cast<ClassDecl>(parent)->GetType()));
 		}
 	}
 
 	void FunctionDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
 		// function llvm arguments' type.
 		std::vector<llvm::Type*> llvm_arg_types;
-		for (auto i = 0; i < args->size; i++)
-			llvm_arg_types.push_back(args->fields[i]->type->ToLLVM(ctx));
+		for (int i = 0,size= args->fields.size(); i < size; i++)
+			llvm_arg_types.push_back(args->fields[i].type->ToLLVM(ctx));
 
 	    // create the function type.
-		const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), llvm_arg_types, args->is_var_arg);
+		const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), llvm_arg_types, args->IsVariableArgument());
 		// create the function
 		auto the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, GetFullname(), ctx->module.get());
 		// add name for arguments.
 		unsigned idx = 0;
 		for (auto& arg : the_function->args())
-			arg.setName(args->fields[idx++]->name);
+			arg.setName(args->fields[idx++].name);
 
 	}
 

@@ -10,6 +10,7 @@ namespace AST {
 	namespace expr {
 		// Expression node for all binary expressions
 		class Binary final : public Expr {
+			static std::map<std::string, std::function<llvm::Value* (llvm::Value*, llvm::Value*, std::shared_ptr<DFContext>)>> gens;
 		public:
 			int op;
 			std::shared_ptr<Expr> LHS, RHS;
@@ -17,6 +18,7 @@ namespace AST {
 			void ToString() override;
 			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
 			llvm::Value* Gen(std::shared_ptr<DFContext>, const int cmd = 0) override;
+			llvm::Value* Gen2(std::shared_ptr<DFContext>, const int cmd = 0);
 			Binary() {}
 			Binary(const std::string lhs, const std::string rhs, const int o) :LHS(std::make_shared<Field>(lhs)), RHS(std::make_shared<Field>(rhs)), op(o) {}
 			// This part might be hard to understand.

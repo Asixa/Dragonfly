@@ -1,5 +1,5 @@
 #include "AST/expressions/binary.h"
-
+#include "LLVM/context.h"
 
 namespace AST {
 	using namespace expr;
@@ -12,6 +12,26 @@ namespace AST {
 	}
 
 	std::shared_ptr<AST::Type> Binary::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+	llvm::Value* Binary::Gen2(std::shared_ptr<DFContext> ctx, int cmd) {
+        const auto lhs = LHS->Gen(ctx, cmd),rhs = RHS->Gen(ctx, cmd);
+		const auto lhs_type = lhs->getType()->getTypeID(),
+	               rhs_type = rhs->getType()->getTypeID();
+		auto op_name = std::string(Lexer::Token::Name(op));
+        const auto assign = op_name.size() > 1 && (op_name.back() == '=' && op> Ge);  // check if it is += -= /= *= ...
+		if (assign) op_name.pop_back();
+        const auto name=ctx->GetStructName(lhs)+op_name+ctx->GetStructName(rhs);
+
+        if(gens.find(name)!=gens.end()) gens[name](lhs, rhs, ctx);
+		else {
+			auto operator_func=ctx->GetFunction(name);
+            if(operator_func) {
+				// ctx->builder->CreateCall(operator_func, args_v);
+            }
+		}
+
+		if (op == '=' || assign)
+			return ctx->builder->CreateStore(lhs,rhs);
+	}
 
     llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
 
@@ -174,8 +194,43 @@ namespace AST {
 			return Debugger::ErrorV("invalid binary operator",line,ch);
 
 		}
+
+
+		
 	}
 
+#define  ARGUMENTS llvm::Value* left,llvm::Value* right,std::shared_ptr<DFContext> ctx
+
+	std::map<std::string, std::function<llvm::Value* (llvm::Value*, llvm::Value*, std::shared_ptr<DFContext>)>> Binary::gens =
+	{
+		{"int+int",     [](ARGUMENTS) {return ctx->builder->CreateAdd(left,right,"add_tmp");   }},
+		{"int-int",     [](ARGUMENTS) {return ctx->builder->CreateSub(left,right,"sub_tmp");   }},
+		{"int*int",     [](ARGUMENTS) {return ctx->builder->CreateMul(left,right,"mul_tmp");   }},
+		{"int%int",     [](ARGUMENTS) {return ctx->builder->CreateSRem(left,right,"mod_tmp");   }},
+		{"int/int",     [](ARGUMENTS) {return ctx->builder->CreateFDiv(
+					                 ctx->builder->CreateCast(llvm::Instruction::SIToFP, left, llvm::Type::getDoubleTy(ctx->context)),
+					                 ctx->builder->CreateCast(llvm::Instruction::SIToFP, right, llvm::Type::getDoubleTy(ctx->context)),
+					                "div_tmp");   }},
+		{"int<=int",    [](ARGUMENTS) {return ctx->builder->CreateICmpULE(left,right,"cmp_tmp");   }},
+		{"int>=int",    [](ARGUMENTS) {return ctx->builder->CreateICmpUGE(left,right,"cmp_tmp");   }},
+		{"int<int",     [](ARGUMENTS) {return ctx->builder->CreateICmpULT(left,right,"cmp_tmp");   }},
+		{"int>int",     [](ARGUMENTS) {return ctx->builder->CreateICmpUGT(left,right,"cmp_tmp");   }},
+		{"int==int",    [](ARGUMENTS) {return ctx->builder->CreateICmpEQ(left,right,"cmp_tmp");   }},
+		{"int!=int",    [](ARGUMENTS) {return ctx->builder->CreateICmpNE(left,right,"cmp_tmp");   }},
 
 
+		{"float+float",     [](ARGUMENTS) {return ctx->builder->CreateFAdd(left,right,"add_tmp");      }},
+		{"float-float",     [](ARGUMENTS) {return ctx->builder->CreateFSub(left,right,"sub_tmp");      }},
+		{"float*float",     [](ARGUMENTS) {return ctx->builder->CreateFMul(left,right,"mul_tmp");      }},
+		{"float%float",     [](ARGUMENTS) {return ctx->builder->CreateFRem(left,right,"mod_tmp");   }},
+		{"float/float",     [](ARGUMENTS) {return ctx->builder->CreateFDiv(left,right,"div_tmp");      }},
+
+		{"float<=float",    [](ARGUMENTS) {return ctx->builder->CreateFCmpULE(left,right,"cmp_tmp");   }},
+		{"float>=float",    [](ARGUMENTS) {return ctx->builder->CreateFCmpUGE(left,right,"cmp_tmp");   }},
+		{"float<float",     [](ARGUMENTS) {return ctx->builder->CreateFCmpULT(left,right,"cmp_tmp");   }},
+		{"float>float",     [](ARGUMENTS) {return ctx->builder->CreateFCmpUGT(left,right,"cmp_tmp");   }},
+		{"float==float",    [](ARGUMENTS) {return ctx->builder->CreateFCmpUEQ(left,right,"cmp_tmp");   }},
+		{"float!=float",    [](ARGUMENTS) {return ctx->builder->CreateFCmpUNE(left,right,"cmp_tmp");   }},
+	};
+#undef  ARGUMENTS
 }

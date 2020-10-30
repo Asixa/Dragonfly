@@ -13,7 +13,7 @@ namespace AST {
 		 * ``init(..)=>STATEMENT``
 		 */
 		class ConstructorDecl final :public Declaration {
-			std::shared_ptr<FuncParam> args;
+			std::shared_ptr<FieldList> args;
 			std::shared_ptr<Statement> statements;
 			void Analysis(std::shared_ptr<DFContext>) override;
 			void AnalysisHeader(std::shared_ptr<DFContext>) override;
