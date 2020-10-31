@@ -105,7 +105,7 @@ namespace AST {
         // check if the function argument count matchs.
         // some function could have varible arguments size when isVarArg is true.
 
-		if (func->args->content.size() != args.size() + (is_member_func ? 1 : 0) && !func->args->IsVariableArgument()) {
+		if (!func->args->IsVariableArgument()&&func->args->content.size() != args.size() + (is_member_func ? 1 : 0) ) {
 			Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
 				std::to_string(func->args->content.size()) + " needed, but got " + std::to_string(args.size()) +" instead").c_str(), line, ch);
 			return nullptr;
@@ -148,7 +148,6 @@ namespace AST {
 			args_v.push_back(val);
 		}
 
-		printf("[[[arg size%d]]]\n", args_v.size());
   
 		// here we check if the func is a constructor
 		if (is_constructor) {

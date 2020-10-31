@@ -15,13 +15,13 @@ std::vector<std::shared_ptr<DFContext>> DFContext::contexts;
 
 
 AST::decl::ClassDecl* DFContext::GetClassTemplate(const std::string name) {
-	if (template_types_table.find(name) == template_types_table.end())return nullptr;
-	return template_types_table[name];
+	if (class_template_table.find(name) == class_template_table.end())return nullptr;
+	return class_template_table[name];
 }
 
 AST::decl::FunctionDecl* DFContext::GetFuncTemplate(std::string name) {
-	if (template_function_table.find(name) == template_function_table.end())return nullptr;
-	return template_function_table[name];
+	if (function_template_table.find(name) == function_template_table.end())return nullptr;
+	return function_template_table[name];
 }
 
 std::shared_ptr<AST::decl::FunctionDecl> DFContext::GetFunctionDecl(std::string name) {
@@ -127,6 +127,7 @@ void DFContext::BuildInFunc(std::shared_ptr<DFContext> ctx,std::string name, std
 	auto decl = std::make_shared<AST::decl::FunctionDecl>();
 	decl->return_type = ret;
 	decl->args = std::make_shared<AST::decl::FieldList>(args);
+	decl->args->type = AST::decl::FieldList::Arguments;
 	if (isVarArg)decl->args->content.push_back(std::make_shared<AST::decl::FieldDecl>("...", nullptr)); // var
 	ctx->extern_functions_table[name] = decl;
 

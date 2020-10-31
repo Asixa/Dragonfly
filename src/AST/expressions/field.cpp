@@ -98,23 +98,29 @@ namespace AST {
 			child->is_ptr = is_ptr;
 			v = child->GenField(ctx, v);
 		}
-			
-        if(is_ptr||ctx->GetStructName(v->getType())=="void*"||name=="this"){ return v; }
-        v=ctx->AlignLoad(ctx->builder->CreateLoad(v));
-        
+		// printf("CREATE LOAD? %d",is_ptr);
+  //       if(is_ptr||ctx->GetStructName(v->getType())=="void*"||name=="this"){ return v; }
+		// printf("CREATE LOAD");
+  //       v=ctx->AlignLoad(ctx->builder->CreateLoad(v));
+		// return v;
 
-        // If we want the constant, when load the pointer.
+  //       If we want the constant, when load the pointer.
 		// This only done in entry node where parent is null.
-		// if (parent == nullptr) {
-		// 	if (cmd == kConstantWanted && v->getType()->getTypeID() == llvm::Type::PointerTyID
-		// 		&& !(child == nullptr && (name == "this" || name == "base"))
-		// 		// && (ctx->current_function==nullptr||!ctx->current_function->IsGenericArgument(name))
-		// 		&& !(ctx->GetStructName(v->getType())=="void*")
-		// 		)
-		// 		// TODO load once is not safe, should loop untill it is constant.
-		// 		return ctx->AlignLoad(ctx->builder->CreateLoad(v));
-		// }
-         
+		if (parent == nullptr) {
+			printf("is_ptr? %d \n", is_ptr);
+			if (is_ptr) { printf("NOT  --isptr\n"); }
+			else if (v->getType()->getTypeID() != llvm::Type::PointerTyID) { printf("NOT  --ID\n"); }
+			else if (child == nullptr && (name == "this" || name == "base")) { printf("NOT  --this\n"); }
+			else if (ctx->GetStructName(v->getType()) == "void*") {
+				printf("NOT  --void\n");
+			}
+            else {
+                // TODO load once is not safe, should loop untill it is constant.
+                printf("LOADDDDDDDDDDDD\n");
+                return ctx->AlignLoad(ctx->builder->CreateLoad(v));
+            }
+        }
+		return v;
 		
 
 	}

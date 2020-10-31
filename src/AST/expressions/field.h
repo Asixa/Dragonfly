@@ -10,7 +10,7 @@ namespace AST {
 		public:
 			// enum CMD{ kConstantWanted = 0, kPtrWanted = 1 };
 			// int cmd = kConstantWanted;
-			bool is_ptr;
+			bool is_ptr=false;
 			std::shared_ptr<Field> child, left;
 			void ToString() override;
 			llvm::Value* Gen(std::shared_ptr<DFContext>, bool is_ptr) override;

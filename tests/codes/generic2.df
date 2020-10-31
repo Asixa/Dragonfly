@@ -6,6 +6,13 @@ class A
 }
 
 
-var a = A(1)
+func foo<T>(t:T):T
+{
+	return t
+}
 
-printf("%d\n",a.some)
+
+
+var a = A(1)
+var f = foo<A>(a)
+a.some=11

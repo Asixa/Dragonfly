@@ -43,8 +43,8 @@ public:
 	// std::map<std::string, llvm::Value*> global_fields_table;
 	std::map<std::string, std::string> func_alias_table;
 
-	std::map<std::string, AST::decl::ClassDecl*> template_types_table;
-	std::map<std::string, AST::decl::FunctionDecl*> template_function_table;
+	std::map<std::string, AST::decl::ClassDecl*> class_template_table;
+	std::map<std::string, AST::decl::FunctionDecl*> function_template_table;
 
 	std::map<std::string, std::shared_ptr<AST::CustomType>> types_table;
 	std::map<std::string, std::shared_ptr<AST::decl::FunctionDecl>> functions_table;

@@ -96,9 +96,11 @@ namespace AST {
  
 #pragma region  Analysis
 	void ClassDecl::AnalysisHeader(std::shared_ptr<DFContext>ctx) {
-		if (is_template)return;
+		if (is_template){
+			ctx->class_template_table[name] = this;
+            return;
+		}
         const auto full_name = GetFullname();
-
 		// Check duplicated class
 		if (ctx->ExistClass(full_name)) {
 			Debugger::ErrorV((std::string("type") + full_name + " is not defined").c_str(), line, ch);
@@ -139,6 +141,7 @@ namespace AST {
 	std::shared_ptr<ClassDecl> ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> context,std::shared_ptr<FieldList> replace_by) {
 
 		const auto instance = std::shared_ptr<ClassDecl>(this);
+		instance->is_template = false;
 		instance->generic_info = replace_by;
 		// Here replace all Generic Types to Real Types, instance.fields will be change, also the generic functions
 		for (int i = 0, size = fields->content.size(); i < size; ++i) {
@@ -154,7 +157,7 @@ namespace AST {
 			return nullptr;
 		}
 		context->program->declarations.push_back(instance);
-		instance->AnalysisHeader(context);
+		// instance->AnalysisHeader(context);
 		return instance;
 	}
 

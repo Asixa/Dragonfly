@@ -106,7 +106,7 @@ namespace AST {
 		DFContext::BuildInFunc(context, "malloc", BasicType::Void_Ptr, { BasicType::Int });
 		DFContext::BuildInFunc(context, "memcpy", BasicType::Void_Ptr, { BasicType::Void_Ptr, BasicType::Void_Ptr,  BasicType::Int });
 		DFContext::BuildInFunc(context, "free", BasicType::Void_Ptr, { BasicType::Void_Ptr });
-		DFContext::BuildInFunc(context, "printf", BasicType::Void_Ptr, { BasicType::Void_Ptr }, true);
+		DFContext::BuildInFunc(context, "printf", BasicType::Void, { BasicType::Void_Ptr }, true);
 
 		for (auto i = 0; i < declarations.size(); i++)
 			try { declarations[i]->AnalysisHeader(context);  }

@@ -160,7 +160,7 @@ namespace AST {
 		if (is_generic_template) {
 			for (int i = 0,size= args->content.size(); i <size; i++) 
                 args->content[i]->generic = generic->FindByName(args->content[i]->type->ToString());
-			ctx->template_function_table[full_name] = this;
+			ctx->function_template_table[full_name] = this;
 			return;
 		}
 		ctx->functions_table[full_name] = std::shared_ptr<FunctionDecl>(this);
