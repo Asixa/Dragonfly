@@ -30,7 +30,7 @@ namespace AST {
 			return;
 		}
 
-		auto val = value->Gen(ctx,1);
+		auto val = value->Gen(ctx);
 		if (!val) {
 			Debugger::ErrorV("Error in return", line, ch);
 			return;

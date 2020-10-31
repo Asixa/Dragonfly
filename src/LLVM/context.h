@@ -48,6 +48,7 @@ public:
 
 	std::map<std::string, std::shared_ptr<AST::CustomType>> types_table;
 	std::map<std::string, std::shared_ptr<AST::decl::FunctionDecl>> functions_table;
+	std::map<std::string, std::shared_ptr<AST::decl::FunctionDecl>> extern_functions_table;
 
 
 	llvm::Value* True;
@@ -75,6 +76,7 @@ public:
 
 	AST::decl::ClassDecl* GetClassTemplate(std::string name);
 	AST::decl::FunctionDecl* GetFuncTemplate(std::string name);
+	std::shared_ptr<AST::decl::FunctionDecl> GetFunctionDecl(std::string name);
 
 	llvm::GlobalVariable* CreateGlobal(const std::string name, llvm::Type* ty);
 	// llvm::ConstantInt* CreateConstant(int value);
@@ -133,7 +135,7 @@ public:
 	*/
 	int GetCustomTypeCategory(std::string ty);
 
-	void BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false) const;
+	static void BuildInFunc(std::shared_ptr<DFContext> ctx,std::string name, std::shared_ptr<AST::Type> ret, const std::vector<std::shared_ptr<AST::Type>> args, const bool isVarArg=false);
 	// Write human-readable ir to file , for debug and testing.
     static void WriteReadableIr(llvm::Module* module, const char* file, bool print = false);
 	// Write compilable ir to file , for further compilation.

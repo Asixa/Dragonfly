@@ -3,7 +3,6 @@
 
 #include "frontend/lexer.h"
 #include "AST/declarations/declaration.h"
-#include "generic-param.h"
 #include "namespace-decl.h"
 
 #define MAKE_FLAGS_ENUM(TEnum, TUnder)                                                                                             \
@@ -109,7 +108,7 @@ namespace AST {
 			void GenHeader(std::shared_ptr<DFContext>) override;
 
 			void PassGeneric(std::shared_ptr<FieldList> generic_instance, std::shared_ptr<FieldList> generic_decl=nullptr);
-			void InstantiateTemplate(std::shared_ptr<DFContext> context, std::shared_ptr<FieldList> param);
+			std::shared_ptr<FunctionDecl> InstantiateTemplate(std::shared_ptr<DFContext> context, std::shared_ptr<FieldList> param);
 
 			static std::shared_ptr<FunctionDecl> Parse(bool ext = false);
 			std::string GetName() override;

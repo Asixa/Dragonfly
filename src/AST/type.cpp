@@ -2,14 +2,16 @@
 #include "frontend/lexer.h"
 #include "LLVM/context.h"
 #include "AST/declarations/class-decl.h"
+
 std::shared_ptr<AST::Type>
-AST::BasicType::string = std::make_shared<BasicType>(K_string),
-AST::BasicType::i32 = std::make_shared<BasicType>(K_int32),
-AST::BasicType::i64 = std::make_shared<BasicType>(K_int64),
-AST::BasicType::f32=std::make_shared<BasicType>(K_float32),
-AST::BasicType::f64 = std::make_shared<BasicType>(K_float64),
+AST::BasicType::String = std::make_shared<BasicType>(K_string),
+AST::BasicType::Int = std::make_shared<BasicType>(K_int),
+AST::BasicType::Long = std::make_shared<BasicType>(K_long),
+AST::BasicType::Float=std::make_shared<BasicType>(K_float),
+AST::BasicType::Double = std::make_shared<BasicType>(K_double),
 AST::BasicType::Void = std::make_shared<AST::BasicType>(K_void),
-AST::BasicType::boolean = std::make_shared<AST::BasicType>(K_bool);
+AST::BasicType::Void_Ptr = std::make_shared<AST::BasicType>(K_string),
+AST::BasicType::Boolean = std::make_shared<AST::BasicType>(K_bool);
 
 std::shared_ptr<AST::Type> AST::Type::Match() {
 	std::shared_ptr<AST::Type> type=nullptr;
@@ -47,20 +49,10 @@ llvm::Type* AST::BasicType::ToLLVM(std::shared_ptr<DFContext>context) {
 }
 
 std::string AST::BasicType::ToString() {
-    switch (detail) {
-	    case K_void:
-	    case 1:             return "void";
-	    case K_byte:        return "byte";
-	    case K_short:       return "int16";
-	    case K_int:         return "int32";
-	    case K_long:        return "int64";
-	    case K_float:       return "float";
-	    case K_double:      return "double";
-	    case K_bool:        return "bppl";
-	    case K_string:      return "string";
-	    default:return  "ERRIR";
-	}
+    return frontend::Lexer::Token::Name(detail);
 }
+
+AST::CustomType::CustomType(const std::shared_ptr<decl::ClassDecl> decl) :decl(decl),str(decl->GetFullname()), Type(Custom) {} 
 
 std::shared_ptr<AST::CustomType> AST::CustomType::Match() {
 	auto type = std::make_shared<AST::CustomType>();
@@ -96,7 +88,8 @@ llvm::Type* AST::CustomType::ToLLVM(std::shared_ptr<DFContext> ctx) {
 		llvm_type = ctx->types_table[str]->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 	}
 	else {
-
+		if (decl == nullptr)decl = ctx->types_table[str]->decl;
+		
 		llvm_type = ctx->module->getTypeByName(decl->GetFullname());
 		if (llvm_type == nullptr) {
             frontend::Debugger::ErrorV((std::string("Unknown Type: ") + str + "\n").c_str(), -1, -1);

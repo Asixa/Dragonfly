@@ -21,10 +21,11 @@ namespace AST {
             enum ListType{ GenericDecl, GenericInstantiate, Arguments};
 			ListType type;
 			// bool is_var_arg;
-			std::vector<FieldDecl>fields;
+			std::vector< std::shared_ptr<FieldDecl>>content;
 			std::string ToString();
-			FieldList(){};
-            explicit FieldList(std::shared_ptr<FieldList> copy);
+            FieldList(){}
+			explicit FieldList(std::shared_ptr<FieldList> copy);
+			explicit FieldList(std::vector<std::shared_ptr<AST::Type>>& type);
 			static std::shared_ptr<FieldList> ParseGenericDecl();
 			static std::shared_ptr<FieldList> ParseGenericInstantiate();
 			static std::shared_ptr<FieldList> ParseArguments(const bool parse_var_arg, const bool parse_expr) ;

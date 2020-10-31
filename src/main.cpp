@@ -36,8 +36,6 @@ int main(int argc, char** argv) {
 
     Debugger::SetStream(argc == 1);
     Debugger::only_tokenize = argc > 2;
-	std::wcout.imbue(std::locale(""));
-
     
     const auto start = clock();
 	// Lexer::LoadFile(filename.c_str());
@@ -45,11 +43,13 @@ int main(int argc, char** argv) {
 	Preprocessor::Process();
 
 	// auto ctx = CudaContext::Create(nullptr);
-	const auto context = DFContext::Create(AST::Parse()); 
-
+	const auto context = DFContext::Create(AST::Parse());
+	printf("--------------------analysis-----------------------\n");
+	DFContext::Analysis();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
-	DFContext::Gen();
+	printf("--------------------gen-----------------------\n");
+	if(!Debugger::error_existed)DFContext::Gen();
     Debugger::WriteOutput("log.txt");
 
 	std::cout << "took a total of " << static_cast<double>(clock() - start) << "ms\n\n";

@@ -11,10 +11,10 @@ namespace AST {
 	}
 
 	std::shared_ptr<AST::Type> Boolean::Analysis(std::shared_ptr<DFContext>) {
-	    return BasicType::boolean;
+	    return BasicType::Boolean;
 	}
 
-    llvm::Value* Boolean::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+    llvm::Value* Boolean::Gen(std::shared_ptr<DFContext> ctx, bool is_ptr) {
 		return value ? ctx->True : ctx->False;;
 	}
 }

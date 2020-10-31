@@ -10,7 +10,7 @@ namespace AST {
 		public:
 			void ToString() override;
 			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
-			llvm::Value* Gen(std::shared_ptr<DFContext>, const int cmd = 0) override;
+			llvm::Value* Gen(std::shared_ptr<DFContext>, bool is_ptr) override;
 			frontend::Lexer::Token* tok;
 			explicit Factor(frontend::Lexer::Token* t) : tok(t) {}
 			static std::shared_ptr<Expr> Parse();

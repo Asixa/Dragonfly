@@ -17,13 +17,13 @@ namespace AST {
 
     std::shared_ptr<AST::Type> expr::NumberConst::Analysis(std::shared_ptr<DFContext>) {
 		switch (type) {
-		    case K_float: return BasicType::f32;
-		    case K_double: return BasicType::f64;
-		    case K_int: return BasicType::i32;
+		    case K_float: return BasicType::Float;
+		    case K_double: return BasicType::Double;
+		    case K_int: return BasicType::Int;
 		}
 	}
 
-    llvm::Value* expr::NumberConst::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+    llvm::Value* expr::NumberConst::Gen(std::shared_ptr<DFContext> ctx, bool is_ptr) {
 		switch (type) {
 		case K_float: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(static_cast<float>(value)));
 		case K_double: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(value));

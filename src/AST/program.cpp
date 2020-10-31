@@ -4,6 +4,7 @@
 #include "AST/declarations/enum-decl.h"
 #include "AST/declarations/extern-decl.h"
 #include "llvm/IR/Verifier.h"
+#include "AST/type.h"
 namespace AST {
 	using namespace decl;
     void Program::ParseSingle() {
@@ -55,16 +56,16 @@ namespace AST {
 
 	void Program::Gen(std::shared_ptr<DFContext> context) {
 
-        
+	
 
-		context->BuildInFunc("malloc", context->void_ptr,std::vector<llvm::Type*>{context->int32});
-
-		context->BuildInFunc("memcpy", context->void_ptr,
-			std::vector<llvm::Type*>{context->void_ptr, context->void_ptr, context->int32});
-
-		context->BuildInFunc("free", context->void_type,std::vector<llvm::Type*>{context->void_ptr});
-
-		context->BuildInFunc("printf", context->void_type,std::vector<llvm::Type*>{context->void_ptr}, true);
+		// context->BuildInFunc("malloc", context->void_ptr,std::vector<llvm::Type*>{context->int32});
+		//
+		// context->BuildInFunc("memcpy", context->void_ptr,
+		// 	std::vector<llvm::Type*>{context->void_ptr, context->void_ptr, context->int32});
+		//
+		// context->BuildInFunc("free", context->void_type,std::vector<llvm::Type*>{context->void_ptr});
+		//
+		// context->BuildInFunc("printf", context->void_type,std::vector<llvm::Type*>{context->void_ptr}, true);
 
 
         // DO not make it into the form like below, because the array will change.
@@ -88,10 +89,11 @@ namespace AST {
 		const auto entry = context->CreateBasicBlock(main_func, "entry");
 		context->builder->SetInsertPoint(entry);
 
-        
+		context->llvm->CreateScope();
 		for (auto& statement : statements)
 			try {if (statement != nullptr)statement->Gen(context);}catch (int e){}
 		context->builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context->context), 0));
+		context->llvm->EndScope();
 
 		for (auto i = 0; i < late_gen.size(); i++)
 			try { late_gen[i]->Gen(context); }catch (int e) {}
@@ -101,13 +103,24 @@ namespace AST {
 	}
 
     void Program::Analysis(std::shared_ptr<DFContext> context) {
+		DFContext::BuildInFunc(context, "malloc", BasicType::Void_Ptr, { BasicType::Int });
+		DFContext::BuildInFunc(context, "memcpy", BasicType::Void_Ptr, { BasicType::Void_Ptr, BasicType::Void_Ptr,  BasicType::Int });
+		DFContext::BuildInFunc(context, "free", BasicType::Void_Ptr, { BasicType::Void_Ptr });
+		DFContext::BuildInFunc(context, "printf", BasicType::Void_Ptr, { BasicType::Void_Ptr }, true);
+
 		for (auto i = 0; i < declarations.size(); i++)
-			try { declarations[i]->AnalysisHeader(context); }
+			try { declarations[i]->AnalysisHeader(context);  }
 		catch (int e) {}
 
 		for (auto& declaration : declarations)
-			try { declaration->Analysis(context); }
+			try { declaration->Analysis(context);}
 		catch (int e) {}
+
+		context->ast->CreateScope();
+		for (auto& statement : statements)
+			try { if (statement != nullptr)statement->Analysis(context); }
+		catch (int e) {}
+		context->ast->EndScope();
     }
 }
 

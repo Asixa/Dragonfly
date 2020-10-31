@@ -11,7 +11,9 @@ namespace AST {
 
     // returns NAME<X,X>(X,X)
 	std::string FunctionDecl::GetName() {
-		return nested_name->GetFunctionName()+ 
+		auto func_name = nested_name->GetFunctionName();
+		// if (func_name == BUILTIN_TAG"init")func_name= "";
+		return func_name +
 			(generic_instance_info == nullptr ? "" : generic_instance_info->ToString())+
 			args->ToString();
 	}
@@ -58,9 +60,7 @@ namespace AST {
 			}
 		}
 
-		Lexer::Match('(');
 		function->args = FieldList::ParseArguments(true,true);
-		Lexer::Match(')');
 
 		function->return_type = BasicType::Void;
 		if (Lexer::Check(':')) {
@@ -96,9 +96,9 @@ namespace AST {
 		instance->nested_name->type = NestedName::kFunction;
 
 		std::vector<std::shared_ptr<stmt::Statement>>statements;
-		for (int i = 0,size= init_field->fields.size(); i <size ; i++)
+		for (int i = 0,size= init_field->content.size(); i <size ; i++)
 			statements.push_back(std::make_shared<stmt::Empty>(
-				std::make_shared<expr::Binary>(init_field->fields[i].name, init_field->fields[i].name, '=')));
+				std::make_shared<expr::Binary>(init_field->content[i]->name, init_field->content[i]->name, '=')));
 
 		// List to binary tree
 		if (!statements.empty()) {
@@ -115,8 +115,8 @@ namespace AST {
 
 
 #pragma region Analysis_Template
-    void FunctionDecl::InstantiateTemplate(std::shared_ptr<DFContext> ctx, std::shared_ptr<FieldList> param) {
-		if (!generic)return;
+	std::shared_ptr<FunctionDecl> FunctionDecl::InstantiateTemplate(std::shared_ptr<DFContext> ctx, std::shared_ptr<FieldList> param) {
+		if (!generic)return nullptr;
 		const auto func_instance_name = param->ToString();
 
         // TODO check dupulication
@@ -128,22 +128,26 @@ namespace AST {
 		instance->PassGeneric(param);
 		instance->is_generic_template = false;
 		instance->AnalysisHeader(ctx);
+		instance->generic_instance_info = param;
 		ctx->program->late_gen.push_back(instance);
+		printf("[Instantiate Generic Function]:%s \n", instance->GetFullname().c_str());
+		ctx->functions_table[instance->GetFullname()] = instance;
+		return instance;
 	}
 	void FunctionDecl::PassGeneric(std::shared_ptr<FieldList> generic_instance, std::shared_ptr<FieldList> generic_decl) {
-		if (generic_instance->fields.empty())return;
+		if (generic_instance->content.empty())return;
 		if (generic_decl == nullptr)generic_decl = generic;
         if(!generic_decl)return;
-		for (int i = 0, size = args->fields.size(); i < size; ++i) {
-            const auto pos = generic_decl->FindByType(args->fields[i].type->ToString());
+		for (int i = 0, size = args->content.size(); i < size; ++i) {
+            const auto pos = generic_decl->FindByName(args->content[i]->type->ToString());
 			if (pos != -1)
-				args->fields[i].type = generic_instance->fields[pos].type;
+				args->content[i]->type = generic_instance->content[pos]->type;
 		}
 
         //Replace Return Type
-		const auto pos = generic_decl->FindByType(return_type->ToString());
+		const auto pos = generic_decl->FindByName(return_type->ToString());
 		if (pos != -1)
-			return_type = generic_instance->fields[pos].type;
+			return_type = generic_instance->content[pos]->type;
 	}
 #pragma endregion
 
@@ -154,8 +158,8 @@ namespace AST {
 	    const auto full_name = is_member_function? GetFullname():nested_name->GetFullName();
 
 		if (is_generic_template) {
-			for (int i = 0,size= args->fields.size(); i <size; i++) 
-                args->fields[i].generic = generic->FindByType(args->fields[i].type->ToString());
+			for (int i = 0,size= args->content.size(); i <size; i++) 
+                args->content[i]->generic = generic->FindByName(args->content[i]->type->ToString());
 			ctx->template_function_table[full_name] = this;
 			return;
 		}
@@ -173,27 +177,42 @@ namespace AST {
 			}
 		}
 
-		// added $this in the argument list
+		// added this in the argument list
 		if (is_member_function) {
-			args->fields.insert(args->fields.begin(), 
-				FieldDecl(BUILTIN_TAG"this",std::static_pointer_cast<ClassDecl>(parent)->GetType()));
+			args->content.insert(args->content.begin(), 
+				std::make_shared<FieldDecl>("this",std::static_pointer_cast<ClassDecl>(parent)->GetType()));
 		}
 	}
 
 	void FunctionDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
+        if(is_generic_template)return;
 		// function llvm arguments' type.
 		std::vector<llvm::Type*> llvm_arg_types;
-		for (int i = 0,size= args->fields.size(); i < size; i++)
-			llvm_arg_types.push_back(args->fields[i].type->ToLLVM(ctx));
-
+		for (auto& parameter : args->content) {
+			if ((parameter->type->category == Type::Custom
+				&& std::static_pointer_cast<CustomType>(parameter->type)->decl->category == ClassDecl::kClass)
+				|| parameter->name == "this") {
+				printf("this depth %d\n", ctx->GetPtrDepth(parameter->type->ToLLVM(ctx)));
+				llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
+			}
+           
+			else llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
+		}
+			
 	    // create the function type.
 		const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), llvm_arg_types, args->IsVariableArgument());
 		// create the function
+
+		printf("decl %s       ", GetFullname().c_str());
+        for (auto ty: llvm_arg_types) {
+			printf("%d,", ctx->GetPtrDepth(ty));
+        }
+		printf("\n");
 		auto the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, GetFullname(), ctx->module.get());
 		// add name for arguments.
 		unsigned idx = 0;
 		for (auto& arg : the_function->args())
-			arg.setName(args->fields[idx++].name);
+			arg.setName(args->content[idx++]->name);
 
 	}
 
@@ -202,11 +221,7 @@ namespace AST {
 
     void FunctionDecl::Gen(std::shared_ptr<DFContext> ctx) {
 		if(keyword==K_extern|| is_generic_template)return;
-   //      if(extension) {
-			// extension = false;
-			// GenHeader(ctx);
-   //      }
-	
+
 		auto function = ctx->GetFunction(GetFullname());
 		//  create the basic block for the function.
 		const auto basic_block = ctx->CreateBasicBlock(function, nested_name->GetFunctionName() + "_entry");
@@ -216,7 +231,7 @@ namespace AST {
 			// store the argument to argument table.
 			// if argment is a struct passed by value. we store its alloca to local_fields.
 			const auto arg_type_name = ctx->GetStructName(arg.getType());
-			if (ctx->types_table[arg_type_name]->decl->category == ClassDecl::kStruct) {
+			if (ctx->GetCustomTypeCategory(arg_type_name)== ClassDecl::kStruct) {
 				if (ctx->GetPtrDepth(&arg) == 0) {
 					const auto alloca = ctx->CreateEntryBlockAlloca(arg.getType(), arg.getName());
 					ctx->AlignStore(ctx->builder->CreateStore(&arg, alloca));

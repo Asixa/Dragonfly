@@ -17,8 +17,8 @@ namespace AST {
 			Binary(std::shared_ptr<Expr> lhs, std::shared_ptr<Expr> rhs, int op) : op(op), LHS(lhs), RHS(rhs) {}
 			void ToString() override;
 			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
-			llvm::Value* Gen(std::shared_ptr<DFContext>, const int cmd = 0) override;
-			llvm::Value* Gen2(std::shared_ptr<DFContext>, const int cmd = 0);
+			llvm::Value* Gen(std::shared_ptr<DFContext>, bool is_ptr) override;
+			llvm::Value* Gen2(std::shared_ptr<DFContext>);
 			Binary() {}
 			Binary(const std::string lhs, const std::string rhs, const int o) :LHS(std::make_shared<Field>(lhs)), RHS(std::make_shared<Field>(rhs)), op(o) {}
 			// This part might be hard to understand.

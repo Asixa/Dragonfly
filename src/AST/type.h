@@ -51,14 +51,14 @@ namespace AST {
 		explicit BasicType() :Type(Basic), detail(0) {}
 		explicit BasicType(const int detail) :Type(Basic), detail(detail) {}
 	    static std::shared_ptr<AST::BasicType> Match();
-		static std::shared_ptr<AST::Type> string,i32, i64,f32, f64,Void,boolean;
+		static std::shared_ptr<AST::Type> String,Int, Long, Float, Double,Void,Void_Ptr,Boolean;
 		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
 		std::string ToString()override;
     };
 	class  CustomType : public Type {
 		std::string str = "";
 	public:
-		explicit CustomType(const std::shared_ptr<decl::ClassDecl>decl) :decl(decl), Type(Custom) {}
+		explicit CustomType(const std::shared_ptr<decl::ClassDecl>decl);
 		explicit CustomType() :decl(nullptr), Type(Custom) {}
 		std::shared_ptr<decl::ClassDecl>decl;
 		

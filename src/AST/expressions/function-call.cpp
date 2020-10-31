@@ -32,56 +32,89 @@ namespace AST {
 		return func_call;
 	}
 
-	llvm::Value* FuncCall::Gen(std::shared_ptr<DFContext> context,int cmd) {
+	llvm::Value* FuncCall::Gen(const std::shared_ptr<DFContext> context,bool is_var) {
 		return GenField(context,nullptr);
 	}
 
-    std::shared_ptr<AST::Type> FuncCall::Analysis(std::shared_ptr<DFContext>ctx) {
-		llvm::Value* parent;
+    std::shared_ptr<AST::Type> FuncCall::Analysis(const std::shared_ptr<DFContext>ctx) {
+		printf("[Analysis] func call\n");
+		return AnalysisField(ctx, nullptr);
+	}
+
+    std::shared_ptr<AST::Type> FuncCall::AnalysisField(std::shared_ptr<DFContext>ctx, std::shared_ptr<AST::Type>parent) {
+		
 		// the data structure of Field for exmaple: a.B().C().d is
-	    //  [a]
-	    //     \child
-	    //      [C()]            cannot be linked list:  a->B()->C()->d 
-	    //   left/  \child       because left recursion happens when parse nested funtion.
-	    //  [B()]     [d]
-	    // so here we DFS to generate previous nodes.
+		//  [a]
+		//     \child
+		//      [C()]            cannot be linked list:  a->B()->C()->d 
+		//   left/  \child       because left recursion happens when parse nested funtion.
+		//  [B()]     [d]
+		// so here we DFS to generate previous nodes.
 
-	    // true if nested function call like A().B(), then we left-DFS
-	    // TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
-		if (left != nullptr)
-			parent = left->GenField(ctx, parent);
+		// true if nested function call like A().B(), then we left-DFS
+		// TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
+		if (left != nullptr) parent = left->AnalysisField(ctx, parent);
 
-		// if is calling a constructor, eg: A(), A is any class or struct.
-		auto is_constructor = false;
+
 		// if is calling a member function, eg: a.bar(), a is any object of custom class or struct.
 		// if true, parent is the value of a.
-		auto is_member_func = parent != nullptr;
-
-		auto callee_name = is_member_func
-			? ctx->GetStructName(parent) + "::" + name
-			: name;
-
+        is_member_func = parent != nullptr;
+		callee_name = is_member_func ? parent->ToString() + JOINER_TAG + name : name;
 		if (generic) {
 			const auto template_class_decl = ctx->GetClassTemplate(callee_name);
-			if (template_class_decl != nullptr) {
-				template_class_decl->InstantiateTemplate(ctx, generic);
-			}
+			const auto template_func_decl = ctx->GetFuncTemplate(callee_name);
+			if (template_class_decl != nullptr)  template_class_decl->InstantiateTemplate(ctx, generic);
+			else if(template_func_decl!=nullptr) template_func_decl->InstantiateTemplate(ctx, generic);
 			else {
-				const auto template_decl = ctx->GetFuncTemplate(callee_name);
-				if (template_decl == nullptr) {
-					Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
-					return nullptr;
-				}
-				template_decl->InstantiateTemplate(ctx, generic);
+				Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
+				return nullptr;
 			}
-
-
 			callee_name += generic->ToString();
 		}
 
+		if (ctx->IsCustomType(callee_name)) {
+            if(ctx->GetCustomTypeCategory(callee_name) < ClassDecl::kInterface) {
+				Debugger::ErrorV("Cannot call a constructor of a interface or basic type", line, ch);
+				return nullptr;
+            }
+			class_type = ctx->types_table[callee_name];
+			// now the function is a construtor, which is a special type of member function.
+			// we add back the  front name.
+			is_member_func = true;
+			callee_name = callee_name + JOINER_TAG + "$init";
+			printf("%s is a constructor\n", callee_name.c_str());
+			is_constructor = true;
+		}
+
+
+		param_name += "(";
+		for (int i = 0, argv_size = args.size(); i < argv_size; i++)
+			param_name += args[i]->Analysis(ctx)->ToString() + (i == argv_size - 1 ? "" : ",");
+		param_name += ")";
+		printf("analysis function :%s\n", (callee_name + param_name).c_str());
+
+
+		func = ctx->GetFunctionDecl(callee_name);
+		if (!func) func = ctx->GetFunctionDecl(callee_name + param_name);
+		
+        if(!func) {
+			 Debugger::ErrorV((std::string("Unknown function referenced :") + callee_name + param_name).c_str(), line, ch);
+			 return nullptr;
+        }
+		// here we found the callee!
+        // check if the function argument count matchs.
+        // some function could have varible arguments size when isVarArg is true.
+
+		if (func->args->content.size() != args.size() + (is_member_func ? 1 : 0) && !func->args->IsVariableArgument()) {
+			Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
+				std::to_string(func->args->content.size()) + " needed, but got " + std::to_string(args.size()) +" instead").c_str(), line, ch);
+			return nullptr;
+		}
+
+		return is_constructor?class_type:func->return_type;
 	}
 
-	llvm::Value* FuncCall::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* parent) {
+    llvm::Value* FuncCall::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* _this) {
 		// TODO function call like a()()
         
 		// the data structure of Field for exmaple: a.B().C().d is
@@ -94,115 +127,76 @@ namespace AST {
   
 		// true if nested function call like A().B(), then we left-DFS
 		// TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
-		if (left != nullptr)
-			parent = left->GenField(ctx,parent);
+		if (left != nullptr) _this = left->GenField(ctx,_this);
   
-		// if is calling a constructor, eg: A(), A is any class or struct.
-		auto is_constructor = false;
-		// if is calling a member function, eg: a.bar(), a is any object of custom class or struct.
-		// if true, parent is the value of a.
-		auto is_member_func = parent != nullptr;
-  
-		// if the function is a memeber function, for example for class A.
-		// then the name will be [A::name], otherwise the name is just [name]
-		auto callee_name = is_member_func
-			? ctx->GetStructName(parent) + "::" + name
-			: name;
-  
-        if(generic) {
-			
-			const auto template_class_decl = ctx->GetClassTemplate(callee_name);
-            if (template_class_decl != nullptr) {
-			    template_class_decl->InstantiateTemplate(ctx,generic);
-			}
-            else {
-				const auto template_decl = ctx->GetFuncTemplate(callee_name);
-				if (template_decl == nullptr)
-					return Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
-  				template_decl->InstantiateTemplate(ctx,generic);
-            }
-            
-			
-			callee_name += generic->ToString();
-        }
-  
+
 		// Here we generate all the parameters for the Call, store the values into args_v
 		// hidden pointer for member func is not added here. will added later.
 		std::vector<llvm::Value*> args_v;
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
 			// val is the llvm::Value* of current argument experssion.
-			auto val = args[i]->Gen(ctx);
-  
-			// all Struct type will 'pass as value',
-			// except hidden pointer for member func, which is not added yet.
+			auto val = args[i]->Gen(ctx,is_ptr);
+
+
+
 			if (ctx->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
 				while (ctx->GetPtrDepth(val) != 0)
 					val = ctx->builder->CreateLoad(val);
-  
 			// here we catch if the val is null. 
 			if (!val)return Debugger::ErrorV("Incorrect # arguments passed with error",line,ch);
 			// add the value the the args list.
 			args_v.push_back(val);
 		}
+
+		printf("[[[arg size%d]]]\n", args_v.size());
   
 		// here we check if the func is a constructor
-		if (ctx->IsCustomType(callee_name)) {
-			switch (ctx->GetCustomTypeCategory(callee_name)) {
-			case ClassDecl::kClass: {
-				auto ty = ctx->module->getTypeByName(callee_name);
-				parent = ctx->Malloc(ty);
+		if (is_constructor) {
+			printf("it is constrcutor\n");
+			switch (class_type->decl->category) {
+			case ClassDecl::kClass: 
+				_this = ctx->Malloc(class_type->ToLLVM(ctx)->getPointerElementType());
 				break;
-			}
 			case ClassDecl::kStruct:
-				parent = ctx->CreateEntryBlockAlloca(ctx->module->getTypeByName(callee_name), callee_name);
+				_this = ctx->CreateEntryBlockAlloca(class_type->ToLLVM(ctx), callee_name);
 				break;
 			case ClassDecl::kInterface:
 				return  Debugger::ErrorV("Cannot call a constructor of a interface type",line,ch);
 			default: //here the category should be -1
 				return Debugger::ErrorV("Cannot call a constructor of a basic type", line, ch);
 			}
-			// now the function is a construtor, which is a special type of member function.
-			// we add back the  front name.
-			is_member_func = true;
-			callee_name = callee_name + "::" + callee_name;
-			is_constructor = true;
 		}
-	 
+
 		// now we add the hidden pointer to the args list if it is a member function. //TODO catch errors like pass a value
 		if (is_member_func) {
-			const auto ptr_depth = ctx->GetPtrDepth(parent);
-			auto this_arg = parent;
+			printf("it is member func\n");
+			const auto ptr_depth = ctx->GetPtrDepth(_this);
+			auto this_arg = _this;
 			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
-				this_arg = ctx->builder->CreateLoad(parent);
+				this_arg = ctx->builder->CreateLoad(_this);
 			args_v.insert(args_v.begin(), this_arg);
 		}
-		std::string param_name;
-		param_name += "(";
-		for (int i = is_member_func ? 1 : 0, argv_size = args_v.size(); i < argv_size; i++)
-			param_name += ctx->GetStructName(args_v[i]->getType()) + (i == argv_size - 1 ? "" : ",");
-		param_name += ")";
-		// after fix the function name, we try to get it again.
+
 		
 		// now, callee_name is the full function name, eg: "A::bar" or "foo"  etc.
 		// and we try get the fuction.
 	 
-		if (!ctx->IsCustomType(callee_name)) {
-			auto ty = ctx->module->getTypeByName(name);
+		if (!is_constructor) {
+            const auto ty = ctx->module->getTypeByName(name);
 			printf("%s\n", name.c_str());
 			if (ty) {
-				printf("try get callee %s\n", (name + "::" + callee_name + param_name).c_str());
-				if (ctx->GetFunction(name + "::" + callee_name + param_name) != nullptr) {
+				printf("try get callee %s\n", (callee_name + param_name).c_str());
+				if (ctx->GetFunction(callee_name + param_name) != nullptr) {
 					is_member_func = true;
-					callee_name = name + "::" + callee_name+param_name;
+					callee_name +=param_name;
 					is_constructor = true;
-					
 					printf("---------------");
                     //HACK
-					parent = ctx->Malloc(ty->getPointerTo());
-					const auto ptr_depth = ctx->GetPtrDepth(parent);
-					auto this_arg = parent;
+					_this = ctx->Malloc(ty->getPointerTo());
+					const auto ptr_depth = ctx->GetPtrDepth(_this);
+					auto this_arg = _this;
 					if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
-						this_arg = ctx->builder->CreateLoad(parent);
+						this_arg = ctx->builder->CreateLoad(_this);
 					args_v.insert(args_v.begin(), this_arg);
 				}
 			}
@@ -221,32 +215,29 @@ namespace AST {
 		if (!callee)
 			return Debugger::ErrorV((std::string("Unknown function referenced :") + callee_name).c_str(),line,ch);
 		
-		// here we found the callee!
-		// check if the function argument count matchs.
-		// some function could have varible arguments size when isVarArg is true.
-		if (callee->arg_size() != args_v.size() && !callee->isVarArg())
-			return Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
-				std::to_string(args.size() + (is_member_func ? 1 : 0)) + " / " + std::to_string(callee->arg_size())).c_str(), line, ch);
-  
-		printf("arg size %d\n",ctx->GetPtrDepth(args_v[0]));
-        while (ctx->GetPtrDepth(args_v[0])>1) {
+		
+        while (ctx->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
 			args_v[0] = ctx->builder->CreateLoad(args_v[0]);
-        }
-  
+
+		printf("this ptr depth %d\n", ctx->GetPtrDepth(args_v[0]));
+         
+		printf("args_v size %d - %d    %d\n", args_v.size(),callee->arg_size(), ctx->GetPtrDepth(callee->getArg(0)->getType()));
+		printf("     %s\n", ctx->DebugValue(args_v[0]).c_str());
+		printf("     %s\n", ctx->DebugValue(args_v[1]).c_str());
+
+
 		// call the function and save it to v
-		llvm::Value* v = ctx->builder->CreateCall(callee, args_v);
-  
+		llvm::Value* value = ctx->builder->CreateCall(callee, args_v);
+		
 		// since constructor returns void, the value shoud be the initized 'parent'
-		v = is_constructor ? parent : v;
-  
+		if (is_constructor) value = _this;
 		// it the field is not done yet. continue.
-		if (child != nullptr)
-		{
-			child->cmd = cmd;
-			v = child->GenField(ctx,v);
+		
+		if (child != nullptr) {
+			child->is_ptr = is_ptr;
+			value = child->GenField(ctx, value);
 		}
-  
-		return v;
+		return value;
 	}
 
 

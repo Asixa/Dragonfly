@@ -2,6 +2,7 @@
 #include <codecvt>
 #include <iostream>
 #include <fstream>
+#include <utility>
 
 #include <llvm/Support/raw_ostream.h>
 #include "LLVM/context.h"
@@ -21,6 +22,21 @@ AST::decl::ClassDecl* DFContext::GetClassTemplate(const std::string name) {
 AST::decl::FunctionDecl* DFContext::GetFuncTemplate(std::string name) {
 	if (template_function_table.find(name) == template_function_table.end())return nullptr;
 	return template_function_table[name];
+}
+
+std::shared_ptr<AST::decl::FunctionDecl> DFContext::GetFunctionDecl(std::string name) {
+	if (functions_table.find(name) != functions_table.end())
+		return functions_table[name];
+	printf("find func %s\n", name.c_str());
+
+	for (std::map<std::string, std::shared_ptr<AST::decl::FunctionDecl>>::iterator it = extern_functions_table.begin(); it != extern_functions_table.end(); ++it)
+	{
+		std::cout << "              " << it->first  << std::endl;
+	}
+
+	if (extern_functions_table.find(name) != extern_functions_table.end())
+		return extern_functions_table[name];
+	return nullptr;
 }
 
 llvm::GlobalVariable* DFContext::CreateGlobal(const std::string name, llvm::Type* ty) {
@@ -106,11 +122,23 @@ llvm::LoadInst* DFContext::AlignLoad(llvm::LoadInst* a) {
 	// a->setAlignment(MaybeAlign(8));
 	return a;
 }
+void DFContext::BuildInFunc(std::shared_ptr<DFContext> ctx,std::string name, std::shared_ptr<AST::Type> ret,  std::vector<std::shared_ptr<AST::Type>> args, const bool isVarArg)  {
 
-auto DFContext::BuildInFunc(const char* name, llvm::Type* ret, const std::vector<llvm::Type*> types,const bool isVarArg) const -> void {
-	llvm::Function::Create(llvm::FunctionType::get(ret, types, isVarArg), llvm::Function::ExternalLinkage, name,
-		module.get());
+	auto decl = std::make_shared<AST::decl::FunctionDecl>();
+	decl->return_type = ret;
+	decl->args = std::make_shared<AST::decl::FieldList>(args);
+	if (isVarArg)decl->args->content.push_back(std::make_shared<AST::decl::FieldDecl>("...", nullptr)); // var
+	ctx->extern_functions_table[name] = decl;
+
+    std::vector<llvm::Type*> llvm_types;
+    for (auto ty : args) llvm_types.push_back(ty->ToLLVM(ctx));
+	llvm::Function::Create(llvm::FunctionType::get(ret->ToLLVM(ctx), llvm_types, isVarArg), llvm::Function::ExternalLinkage, name,ctx->module.get());
 }
+// auto DFContext::BuildInFunc(const char* name, llvm::Type* ret, const std::vector<llvm::Type*> types,const bool isVarArg) const -> void {
+// 	std::vector<llvm::Type*> types;
+// 	llvm::Function::Create(llvm::FunctionType::get(ret, types, isVarArg), llvm::Function::ExternalLinkage, name,
+// 		module.get());
+// }
 
 void DFContext::WriteReadableIr(llvm::Module* module, const char* file, bool print) {
 	std::string ir;
@@ -160,11 +188,11 @@ std::string DFContext::GetStructName(llvm::Type* type) {
 		type = type->getPointerElementType();
 	switch (type->getTypeID()) {
 	case llvm::Type::DoubleTyID:
-		return "f64";
+		return "double";
 	case llvm::Type::IntegerTyID:
-		return "i32";
+		return "int";
 	case llvm::Type::FloatTyID:
-		return "f32";
+		return "float";
 	case llvm::Type::VoidTyID:
 		return "void";
 	default:

@@ -25,7 +25,7 @@ namespace AST {
 		const auto c = Binary::Sub7();
 		return std::make_shared<Ternary>(a, b, c);
 	}
-	llvm::Value* expr::Ternary::Gen(std::shared_ptr<DFContext> context,int cmd) {
+	llvm::Value* expr::Ternary::Gen(std::shared_ptr<DFContext> context, bool is_ptr) {
 		return nullptr;
 	}
 

@@ -23,7 +23,7 @@ namespace AST {
 
     void Statements::Analysis(std::shared_ptr<DFContext>context) {
 		stmt1->Analysis(context);
-		stmt1->Analysis(context);
+		stmt2->Analysis(context);
     }
 
 	void Statements::Gen(std::shared_ptr<DFContext> context) {

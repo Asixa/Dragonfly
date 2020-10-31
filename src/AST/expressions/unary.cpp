@@ -45,7 +45,7 @@ namespace AST {
 			return Factor::Parse();
 		}
 	}
-	llvm::Value* expr::Unary::Gen(std::shared_ptr<DFContext> context, int cmd) {
+	llvm::Value* expr::Unary::Gen(std::shared_ptr<DFContext> context, bool is_ptr) {
 		const auto v = expr->Gen(context);
 		if (!v)return nullptr;
 		switch (op) {

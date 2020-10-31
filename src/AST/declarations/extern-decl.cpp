@@ -55,8 +55,8 @@ namespace AST{
 		if (type == K_func) {
 			std::string func_name = name;
 			std::vector<llvm::Type*> arg_types;
-			for (int i = 0,size= args->fields.size(); i <size ; i++)
-				arg_types.push_back(args->fields[i].type->ToLLVM(ctx));
+			for (int i = 0,size= args->content.size(); i <size ; i++)
+				arg_types.push_back(args->content[i]->type->ToLLVM(ctx));
 			std::string param_name = "";
 			
 			llvm::Type* parent_type = nullptr;
@@ -97,7 +97,7 @@ namespace AST{
 				the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name, ctx->module.get());
 				unsigned idx = 0;
 				for (auto& arg : the_function->args())
-					arg.setName(args->fields[idx++].name);
+					arg.setName(args->content[idx++]->name);
 			}
 			else  Debugger::ErrorV((std::string("function ") + name + std::string(" already defined\n")).c_str(), line, ch);
 		}

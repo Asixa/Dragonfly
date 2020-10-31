@@ -60,6 +60,7 @@ namespace AST {
 			// 	return New::Parse();
 			// }
 		case Id: {
+			printf("[Parsed field]\n");
 			return Field::Parse();
 		}
 		case K_int: case K_short: case K_long: case K_float: case K_double:
@@ -74,7 +75,7 @@ namespace AST {
 	}
 
 
-	llvm::Value* Factor::Gen(std::shared_ptr<DFContext> context,int cmd) {
+	llvm::Value* Factor::Gen(std::shared_ptr<DFContext> context, bool is_ptr) {
 		return nullptr;
 	}
 }

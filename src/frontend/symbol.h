@@ -22,7 +22,7 @@ class DFContext;
 namespace frontend {
 	class Symbol {
 		std::shared_ptr<DFContext> ctx;
-		std::vector<std::map<std::string, AST::Type*>> fields;
+		std::vector<std::map<std::string, std::shared_ptr<AST::Type>>> fields;
 		std::map<std::string, AST::decl::ClassDecl*> classes;
 		std::map<std::string, AST::decl::FunctionDecl*> functions;
 
@@ -30,8 +30,8 @@ namespace frontend {
 		Symbol(const std::shared_ptr<DFContext> ctx) :ctx(ctx) {}
 		void CreateScope();
 		void EndScope();
-		void AddField(std::string, AST::Type*);
-		AST::Type* GetField(std::string);
+		void AddField(std::string, std::shared_ptr<AST::Type>);
+		std::shared_ptr<AST::Type> GetField(std::string);
 	};
 
 	class LLVMSymbol {
@@ -43,7 +43,7 @@ namespace frontend {
 		void CreateScope();
 		void EndScope();
 		void AddField(std::string, llvm::Value*);
-		llvm::Value* GetField(std::string,int wanted);
+		llvm::Value* GetField(std::string,bool is_ptr=false);
 		/**
          * \brief Accpet a ptr value, and get it field'value by name.
          * if you only have a value but not ptr. store it to an alloca.

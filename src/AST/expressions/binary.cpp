@@ -11,9 +11,12 @@ namespace AST {
 		*Debugger::out << ")";
 	}
 
-	std::shared_ptr<AST::Type> Binary::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
-	llvm::Value* Binary::Gen2(std::shared_ptr<DFContext> ctx, int cmd) {
-        const auto lhs = LHS->Gen(ctx, cmd),rhs = RHS->Gen(ctx, cmd);
+	std::shared_ptr<AST::Type> Binary::Analysis(std::shared_ptr<DFContext>) {
+	    printf("[Analysis] Binary\n");
+		return nullptr;
+	}
+	llvm::Value* Binary::Gen2(std::shared_ptr<DFContext> ctx) {
+        const auto lhs = LHS->Gen(ctx),rhs = RHS->Gen(ctx);
 		const auto lhs_type = lhs->getType()->getTypeID(),
 	               rhs_type = rhs->getType()->getTypeID();
 		auto op_name = std::string(Lexer::Token::Name(op));
@@ -33,12 +36,13 @@ namespace AST {
 			return ctx->builder->CreateStore(lhs,rhs);
 	}
 
-    llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx,int cmd) {
+    llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx, bool is_ptr) {
 
 		const auto load_ptr = op == '=' || op >= AddAgn;
-		auto lhs = LHS->Gen(ctx,load_ptr);
+		auto lhs = LHS->Gen(ctx, load_ptr);
 		auto rhs = RHS->Gen(ctx,load_ptr);
-		if (!lhs || !rhs)return Debugger::ErrorV("operands is NULL",line,ch);;
+		if (!lhs)return Debugger::ErrorV("left operands is NULL", line, ch);;
+		if (!rhs)return Debugger::ErrorV("right operands is NULL",line,ch);;
 
 
 		auto type = lhs->getType()->getTypeID();

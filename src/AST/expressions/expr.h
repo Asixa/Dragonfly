@@ -19,7 +19,7 @@ namespace AST {
 			virtual void ToString() = 0;
 
 			virtual std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext> ctx)=0;
-			virtual llvm::Value* Gen(std::shared_ptr<DFContext>, int cmd = 0) = 0;
+			virtual llvm::Value* Gen(std::shared_ptr<DFContext>, bool is_ptr=false) = 0;
 		};
 	}
 }

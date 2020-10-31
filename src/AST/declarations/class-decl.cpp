@@ -36,12 +36,10 @@ namespace AST {
 
         // check class A(a:X,b:X) grammar
 		if (Lexer::Check('(')) {
-			Lexer::Next();
 			const auto args = FieldList::ParseArguments(false, false);
 			singleline = true;
 			instance->fields = args;
 			instance->functions.push_back(FunctionDecl::CreateInit(args));
-			Lexer::Match(')');
 		}
 
 		if (Lexer::Check(':')) {
@@ -85,7 +83,8 @@ namespace AST {
 				auto field_name=Lexer::string_val;
 				Lexer::Match(Id);
 				Lexer::Match(':');
-				instance->fields->fields.push_back(FieldDecl(field_name,Type::Match()));
+             
+				instance->fields->content.push_back(std::make_shared<FieldDecl>(field_name,Type::Match()));
 				Lexer::MatchSemicolon();
 				Lexer::SkipNewlines();
 			}
@@ -124,7 +123,7 @@ namespace AST {
 					auto cast = std::static_pointer_cast<CustomType>(inherit);
 					if (i <= 0) {
 						base_type = cast;
-						fields->fields.insert(fields->fields.begin(), FieldDecl("$base", base_type));
+						fields->content.insert(fields->content.begin(), std::make_shared<FieldDecl>("$base", base_type));
 					}
                         
                     else if (cast->decl->category != kInterface)
@@ -137,25 +136,26 @@ namespace AST {
 
 
     // Called at Analysis State
-	void ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> context,std::shared_ptr<FieldList> replace_by) {
+	std::shared_ptr<ClassDecl> ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> context,std::shared_ptr<FieldList> replace_by) {
 
 		const auto instance = std::shared_ptr<ClassDecl>(this);
 		instance->generic_info = replace_by;
 		// Here replace all Generic Types to Real Types, instance.fields will be change, also the generic functions
-		for (int i = 0, size = fields->fields.size(); i < size; ++i) {
-            const auto pos = generic->FindByName(fields->fields[i].type->ToString());
-			auto type = fields->fields[i].type;
-			if (pos != -1) type = replace_by->fields[i].type;
-			instance->fields->fields.emplace_back(fields->fields[i].name, type);
+		for (int i = 0, size = fields->content.size(); i < size; ++i) {
+            const auto pos = generic->FindByName(fields->content[i]->type->ToString());
+			auto type = fields->content[i]->type;
+			if (pos != -1) type = replace_by->content[i]->type;
+			instance->fields->content.push_back(std::make_shared<FieldDecl>(fields->content[i]->name, type));
 		}
 
 		const auto full_name = instance->GetFullname() + replace_by->ToString();      //eg:  "NAMESPACE::CLASSNAME<int,float>"
 		if (!context->ExistClass(full_name)) {
 			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
-			return;
+			return nullptr;
 		}
 		context->program->declarations.push_back(instance);
 		instance->AnalysisHeader(context);
+		return instance;
 	}
 
     std::shared_ptr<CustomType> ClassDecl::GetType() {
@@ -166,13 +166,15 @@ namespace AST {
 
 #pragma region  CodeGen
 	void ClassDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
+		if (is_template)return;
         auto the_struct = llvm::StructType::create(ctx->context, GetFullname());
 	}
 
 	void ClassDecl::Gen(const std::shared_ptr<DFContext> ctx) {
-		auto the_struct = ctx->module->getTypeByName(GetFullname());    //Get the LLVM::Struct
+        if(is_template)return;
+        auto the_struct = ctx->module->getTypeByName(GetFullname());    //Get the LLVM::Struct
 		std::vector<llvm::Type*> llvm_class_field_types;
-		for (const auto& field: fields->fields) llvm_class_field_types.push_back(field.type->ToLLVM(ctx));
+		for (const auto& field: fields->content) llvm_class_field_types.push_back(field->type->ToLLVM(ctx));
 		the_struct->setBody(llvm_class_field_types);
 	}
 

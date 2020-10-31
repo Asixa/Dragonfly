@@ -5,69 +5,7 @@ class A
   init(x:int){ some =x;}
 }
 
-class B
-{
-  thing:int;
-  init(x:int){ thing =x;}
-}
-
-struct C
-{
-  thing:int;
-  init(x:int){ thing =x;}
-}
- 
-func foo<T>(t:T):T
-{
-	return t
-}
-
-
-class Pair<K,V>
-{
-   a:K
-   b:V
-   init(x:K,y:V)
-   {
-    a=x
-	b=y
-   }
-   func left():K => return a
-   func right():V => return b
-   func foo<T>(t:T):T=>return t
-}
 
 var a = A(1)
-var f = foo<A>(a)
-a.some=11
-var b = B(2)
-var c = C(3)
-var p=Pair<A,B>(a,b)
-var p2=Pair<B,A>(b,a)
 
-printf("there is an if:\n");
-var sss = 10;
-if(sss == 10) {
-  printf("true\n");
-} else {
-  printf("false\n");
-}
-
-printf("there is a for:\n");
-for(var i: int = 10; i > 0; i = i - 1) {
-  printf("%d\n", i);
-}
-
-printf("a: %d f: %d b:%d \n",a.some,f.some,b.thing)
-printf("pair.a: %d pair.b: %d \n",p.left(),p.right())
-printf("pair2.b: %d pair2.a: %d \n",p2.left(),p2.right())
-a.some=111
-b.thing=222
-printf("pair.a: %d pair.b: %d \n",p.left(),p.right())
-printf("pair2.b: %d pair2.a: %d \n",p2.left(),p2.right())
-
-var p3=Pair<B,C>(b,c)
-printf("pair3.b: %d pair3.c: %d \n",p3.left(),p3.right())
-c.thing=333
-printf("pair3.b: %d pair3.c: %d \n",p3.left(),p3.right())
-printf("p3 . a :%d \n",p3.foo<A>(a).some)
+printf("%d\n",a.some)
