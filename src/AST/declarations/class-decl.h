@@ -41,6 +41,7 @@ namespace AST {
 
 			ClassDecl() {
 				fields = std::make_shared<FieldList>();
+				isClass = true;
 			};
             explicit ClassDecl(ClassDecl*);
 

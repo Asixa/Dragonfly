@@ -65,7 +65,7 @@ public:
 	llvm::BasicBlock* block_end;
 	AST::decl::FunctionDecl* current_function;
 
-	bool ExistClass(std::string){return false;}
+	bool ExistClass(std::string);
 
 	explicit DFContext(){}
     explicit DFContext(std::shared_ptr<AST::Program> program);

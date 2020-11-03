@@ -40,6 +40,7 @@ namespace AST {
 
 		virtual llvm::Type* ToLLVM(std::shared_ptr<DFContext>) = 0;
 		virtual std::string ToString() = 0;
+		// virtual std::shared_ptr<Type> Copy() = 0;
 		static std::shared_ptr<AST::Type> Match();
 	};
 
@@ -54,6 +55,7 @@ namespace AST {
 		static std::shared_ptr<AST::Type> String,Int, Long, Float, Double,Void,Void_Ptr,Boolean;
 		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
 		std::string ToString()override;
+		// std::shared_ptr<Type> Copy()override;
     };
 	class  CustomType : public Type {
 		std::string str = "";
@@ -66,6 +68,7 @@ namespace AST {
 		static std::shared_ptr<AST::CustomType> Match();
 
 		llvm::Type* ToLLVM(std::shared_ptr<DFContext>) override;
+		// std::shared_ptr<Type> Copy()override;
 		std::string ToString()override;
 
 	};

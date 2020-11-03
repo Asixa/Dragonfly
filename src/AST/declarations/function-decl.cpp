@@ -15,14 +15,14 @@ namespace AST {
 		// if (func_name == BUILTIN_TAG"init")func_name= "";
 		return func_name +
 			(generic_instance_info == nullptr ? "" : generic_instance_info->ToString())+
-			args->ToString();
+			(is_generic_template?"":args->ToString());
 	}
 
-    FunctionDecl::FunctionDecl() { keyword = 0;  }
+	FunctionDecl::FunctionDecl() { keyword = 0; isClass = false; }
 
 	FunctionDecl::FunctionDecl(std::shared_ptr < FunctionDecl>  copy) {
 		*this = *copy;
-		args =copy->args;
+		args = std::make_shared<FieldList>(copy->args);
 	}
 
 
@@ -129,7 +129,7 @@ namespace AST {
 		instance->is_generic_template = false;
 		instance->AnalysisHeader(ctx);
 		instance->generic_instance_info = param;
-		ctx->program->late_gen.push_back(instance);
+		ctx->program->declarations.push_back(instance);
 		printf("[Instantiate Generic Function]:%s \n", instance->GetFullname().c_str());
 		ctx->functions_table[instance->GetFullname()] = instance;
 		return instance;
@@ -143,7 +143,6 @@ namespace AST {
 			if (pos != -1)
 				args->content[i]->type = generic_instance->content[pos]->type;
 		}
-
         //Replace Return Type
 		const auto pos = generic_decl->FindByName(return_type->ToString());
 		if (pos != -1)
@@ -164,6 +163,11 @@ namespace AST {
 			return;
 		}
 		ctx->functions_table[full_name] = std::shared_ptr<FunctionDecl>(this);
+		// added this in the argument list
+		if (is_member_function) {
+			args->content.insert(args->content.begin(),
+				std::make_shared<FieldDecl>("this", std::static_pointer_cast<ClassDecl>(parent)->GetType()));
+		}
 	}
 	void FunctionDecl::Analysis(std::shared_ptr<DFContext>ctx) {
 		auto const is_member_function = parent != nullptr;
@@ -177,11 +181,7 @@ namespace AST {
 			}
 		}
 
-		// added this in the argument list
-		if (is_member_function) {
-			args->content.insert(args->content.begin(), 
-				std::make_shared<FieldDecl>("this",std::static_pointer_cast<ClassDecl>(parent)->GetType()));
-		}
+	
 	}
 
 	void FunctionDecl::GenHeader(std::shared_ptr<DFContext> ctx) {
@@ -189,25 +189,20 @@ namespace AST {
 		// function llvm arguments' type.
 		std::vector<llvm::Type*> llvm_arg_types;
 		for (auto& parameter : args->content) {
-			if ((parameter->type->category == Type::Custom
-				&& std::static_pointer_cast<CustomType>(parameter->type)->decl->category == ClassDecl::kClass)
-				|| parameter->name == "this") {
-				printf("this depth %d\n", ctx->GetPtrDepth(parameter->type->ToLLVM(ctx)));
-				llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
-			}
+			// if ((parameter->type->category == Type::Custom
+			// 	&& std::static_pointer_cast<CustomType>(parameter->type)->decl->category == ClassDecl::kClass)
+			// 	|| parameter->name == "this") {
+			// 	llvm_arg_types.push_back(parameter->type->ToLLVM(ctx)->getPointerTo());
+			// }
            
-			else llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
+			 llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
 		}
 			
 	    // create the function type.
 		const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), llvm_arg_types, args->IsVariableArgument());
 		// create the function
 
-		printf("decl %s       ", GetFullname().c_str());
-        for (auto ty: llvm_arg_types) {
-			printf("%d,", ctx->GetPtrDepth(ty));
-        }
-		printf("\n");
+
 		auto the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, GetFullname(), ctx->module.get());
 		// add name for arguments.
 		unsigned idx = 0;

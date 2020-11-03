@@ -27,13 +27,6 @@ AST::decl::FunctionDecl* DFContext::GetFuncTemplate(std::string name) {
 std::shared_ptr<AST::decl::FunctionDecl> DFContext::GetFunctionDecl(std::string name) {
 	if (functions_table.find(name) != functions_table.end())
 		return functions_table[name];
-	printf("find func %s\n", name.c_str());
-
-	for (std::map<std::string, std::shared_ptr<AST::decl::FunctionDecl>>::iterator it = extern_functions_table.begin(); it != extern_functions_table.end(); ++it)
-	{
-		std::cout << "              " << it->first  << std::endl;
-	}
-
 	if (extern_functions_table.find(name) != extern_functions_table.end())
 		return extern_functions_table[name];
 	return nullptr;
@@ -249,6 +242,9 @@ int DFContext::GetCustomTypeCategory(const std::string ty) {
 }
 
 
+bool DFContext::ExistClass(std::string name) {
+	return  (types_table.find(name) != types_table.end());
+}
 
 DFContext::DFContext(std::shared_ptr<AST::Program> program) {
     if(program==nullptr)return;

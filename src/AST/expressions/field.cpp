@@ -68,14 +68,32 @@ namespace AST {
 
 	std::shared_ptr<AST::Type> Field::Analysis(std::shared_ptr<DFContext>ctx) { return AnalysisField(ctx, nullptr); }
     std::shared_ptr<AST::Type> Field::AnalysisField(std::shared_ptr<DFContext>ctx, std::shared_ptr<AST::Type> parent) {
-		printf("[Analysis field]");
+
+		std::shared_ptr<AST::Type> v;
         if(!parent) {
-			auto v = ctx->ast->GetField(name);
-			printf("[Analysis] Field %s:%s\n", name.c_str(), v->ToString().c_str());
-			return v;
+
+			v = ctx->ast->GetField(name);
+            if(!v) {
+				Debugger::ErrorV((std::string("Unknown Variable :") + name ).c_str(), line, ch);
+				return nullptr;
+            }
         }
-		
-		return nullptr;
+        else {
+			
+			v = ctx->ast->GetMemberField(parent,name);
+			if (!v) {
+				Debugger::ErrorV((std::string("cannot get field from variable: ") + parent->ToString() + "." + name + "\n").c_str(),line,ch);
+				return nullptr;
+			}
+        }
+
+		if (child != nullptr)
+		{
+			child->is_ptr = is_ptr;
+			v = child->AnalysisField(ctx, v);
+		}
+
+		return v;
 	}
 
     llvm::Value* Field::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* parent) {
@@ -92,31 +110,28 @@ namespace AST {
 
 			v = ctx->llvm->GetMemberField(parent, name);
 		}
-		printf("child %d %s  \n      > %s<<<<<<<<<<<<<\n", child != nullptr, name.c_str(), ctx->DebugValue(v).c_str());
+		
 		// if this field is not done yet. finish it.
 		if (child != nullptr) {
 			child->is_ptr = is_ptr;
 			v = child->GenField(ctx, v);
 		}
-		// printf("CREATE LOAD? %d",is_ptr);
-  //       if(is_ptr||ctx->GetStructName(v->getType())=="void*"||name=="this"){ return v; }
-		// printf("CREATE LOAD");
-  //       v=ctx->AlignLoad(ctx->builder->CreateLoad(v));
-		// return v;
 
   //       If we want the constant, when load the pointer.
 		// This only done in entry node where parent is null.
 		if (parent == nullptr) {
-			printf("is_ptr? %d \n", is_ptr);
-			if (is_ptr) { printf("NOT  --isptr\n"); }
-			else if (v->getType()->getTypeID() != llvm::Type::PointerTyID) { printf("NOT  --ID\n"); }
-			else if (child == nullptr && (name == "this" || name == "base")) { printf("NOT  --this\n"); }
-			else if (ctx->GetStructName(v->getType()) == "void*") {
-				printf("NOT  --void\n");
-			}
+			auto type = ctx->GetStructName(v->getType());
+			if (is_ptr) {  }
+			else if (v->getType()->getTypeID() != llvm::Type::PointerTyID) {  }
+			else if (child == nullptr && (name == "this" || name == "base")) {  }
+			else if (type == "void*") { }
+            else if(ctx->types_table.find(type)!=ctx->types_table.end() && ctx->types_table[type]->category== decl::ClassDecl::kClass) {
+                 if(!is_ptr) {
+                     while (ctx->GetPtrDepth(v)>1) 
+						 v = ctx->AlignLoad(ctx->builder->CreateLoad(v));
+                 }
+            }
             else {
-                // TODO load once is not safe, should loop untill it is constant.
-                printf("LOADDDDDDDDDDDD\n");
                 return ctx->AlignLoad(ctx->builder->CreateLoad(v));
             }
         }

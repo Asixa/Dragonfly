@@ -34,7 +34,7 @@ namespace AST {
     FieldList::FieldList(std::shared_ptr<FieldList> copy) {
 	    type = copy->type;
         for (auto field : copy->content) 
-			content.push_back(field);
+			content.push_back(std::make_shared<FieldDecl>(field));
 	}
 
     FieldList::FieldList(std::vector<std::shared_ptr<AST::Type>>& type) {

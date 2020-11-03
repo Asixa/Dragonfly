@@ -9,9 +9,10 @@ namespace AST {
 		 * All declarations will be generated before Statements
 		 */
 		class Declaration : public stmt::Statement {
+            
 		public:
 			std::shared_ptr<Declaration>parent=nullptr; ///< [untested] parent of this declaration. nullptr if there is no parent.
-			
+			bool isClass;
             /**
 			 * \brief Generate the IR code.\n
 			 * will always be called before ``Gen()`` \n

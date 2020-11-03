@@ -99,6 +99,12 @@ llvm::Type* AST::CustomType::ToLLVM(std::shared_ptr<DFContext> ctx) {
 	return llvm_type;
 }
 
+// std::shared_ptr<AST::Type> AST::CustomType::Copy() {
+// 	auto cp= std::make_shared<AST::CustomType>();
+// 	cp->str = str;
+// 	return cp;
+// }
+
 std::string AST::CustomType::ToString() { return  str; }
 
 std::shared_ptr<AST::Type> AST::Tuple::Match() {

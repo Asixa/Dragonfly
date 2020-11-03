@@ -75,10 +75,19 @@ namespace AST {
 		
 		for (auto& declaration : declarations) 
 			try { declaration->Gen(context); }catch (int e) {}
-
-		// for (auto i = 0; i < late_declarations.size(); i++)
-		// 	try { late_declarations[i]->GenHeader(); } catch (int e) {}
-         
+		//
+		// for (auto i = 0; i < late_decl.size(); i++)
+		// 	try { late_decl[i]->GenHeader(context); } catch (int e) {}
+		// for (auto i = 0; i < late_decl.size(); i++)
+		// 	try { late_decl[i]->Gen(context); }
+		// catch (int e) {}
+		//
+		// for (auto i = 0; i < late_decl_f.size(); i++)
+		// 	try { late_decl_f[i]->GenHeader(context); }
+		// catch (int e) {}
+		// for (auto i = 0; i < late_decl_f.size(); i++)
+		// 	try { late_decl_f[i]->Gen(context); }
+		// catch (int e) {}
 
 
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(context->void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", context->module.get());
@@ -95,12 +104,23 @@ namespace AST {
 		context->builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context->context), 0));
 		context->llvm->EndScope();
 
-		for (auto i = 0; i < late_gen.size(); i++)
-			try { late_gen[i]->Gen(context); }catch (int e) {}
+		// for (auto i = 0; i < late_decl.size(); i++)
+		// 	try { late_decl[i]->Gen(context); }catch (int e) {}
 
 
 		verifyFunction(*main_func);
 	}
+	static bool sortByName(std::shared_ptr<decl::Declaration> a, std::shared_ptr<decl::Declaration>b) {
+		return a->isClass;
+    }
+
+	struct SortFunctor
+	{
+		bool operator()(std::shared_ptr<decl::Declaration>& object1, std::shared_ptr<decl::Declaration>& object2)
+		{
+			return object1->isClass;
+		}
+	};
 
     void Program::Analysis(std::shared_ptr<DFContext> context) {
 		DFContext::BuildInFunc(context, "malloc", BasicType::Void_Ptr, { BasicType::Int });
@@ -112,8 +132,8 @@ namespace AST {
 			try { declarations[i]->AnalysisHeader(context);  }
 		catch (int e) {}
 
-		for (auto& declaration : declarations)
-			try { declaration->Analysis(context);}
+		for (auto i = 0; i < declarations.size(); i++)
+			try { declarations[i]->Analysis(context);}
 		catch (int e) {}
 
 		context->ast->CreateScope();
@@ -121,6 +141,30 @@ namespace AST {
 			try { if (statement != nullptr)statement->Analysis(context); }
 		catch (int e) {}
 		context->ast->EndScope();
+
+		for (auto i = 0; i < late_decl.size(); i++)
+			try { late_decl[i]->Analysis(context); }
+		catch (int e) {}
+
+
+
+
+        for (auto decl : late_decl) {
+			declarations.push_back(decl);
+        }
+		printf(" total types count: %d\n", context->types_table.size());
+		std::vector<std::shared_ptr<decl::Declaration>> decls;
+		for (auto decl : declarations) if (decl->isClass&&!std::static_pointer_cast<ClassDecl>(decl)->is_template)decls.push_back(decl);
+		for (auto decl : late_decl) if (decl->isClass&& !std::static_pointer_cast<ClassDecl>(decl)->is_template)decls.push_back(decl);
+		for (auto decl : declarations) if (!decl->isClass&&!std::static_pointer_cast<FunctionDecl>(decl)->is_generic_template)decls.push_back(decl);
+		for (auto decl : late_decl) if (!decl->isClass&&!std::static_pointer_cast<FunctionDecl>(decl)->is_generic_template)decls.push_back(decl);
+		declarations = decls;
+        for (auto decl : declarations) {
+			printf(" decl is class %s   %s\n", decl->isClass ? "true" : "false", decl->GetFullname().c_str());
+  
+        }
+		// std::sort(declarations.begin(),declarations.end(), SortFunctor());
+
     }
 }
 

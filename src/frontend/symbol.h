@@ -32,6 +32,7 @@ namespace frontend {
 		void EndScope();
 		void AddField(std::string, std::shared_ptr<AST::Type>);
 		std::shared_ptr<AST::Type> GetField(std::string);
+		std::shared_ptr<AST::Type> GetMemberField(std::shared_ptr<AST::Type>, std::string name);
 	};
 
 	class LLVMSymbol {

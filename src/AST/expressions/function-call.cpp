@@ -53,6 +53,7 @@ namespace AST {
 
 		// true if nested function call like A().B(), then we left-DFS
 		// TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
+		
 		if (left != nullptr) parent = left->AnalysisField(ctx, parent);
 
 
@@ -60,16 +61,30 @@ namespace AST {
 		// if true, parent is the value of a.
         is_member_func = parent != nullptr;
 		callee_name = is_member_func ? parent->ToString() + JOINER_TAG + name : name;
+		
 		if (generic) {
 			const auto template_class_decl = ctx->GetClassTemplate(callee_name);
 			const auto template_func_decl = ctx->GetFuncTemplate(callee_name);
-			if (template_class_decl != nullptr)  template_class_decl->InstantiateTemplate(ctx, generic);
-			else if(template_func_decl!=nullptr) template_func_decl->InstantiateTemplate(ctx, generic);
+			if (template_class_decl != nullptr) {
+				class_type =template_class_decl->InstantiateTemplate(ctx, generic)->GetType();
+				callee_name += generic->ToString()+JOINER_TAG+BUILTIN_TAG+"init";
+				is_constructor = true;
+				is_member_func = true;
+				printf("Template class init called  %s\n", callee_name.c_str());
+
+			}
+			else if (template_func_decl != nullptr) {
+				template_func_decl->InstantiateTemplate(ctx, generic);
+				callee_name += generic->ToString();
+			}
 			else {
+                for (std::map<std::string, decl::FunctionDecl*>::iterator it = ctx->function_template_table.begin(); it != ctx->function_template_table.end(); ++it) {
+					printf("    %s\n", it->first.c_str());
+                }
+
 				Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
 				return nullptr;
 			}
-			callee_name += generic->ToString();
 		}
 
 		if (ctx->IsCustomType(callee_name)) {
@@ -98,7 +113,7 @@ namespace AST {
 		if (!func) func = ctx->GetFunctionDecl(callee_name + param_name);
 		
         if(!func) {
-			 Debugger::ErrorV((std::string("Unknown function referenced :") + callee_name + param_name).c_str(), line, ch);
+			 Debugger::ErrorV((std::string("Unknown function referenced:") + callee_name + param_name).c_str(), line, ch);
 			 return nullptr;
         }
 		// here we found the callee!
@@ -107,10 +122,10 @@ namespace AST {
 
 		if (!func->args->IsVariableArgument()&&func->args->content.size() != args.size() + (is_member_func ? 1 : 0) ) {
 			Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
-				std::to_string(func->args->content.size()) + " needed, but got " + std::to_string(args.size()) +" instead").c_str(), line, ch);
+				std::to_string(func->args->content.size()) + " needed, but got " + std::to_string(args.size() + (is_member_func ? 1 : 0)) +" instead").c_str(), line, ch);
 			return nullptr;
 		}
-
+		printf("CALL %s\n", callee_name.c_str());
 		return is_constructor?class_type:func->return_type;
 	}
 
@@ -135,10 +150,7 @@ namespace AST {
 		std::vector<llvm::Value*> args_v;
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
 			// val is the llvm::Value* of current argument experssion.
-			auto val = args[i]->Gen(ctx,is_ptr);
-
-
-
+			auto val = args[i]->Gen(ctx,false);
 			if (ctx->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
 				while (ctx->GetPtrDepth(val) != 0)
 					val = ctx->builder->CreateLoad(val);
@@ -151,7 +163,6 @@ namespace AST {
   
 		// here we check if the func is a constructor
 		if (is_constructor) {
-			printf("it is constrcutor\n");
 			switch (class_type->decl->category) {
 			case ClassDecl::kClass: 
 				_this = ctx->Malloc(class_type->ToLLVM(ctx)->getPointerElementType());
@@ -168,7 +179,6 @@ namespace AST {
 
 		// now we add the hidden pointer to the args list if it is a member function. //TODO catch errors like pass a value
 		if (is_member_func) {
-			printf("it is member func\n");
 			const auto ptr_depth = ctx->GetPtrDepth(_this);
 			auto this_arg = _this;
 			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
@@ -184,12 +194,10 @@ namespace AST {
             const auto ty = ctx->module->getTypeByName(name);
 			printf("%s\n", name.c_str());
 			if (ty) {
-				printf("try get callee %s\n", (callee_name + param_name).c_str());
 				if (ctx->GetFunction(callee_name + param_name) != nullptr) {
 					is_member_func = true;
 					callee_name +=param_name;
 					is_constructor = true;
-					printf("---------------");
                     //HACK
 					_this = ctx->Malloc(ty->getPointerTo());
 					const auto ptr_depth = ctx->GetPtrDepth(_this);
@@ -212,19 +220,16 @@ namespace AST {
   
 		// if we still cannot find the function, we could now throw a error.
 		if (!callee)
-			return Debugger::ErrorV((std::string("Unknown function referenced :") + callee_name).c_str(),line,ch);
-		
+			return Debugger::ErrorV((std::string("Unknown function referenced in GEN:") + callee_name).c_str(),line,ch);
 		
         while (ctx->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
 			args_v[0] = ctx->builder->CreateLoad(args_v[0]);
 
-		printf("this ptr depth %d\n", ctx->GetPtrDepth(args_v[0]));
-         
-		printf("args_v size %d - %d    %d\n", args_v.size(),callee->arg_size(), ctx->GetPtrDepth(callee->getArg(0)->getType()));
-		printf("     %s\n", ctx->DebugValue(args_v[0]).c_str());
-		printf("     %s\n", ctx->DebugValue(args_v[1]).c_str());
 
-
+		
+        for(auto i=0;i<callee->arg_size();i++) {
+			printf("%s *%d == %s *%d\n", ctx->GetStructName(callee->getArg(i)).c_str(), ctx->GetPtrDepth(callee->getArg(i)), ctx->GetStructName(args_v[i]).c_str(), ctx->GetPtrDepth(args_v[i]));
+        }
 		// call the function and save it to v
 		llvm::Value* value = ctx->builder->CreateCall(callee, args_v);
 		

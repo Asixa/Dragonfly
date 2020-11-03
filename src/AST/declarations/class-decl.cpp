@@ -9,7 +9,7 @@ namespace AST {
    
     // copy from
     ClassDecl::ClassDecl(ClassDecl* from) {
-		fields = from->fields;
+		fields = std::make_shared<FieldList>();
 		is_template = from->is_template;
 		category = from->category;
 		name = from->name;
@@ -111,13 +111,14 @@ namespace AST {
 		// Add subfunction to global decalarations
 		for (auto& function : functions) {
 			function->parent= this_ptr;
-			if (generic_info)function->PassGeneric(generic_info);
+			if (generic_info)function->PassGeneric(generic_info,generic);
 			ctx->program->declarations.push_back(function);
 		}
 	}
 
 
     void ClassDecl::Analysis(std::shared_ptr<DFContext>ctx) {
+		if (is_template) return;
 		if (!interfaces.empty()) {
             for(auto i=0;i<interfaces.size();i++) {
 				auto inherit = interfaces[i];
@@ -140,9 +141,10 @@ namespace AST {
     // Called at Analysis State
 	std::shared_ptr<ClassDecl> ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> context,std::shared_ptr<FieldList> replace_by) {
 
-		const auto instance = std::shared_ptr<ClassDecl>(this);
+		const auto instance = std::make_shared<ClassDecl>(this);
 		instance->is_template = false;
 		instance->generic_info = replace_by;
+		instance->generic = std::make_shared<FieldList>(generic);
 		// Here replace all Generic Types to Real Types, instance.fields will be change, also the generic functions
 		for (int i = 0, size = fields->content.size(); i < size; ++i) {
             const auto pos = generic->FindByName(fields->content[i]->type->ToString());
@@ -151,12 +153,25 @@ namespace AST {
 			instance->fields->content.push_back(std::make_shared<FieldDecl>(fields->content[i]->name, type));
 		}
 
-		const auto full_name = instance->GetFullname() + replace_by->ToString();      //eg:  "NAMESPACE::CLASSNAME<int,float>"
-		if (!context->ExistClass(full_name)) {
-			Debugger::ErrorV((std::string("Type ") + full_name + " already defined").c_str(), line, ch);
-			return nullptr;
-		}
+		const auto full_name = instance->GetFullname();      //eg:  "NAMESPACE::CLASSNAME<int,float>"
+
+        if (context->ExistClass(full_name))return context->types_table[full_name]->decl;
+
+		instance->Analysis(context);
+		for (int i=0;i<functions.size();i++)
+            instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
 		context->program->declarations.push_back(instance);
+		context->types_table[full_name] = instance->GetType();
+		printf("[Instantiate Template]:   %s\n", full_name.c_str());
+		printf("[Instantiate Template] %s to %s\n", generic->ToString().c_str(), replace_by->ToString().c_str());
+		for (auto& function : instance->functions) {
+			function->parent= instance;
+			function->PassGeneric(replace_by, generic);
+			function->AnalysisHeader(context);
+			printf("[Instantiate Template sub functions]:   %s    %d\n", function->GetFullname().c_str(),context->GetFunctionDecl(function->GetFullname())!=nullptr);
+			context->program->late_decl.push_back(function);
+		}
+	
 		// instance->AnalysisHeader(context);
 		return instance;
 	}
@@ -175,6 +190,7 @@ namespace AST {
 
 	void ClassDecl::Gen(const std::shared_ptr<DFContext> ctx) {
         if(is_template)return;
+		printf("gen body %s\n", GetFullname().c_str());
         auto the_struct = ctx->module->getTypeByName(GetFullname());    //Get the LLVM::Struct
 		std::vector<llvm::Type*> llvm_class_field_types;
 		for (const auto& field: fields->content) llvm_class_field_types.push_back(field->type->ToLLVM(ctx));

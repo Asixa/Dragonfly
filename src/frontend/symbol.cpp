@@ -21,6 +21,21 @@ std::shared_ptr<AST::Type> frontend::Symbol::GetField(std::string k) {
 	return nullptr;
 }
 
+std::shared_ptr<AST::Type> frontend::Symbol::GetMemberField(std::shared_ptr<AST::Type>type, std::string name) {
+
+    if(type->category==AST::Type::Custom) {
+		auto decl =ctx->types_table[type->ToString()] ->decl;
+		if (!decl)return nullptr;
+		printf("find sub field %s\n", name.c_str());
+        const auto idx=decl->fields->FindByName(name);
+		if (idx != -1)
+			return decl->fields->content[idx]->type;
+    }
+    else {
+		return nullptr;
+    }
+}
+
 
 void frontend::LLVMSymbol::CreateScope() {
 	fields.push_back(std::map<std::string, llvm::Value*>());
@@ -151,6 +166,10 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
 		}
 		return Debugger::ErrorV("Cannot find field... \n", -1, -1);
 	}
+	printf("%d\n",ctx->GetPtrDepth(obj));
+    while (ctx->GetPtrDepth(obj)>1) {
+		obj = ctx->builder->CreateLoad(obj);
+    }
 	return  ctx->builder->CreateStructGEP(obj, idx);
 }
 

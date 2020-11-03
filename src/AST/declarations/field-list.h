@@ -13,6 +13,7 @@ namespace AST {
 			std::shared_ptr<AST::Type> type;
 			int generic;
 			FieldDecl(std::string name, std::shared_ptr<AST::Type> type) :name(name), type(type), generic(false) {}
+			FieldDecl(std::shared_ptr<FieldDecl>copy) :name(copy->name), type(copy->type), generic(copy->generic) {}
 
 		};
 
