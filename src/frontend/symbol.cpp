@@ -171,7 +171,16 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
     while (ctx->GetPtrDepth(obj)>1) {
 		obj = ctx->builder->CreateLoad(obj);
     }
-	printf("GETGEP %d\n", ctx->GetPtrDepth(obj));
+	printf(" return constant %s\n", ctx->GetStructName(obj).c_str());
+
+	
+	auto depth = ctx->GetPtrDepth(obj);
+	
+    if(depth ==0) {
+		const auto alloca = ctx->CreateEntryBlockAlloca(obj->getType(), name);
+		ctx->AlignStore(ctx->builder->CreateStore(obj, alloca));
+		obj = alloca;
+    }printf("GETGEP %d\n", ctx->GetPtrDepth(obj));
 	return  ctx->builder->CreateStructGEP(obj, idx);
 }
 
