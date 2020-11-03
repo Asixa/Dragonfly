@@ -1,3 +1,4 @@
+
 class A
 {
   some:int;
@@ -40,6 +41,10 @@ var a = A(1)
 var f = foo<A>(a)
 a.some=11
 var b = B(2)
+var c = C(3)
 var p=Pair<A,B>(a,b)
 var p2=Pair<B,A>(b,a)
-printf("Hello?\n")
+
+
+printf("a: %d f: %d b:%d \n",a.some,f.some,b.thing)
+printf("pair.a: %d pair.b: %d \n",p.left(),p.right())

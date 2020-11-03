@@ -229,6 +229,11 @@ namespace AST {
 		
         for(auto i=0;i<callee->arg_size();i++) {
 			printf("%s *%d == %s *%d\n", ctx->GetStructName(callee->getArg(i)).c_str(), ctx->GetPtrDepth(callee->getArg(i)), ctx->GetStructName(args_v[i]).c_str(), ctx->GetPtrDepth(args_v[i]));
+			auto wantPtr = ctx->GetPtrDepth(callee->getArg(i));
+			auto havePtr = ctx->GetPtrDepth(args_v[i]);
+            while (ctx->GetPtrDepth(args_v[i])>wantPtr) {
+				args_v[i] = ctx->builder->CreateLoad(args_v[i]);
+            }
         }
 		// call the function and save it to v
 		llvm::Value* value = ctx->builder->CreateCall(callee, args_v);

@@ -115,12 +115,14 @@ llvm::Value* frontend::LLVMSymbol::GetField(const std::string name, bool cmd) {
 	}
 	if (!v && fields.back().find("this") != fields.back().end()) {
 		auto this_ptr = fields.back()["this"];
-		auto this_fields = ctx->types_table[ctx->GetStructName(this_ptr)]->decl->fields;
+		printf("this ptr depth %d\n", ctx->GetPtrDepth(this_ptr));
+		auto this_decl = ctx->types_table[ctx->GetStructName(this_ptr)]->decl;
+		auto this_fields = this_decl->fields;
 		if (this_fields->FindByName(name) != -1) {
 			// while (ctx->GetPtrDepth(this_ptr) > 1)
 			// 	this_ptr = ctx->builder->CreateLoad(this_ptr);
 			v = ctx->llvm->GetMemberField(this_ptr, name);
-            v = !cmd ? ctx->builder->CreateLoad(v, "this." + name) : v;
+            v = !cmd && this_decl->category== AST::decl::ClassDecl::kClass ? ctx->builder->CreateLoad(v, "this." + name) : v;
 		}
 	}
 
@@ -166,10 +168,10 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
 		}
 		return Debugger::ErrorV("Cannot find field... \n", -1, -1);
 	}
-	printf("%d\n",ctx->GetPtrDepth(obj));
     while (ctx->GetPtrDepth(obj)>1) {
 		obj = ctx->builder->CreateLoad(obj);
     }
+	printf("GETGEP %d\n", ctx->GetPtrDepth(obj));
 	return  ctx->builder->CreateStructGEP(obj, idx);
 }
 

@@ -194,12 +194,15 @@ namespace AST {
 			// 	|| parameter->name == "this") {
 			// 	llvm_arg_types.push_back(parameter->type->ToLLVM(ctx)->getPointerTo());
 			// }
-           
-			 llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
+            if(parameter->name=="this" &&ctx->types_table[parameter->type->ToString()]->decl->category== ClassDecl::kStruct)
+				llvm_arg_types.push_back(parameter->type->ToLLVM(ctx)->getPointerTo());
+			else llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
 		}
 			
 	    // create the function type.
 		const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), llvm_arg_types, args->IsVariableArgument());
+
+       
 		// create the function
 
 
