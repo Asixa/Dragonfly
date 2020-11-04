@@ -57,7 +57,6 @@ std::shared_ptr<NestedName> NestedName::Parse(int ty) {
 		instance->names.push_back(Lexer::string_val);
 		Lexer::Match(Id);
 	}
-	printf("Parse %s\n", instance->GetFunctionName().c_str());
 	return instance;
 }
 

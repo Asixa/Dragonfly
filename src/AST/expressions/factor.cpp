@@ -60,7 +60,6 @@ namespace AST {
 			// 	return New::Parse();
 			// }
 		case Id: {
-			printf("[Parsed field]\n");
 			return Field::Parse();
 		}
 		case K_int: case K_short: case K_long: case K_float: case K_double:

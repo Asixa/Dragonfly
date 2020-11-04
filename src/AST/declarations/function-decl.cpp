@@ -68,12 +68,10 @@ namespace AST {
 			function->return_type = Type::Match();
 		}
 		if (ext) {
-			*Debugger::out << "[Parsed] Extern function declaration\n";
 			return function;
 		}
 
 		Lexer::SkipNewlines();
-		*Debugger::out << "[Parsed] Function declaration\n";
 		if (Lexer::Check(Arrow)) {
 			Lexer::Next();
 			function->statements = stmt::Statement::Parse();
@@ -84,7 +82,6 @@ namespace AST {
 			Lexer::SkipNewlines();
 			Lexer::Match('}');
 		}
-		*Debugger::out << "[Parsed] Function end\n";
 		return function;
 	}
 

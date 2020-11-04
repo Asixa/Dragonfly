@@ -15,7 +15,6 @@ namespace AST {
 		}
 		instance->value = expr::Binary::Parse();
 		Lexer::MatchSemicolon();
-		*Debugger::out << "[Parsed] Return Statement\n";
 		return instance;
 	}
 
