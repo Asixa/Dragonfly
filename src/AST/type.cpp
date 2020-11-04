@@ -85,7 +85,6 @@ llvm::Type* AST::CustomType::ToLLVM(std::shared_ptr<DFContext> ctx) {
 	llvm::Type* llvm_type = nullptr;
 	if (ctx->IsCustomType(str)) {
 		const auto ty = ctx->module->getTypeByName(str);
-		printf("Check class to LLVM£º %s  is %s\n", str.c_str(), ctx->types_table[str]->decl->category == AST::decl::ClassDecl::kClass ? "class":"struct");
 		llvm_type = ctx->types_table[str]->decl->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 	}
 	else {

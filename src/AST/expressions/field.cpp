@@ -38,7 +38,6 @@ namespace AST {
 					case '<': //TODO conflict with less than
 					case '(': {
                         const auto child = field;
-						printf("[Parsed FuncCall]\n");
 						field = FuncCall::Parse(name);
 						if (!name.empty())name = "";
 						field->left = child;
@@ -136,8 +135,6 @@ namespace AST {
             }
         }
 		return v;
-		
-
 	}
 
 }

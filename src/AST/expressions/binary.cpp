@@ -12,7 +12,6 @@ namespace AST {
 	}
 
 	std::shared_ptr<AST::Type> Binary::Analysis(std::shared_ptr<DFContext>) {
-	    printf("[Analysis] Binary\n");
 		return nullptr;
 	}
 	llvm::Value* Binary::Gen2(std::shared_ptr<DFContext> ctx) {

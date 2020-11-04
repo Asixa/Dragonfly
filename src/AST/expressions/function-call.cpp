@@ -37,7 +37,6 @@ namespace AST {
 	}
 
     std::shared_ptr<AST::Type> FuncCall::Analysis(const std::shared_ptr<DFContext>ctx) {
-		printf("[Analysis] func call\n");
 		return AnalysisField(ctx, nullptr);
 	}
 
@@ -70,7 +69,6 @@ namespace AST {
 				callee_name += generic->ToString()+JOINER_TAG+BUILTIN_TAG+"init";
 				is_constructor = true;
 				is_member_func = true;
-				printf("Template class init called  %s\n", callee_name.c_str());
 
 			}
 			else if (template_func_decl != nullptr) {
@@ -78,10 +76,6 @@ namespace AST {
 				callee_name += generic->ToString();
 			}
 			else {
-                for (std::map<std::string, decl::FunctionDecl*>::iterator it = ctx->function_template_table.begin(); it != ctx->function_template_table.end(); ++it) {
-					printf("    %s\n", it->first.c_str());
-                }
-
 				Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
 				return nullptr;
 			}
@@ -97,7 +91,6 @@ namespace AST {
 			// we add back the  front name.
 			is_member_func = true;
 			callee_name = callee_name + JOINER_TAG + "$init";
-			printf("%s is a constructor\n", callee_name.c_str());
 			is_constructor = true;
 		}
 
@@ -106,7 +99,6 @@ namespace AST {
 		for (int i = 0, argv_size = args.size(); i < argv_size; i++)
 			param_name += args[i]->Analysis(ctx)->ToString() + (i == argv_size - 1 ? "" : ",");
 		param_name += ")";
-		printf("analysis function :%s\n", (callee_name + param_name).c_str());
 
 
 		func = ctx->GetFunctionDecl(callee_name);
@@ -125,7 +117,6 @@ namespace AST {
 				std::to_string(func->args->content.size()) + " needed, but got " + std::to_string(args.size() + (is_member_func ? 1 : 0)) +" instead").c_str(), line, ch);
 			return nullptr;
 		}
-		printf("CALL %s\n", callee_name.c_str());
 		return is_constructor?class_type:func->return_type;
 	}
 
@@ -192,7 +183,6 @@ namespace AST {
 	 
 		if (!is_constructor) {
             const auto ty = ctx->module->getTypeByName(name);
-			printf("%s\n", name.c_str());
 			if (ty) {
 				if (ctx->GetFunction(callee_name + param_name) != nullptr) {
 					is_member_func = true;
@@ -225,15 +215,11 @@ namespace AST {
         while (ctx->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
 			args_v[0] = ctx->builder->CreateLoad(args_v[0]);
 
-
-		
         for(auto i=0;i<callee->arg_size();i++) {
-			printf("%s *%d == %s *%d\n", ctx->GetStructName(callee->getArg(i)).c_str(), ctx->GetPtrDepth(callee->getArg(i)), ctx->GetStructName(args_v[i]).c_str(), ctx->GetPtrDepth(args_v[i]));
-			auto wantPtr = ctx->GetPtrDepth(callee->getArg(i));
-			auto havePtr = ctx->GetPtrDepth(args_v[i]);
-            while (ctx->GetPtrDepth(args_v[i])>wantPtr) {
+			// printf("%s *%d == %s *%d\n", ctx->GetStructName(callee->getArg(i)).c_str(), ctx->GetPtrDepth(callee->getArg(i)), ctx->GetStructName(args_v[i]).c_str(), ctx->GetPtrDepth(args_v[i]));
+            const auto want_ptr = ctx->GetPtrDepth(callee->getArg(i));
+            while (ctx->GetPtrDepth(args_v[i])>want_ptr) 
 				args_v[i] = ctx->builder->CreateLoad(args_v[i]);
-            }
         }
 		// call the function and save it to v
 		llvm::Value* value = ctx->builder->CreateCall(callee, args_v);

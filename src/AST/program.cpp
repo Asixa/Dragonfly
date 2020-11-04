@@ -56,18 +56,6 @@ namespace AST {
 
 	void Program::Gen(std::shared_ptr<DFContext> context) {
 
-	
-
-		// context->BuildInFunc("malloc", context->void_ptr,std::vector<llvm::Type*>{context->int32});
-		//
-		// context->BuildInFunc("memcpy", context->void_ptr,
-		// 	std::vector<llvm::Type*>{context->void_ptr, context->void_ptr, context->int32});
-		//
-		// context->BuildInFunc("free", context->void_type,std::vector<llvm::Type*>{context->void_ptr});
-		//
-		// context->BuildInFunc("printf", context->void_type,std::vector<llvm::Type*>{context->void_ptr}, true);
-
-
         // DO not make it into the form like below, because the array will change.
 		for (auto i = 0; i < declarations.size(); i++)
 			try { declarations[i]->GenHeader(context); }
@@ -75,20 +63,6 @@ namespace AST {
 		
 		for (auto& declaration : declarations) 
 			try { declaration->Gen(context); }catch (int e) {}
-		//
-		// for (auto i = 0; i < late_decl.size(); i++)
-		// 	try { late_decl[i]->GenHeader(context); } catch (int e) {}
-		// for (auto i = 0; i < late_decl.size(); i++)
-		// 	try { late_decl[i]->Gen(context); }
-		// catch (int e) {}
-		//
-		// for (auto i = 0; i < late_decl_f.size(); i++)
-		// 	try { late_decl_f[i]->GenHeader(context); }
-		// catch (int e) {}
-		// for (auto i = 0; i < late_decl_f.size(); i++)
-		// 	try { late_decl_f[i]->Gen(context); }
-		// catch (int e) {}
-
 
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(context->void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", context->module.get());
 		context->builder->SetInsertPoint(context->CreateBasicBlock(__df_global_var_init, "entry"));
@@ -104,9 +78,6 @@ namespace AST {
 		context->builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context->context), 0));
 		context->llvm->EndScope();
 
-		// for (auto i = 0; i < late_decl.size(); i++)
-		// 	try { late_decl[i]->Gen(context); }catch (int e) {}
-
 
 		verifyFunction(*main_func);
 	}
@@ -114,13 +85,7 @@ namespace AST {
 		return a->isClass;
     }
 
-	struct SortFunctor
-	{
-		bool operator()(std::shared_ptr<decl::Declaration>& object1, std::shared_ptr<decl::Declaration>& object2)
-		{
-			return object1->isClass;
-		}
-	};
+
 
     void Program::Analysis(std::shared_ptr<DFContext> context) {
 		DFContext::BuildInFunc(context, "malloc", BasicType::Void_Ptr, { BasicType::Int });
@@ -146,23 +111,15 @@ namespace AST {
 			try { late_decl[i]->Analysis(context); }
 		catch (int e) {}
 
-
-
-
-        for (auto decl : late_decl) {
-			declarations.push_back(decl);
-        }
-		printf(" total types count: %d\n", context->types_table.size());
+        
+        for (const auto& decl : late_decl) declarations.push_back(decl);
 		std::vector<std::shared_ptr<decl::Declaration>> decls;
-		for (auto decl : declarations) if (decl->isClass&&!std::static_pointer_cast<ClassDecl>(decl)->is_template)decls.push_back(decl);
-		for (auto decl : late_decl) if (decl->isClass&& !std::static_pointer_cast<ClassDecl>(decl)->is_template)decls.push_back(decl);
-		for (auto decl : declarations) if (!decl->isClass&&!std::static_pointer_cast<FunctionDecl>(decl)->is_generic_template)decls.push_back(decl);
-		for (auto decl : late_decl) if (!decl->isClass&&!std::static_pointer_cast<FunctionDecl>(decl)->is_generic_template)decls.push_back(decl);
+		for (const auto& decl : declarations) if (decl->isClass&&!std::static_pointer_cast<ClassDecl>(decl)->is_template)decls.push_back(decl);
+		for (const auto& decl : declarations) if (!decl->isClass&&!std::static_pointer_cast<FunctionDecl>(decl)->is_generic_template)decls.push_back(decl);
 		declarations = decls;
-        for (auto decl : declarations) {
-			printf(" decl is class %s   %s\n", decl->isClass ? "true" : "false", decl->GetFullname().c_str());
+        for (const auto& decl : declarations)
+			printf("%s   %s\n", decl->isClass ? "Type:     " : "Function: ", decl->GetFullname().c_str());
   
-        }
 		// std::sort(declarations.begin(),declarations.end(), SortFunctor());
 
     }

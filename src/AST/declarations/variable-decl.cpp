@@ -29,21 +29,18 @@ namespace AST {
 	}
 
 	void VariableDecl::Analysis(std::shared_ptr<DFContext> ctx) {
-		printf("[Analysis] VariableDecl\n");
 		if (ctx->ast->GetField(name) != nullptr)
 		{
             //ERROR
+			Debugger::Error(L"name already existed");
+            return;
 		}
-        printf("Analysis by VarDecl\n");
-		auto v = value->Analysis(ctx);
-		printf("Stores variable %s:%s\n", name.c_str(), v->ToString().c_str());
-		ctx->ast->AddField(name,v );
+		ctx->ast->AddField(name, value->Analysis(ctx));
 	}
 
 	void VariableDecl::Gen(std::shared_ptr<DFContext> ctx) {
 
 		const auto val = value->Gen(ctx);
-		// printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ptr depth %d  %d\n", ctx->GetPtrDepth(val), type == nullptr);
 		const auto ty = type==nullptr ? val->getType() : type->ToLLVM(ctx);
 		if (!val) return;
 
@@ -57,8 +54,6 @@ namespace AST {
 		else {
 			const auto the_function = ctx->builder->GetInsertBlock()->getParent();
 			if (the_function->getName() == "main") {
-
-				printf("variable alloca ty ptr:  %d\n", ctx->GetPtrDepth(ty));
 				// All fields in main function are stored in heap. 
 				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name, the_function);
 				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));

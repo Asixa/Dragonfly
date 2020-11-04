@@ -197,14 +197,11 @@ std::string DFContext::GetStructName(llvm::Type* type) {
 }
 
 llvm::Function* DFContext::GetFunction(std::string name) {
-	printf("find %s in [", name.c_str());
-	for (auto i : func_alias_table)printf("%s,", i.first.c_str());
-	printf("]\n");
+	// printf("find %s in [", name.c_str());
+	// for (auto i : func_alias_table)printf("%s,", i.first.c_str());
+	// printf("]\n");
 	if (func_alias_table.find(name) != func_alias_table.end()) {
-
-		printf("find!  %s now named to %s\n", name.c_str(), func_alias_table[name].c_str());
 		name = func_alias_table[name];
-		printf("find real func: %d\n", module->getFunction(name) != nullptr);
 	}
 
 	return module->getFunction(name);

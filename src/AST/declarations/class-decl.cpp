@@ -128,7 +128,6 @@ namespace AST {
 						base_type = cast;
 						fields->content.insert(fields->content.begin(), std::make_shared<FieldDecl>("$base", base_type));
 					}
-                        
                     else if (cast->decl->category != kInterface)
                          Debugger::ErrorV("Multiple inherting is not allowed,it must be interface", line, ch);
                 }
@@ -162,13 +161,12 @@ namespace AST {
             instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
 		context->program->declarations.push_back(instance);
 		context->types_table[full_name] = instance->GetType();
-		printf("[Instantiate Template]:   %s\n", full_name.c_str());
-		printf("[Instantiate Template] %s to %s\n", generic->ToString().c_str(), replace_by->ToString().c_str());
+		printf("[Instantiate Template]:   %s   %s to %s\n", full_name.c_str(), generic->ToString().c_str(), replace_by->ToString().c_str());
 		for (auto& function : instance->functions) {
 			function->parent= instance;
 			function->PassGeneric(replace_by, generic);
 			function->AnalysisHeader(context);
-			printf("[Instantiate Template sub functions]:   %s    %d\n", function->GetFullname().c_str(),context->GetFunctionDecl(function->GetFullname())!=nullptr);
+			printf("        [Instantiate Template sub functions]:   %s   \n", function->GetFullname().c_str());
 			context->program->late_decl.push_back(function);
 		}
 	
@@ -190,7 +188,6 @@ namespace AST {
 
 	void ClassDecl::Gen(const std::shared_ptr<DFContext> ctx) {
         if(is_template)return;
-		printf("gen body %s\n", GetFullname().c_str());
         auto the_struct = ctx->module->getTypeByName(GetFullname());    //Get the LLVM::Struct
 		std::vector<llvm::Type*> llvm_class_field_types;
 		for (const auto& field: fields->content) llvm_class_field_types.push_back(field->type->ToLLVM(ctx));
