@@ -73,7 +73,7 @@ namespace AST {
 
 			v = ctx->ast->GetField(name);
             if(!v) {
-				Debugger::ErrorV((std::string("Unknown Variable :") + name ).c_str(), line, ch);
+				Debugger::ErrorV(line, ch,"Unknown Variable : {}",name );
 				return nullptr;
             }
         }
@@ -81,7 +81,7 @@ namespace AST {
 			
 			v = ctx->ast->GetMemberField(parent,name);
 			if (!v) {
-				Debugger::ErrorV((std::string("cannot get field from variable: ") + parent->ToString() + "." + name + "\n").c_str(),line,ch);
+				Debugger::ErrorV(line, ch,"cannot get field from variable: {}", parent->ToString() + "." + name );
 				return nullptr;
 			}
         }

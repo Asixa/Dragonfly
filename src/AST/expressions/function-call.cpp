@@ -69,14 +69,14 @@ namespace AST {
 				callee_name += generic->ToString();
 			}
 			else {
-				Debugger::ErrorV((std::string("Template not found ") + callee_name).c_str(), line, ch);
+				Debugger::ErrorV(line, ch,"Template '{}' not found ", callee_name);
 				return nullptr;
 			}
 		}
         //check if is a constructor
 		if (ctx->ast->IsCustomType(callee_name)) {
             if(ctx->ast->GetCustomTypeCategory(callee_name) < ClassDecl::kInterface) {
-				Debugger::ErrorV("Cannot call a constructor of a interface or basic type", line, ch);
+				Debugger::ErrorV(line, ch,"Cannot call a constructor of a interface or basic type");
 				return nullptr;
             }
 			class_type = ctx->ast->GetClass(callee_name);
@@ -97,15 +97,16 @@ namespace AST {
 		if (!func) func = ctx->ast->GetFunctionDecl(callee_name + param_name);
 		
         if(!func) {
-			 Debugger::ErrorV((std::string("Unknown function referenced:") + callee_name + param_name).c_str(), line, ch);
+			 Debugger::ErrorV(line, ch,"Unknown function referenced: {}", callee_name + param_name);
 			 return nullptr;
         }
 		// here we found the callee!
         // check if the function argument count matchs.
         // some function could have varible arguments size when IsVariableArgument() is true.
 		if (!func->args->IsVariableArgument()&&func->args->content.size() != args.size() + (is_member_func ? 1 : 0) ) {
-			Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
-				std::to_string(func->args->content.size()) + " needed, but got " + std::to_string(args.size() + (is_member_func ? 1 : 0)) +" instead").c_str(), line, ch);
+			Debugger::ErrorV(line, ch,"Incorrect # arguments passed: {} needed, but got {} instead",
+				std::to_string(func->args->content.size()) ,
+				std::to_string(args.size() + (is_member_func ? 1 : 0)));
 			return nullptr;
 		}
 		return is_constructor?class_type:func->return_type;
@@ -126,7 +127,7 @@ namespace AST {
 			if (ctx->llvm->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
 				while (ctx->llvm->GetPtrDepth(val) != 0)
 					val = ctx->builder->CreateLoad(val);
-			if (!val)return Debugger::ErrorV("arguments passed with error",line,ch);
+			if (!val)return Debugger::ErrorV(line, ch,"arguments passed with error");
 			args_v.push_back(val);
 		}
 
@@ -141,9 +142,9 @@ namespace AST {
 				_this = ctx->llvm->CreateEntryBlockAlloca(class_type->ToLLVM(ctx), callee_name);
 				break;
 			case ClassDecl::kInterface:
-				return  Debugger::ErrorV("Cannot call a constructor of a interface type",line,ch);
+				return  Debugger::ErrorV(line, ch,"Cannot call a constructor of a interface type");
 			default: //here the category should be -1
-				return Debugger::ErrorV("Cannot call a constructor of a basic type", line, ch);
+				return Debugger::ErrorV(line, ch,"Cannot call a constructor of a basic type");
 			}
 		}
 
@@ -189,7 +190,7 @@ namespace AST {
   
 		// if we still cannot find the function, we could now throw a error.
 		if (!callee)
-			return Debugger::ErrorV((std::string("Unknown function referenced in GEN:") + callee_name).c_str(),line,ch);
+			return Debugger::ErrorV(line, ch,"Unknown function referenced: {}",callee_name);
 		
         while (ctx->llvm->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
 			args_v[0] = ctx->builder->CreateLoad(args_v[0]);

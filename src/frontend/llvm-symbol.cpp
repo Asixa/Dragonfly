@@ -47,7 +47,7 @@ llvm::Value* frontend::LLVMSymbol::GetField(const std::string name, bool cmd) {
 	// TODO find v in public Enums
 	// TODO find v in namespaces
 
-	return  !v ? Debugger::ErrorV((std::string("Unknown variable name: ") + mangle_name + "\n").c_str(), -1, -1) : v;
+	return  !v ? Debugger::ErrorV(-1, -1,"Unknown variable name:{}", mangle_name ) : v;
 }
 
 
@@ -80,7 +80,7 @@ llvm::Value* frontend::LLVMSymbol::GetMemberField(llvm::Value* obj, std::string 
 				return  ctx->builder->CreateStructGEP(base, idx);     // after a load, we get A* and return it.
 			}
 		}
-		return Debugger::ErrorV("Cannot find field... \n", -1, -1);
+		return Debugger::ErrorV(-1, -1,"Cannot find field... ");
 	}
 	while (GetPtrDepth(obj) > 1) {
 		obj = ctx->builder->CreateLoad(obj);

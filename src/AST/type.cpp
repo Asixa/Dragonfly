@@ -92,7 +92,7 @@ llvm::Type* AST::CustomType::ToLLVM(std::shared_ptr<DFContext> ctx) {
 		
 		llvm_type = ctx->module->getTypeByName(decl->GetFullname());
 		if (llvm_type == nullptr) {
-            frontend::Debugger::ErrorV((std::string("Unknown Type: ") + str + "\n").c_str(), -1, -1);
+            frontend::Debugger::ErrorV(-1, -1,"Unknown Type: {}", str );
 			return nullptr;
 		}
 	}
@@ -129,7 +129,7 @@ std::shared_ptr<AST::Tensor> AST::Tensor::Match(std::shared_ptr<AST::Type> base)
 	frontend::Lexer::Match('[');
 	if (frontend::Lexer::Check(Num)) {
 		if (frontend::Lexer::token->value != K_int) {
-			frontend::Debugger::Error(L"Value in side a array operator shoule be integer.");
+			frontend::Debugger::Error("Value in side a array operator shoule be integer.");
 			return nullptr;
 		}
 		// type->array = frontend::Lexer::number_val;

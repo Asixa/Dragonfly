@@ -31,7 +31,7 @@ namespace AST {
 
 		auto val = value->Gen(ctx);
 		if (!val) {
-			Debugger::ErrorV("Error in return", line, ch);
+			Debugger::ErrorV(line, ch,"Error in return");
 			return;
 		}
 
@@ -42,7 +42,7 @@ namespace AST {
 	
 		auto const expected = function->getReturnType();
 		if (ctx->llvm->GetStructName(expected) != ctx->llvm->GetStructName(val)) {
-			Debugger::ErrorV("return type not same", line, ch);
+			Debugger::ErrorV(line, ch,"return type not same" );
 			return;
 		}
 		auto const expected_ptr_level = ctx->llvm->GetPtrDepth(expected);

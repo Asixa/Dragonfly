@@ -86,12 +86,38 @@ namespace frontend {
 		static void CatchNewline();
 
 
-		static void Error(const std::wstring info);
-		static void ErrorNonBreak(const std::wstring info);
-		static llvm::Value* ErrorV(const std::wstring info, int line, int ch);
-		static llvm::Value* Debugger::ErrorV(const char* str, int line, int ch);
+		template <typename... T> static void Error(const std::string s, const T& ... args) {
+			error_occurred = true;
+			ErrorNonBreak(s,args...);
+		}
 
-		static void Warn(const std::wstring info);
+		template <typename... T> static void ErrorNonBreak(const std::string s, const T& ... args) {
+			error_existed = true;
+			log_color = kRed;
+			PrintHeader(L"error", line, ch);
+			const std::string  message = fmt::format(s, args...);
+			*out << message.c_str() << std::endl;
+			PrintCode();
+			throw - 1;
+		}
+		template <typename... T> static llvm::Value* ErrorV(int line, int c,const std::string s, const T& ... args) {
+			error_existed = true;
+			log_color = kRed;
+			PrintHeader(L"error", line, ch);
+			const std::string  message = fmt::format(s, args...);
+			*out << message.c_str() << std::endl;
+			if (line != -1)PrintCode(line, ch, ch);
+			throw - 1;
+		}
+
+		template <typename... T>  static void Warn(const std::string s, const T& ... args) {
+			log_color = kGreen;
+			PrintHeader(L"info", line, ch);
+			const std::string  message = fmt::format(s, args...);
+			*out << message.c_str() << std::endl;
+			PrintCode();
+		}
+
 		template <typename... T> static void Info(std::string s, const T& ... args) {
 			log_color = kGreen;
 			PrintHeader(L"info", line, ch);

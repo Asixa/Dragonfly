@@ -47,15 +47,15 @@ namespace AST {
 			if (has_name) 
 				function->nested_name = NestedName::Parse(NestedName::kFunction);
 		}
-		else Debugger::Error(L" function name expected");
+		else Debugger::Error(" function name expected");
 		
 		if (Lexer::Check('<')) {
 			function->is_generic_template=true;
 			if (function->nested_name->GetFunctionName() == BUILTIN_TAG"init" || function->nested_name->GetFunctionName() == BUILTIN_TAG"delete") {
-				Debugger::Error(L"Constructor or Deconstructor cannot have generic type");
+				Debugger::Error("Constructor or Deconstructor cannot have generic type");
 			}
 			else {
-				if (ext)Debugger::Error(L" extern function cannot be generic");
+				if (ext)Debugger::Error(" extern function cannot be generic");
 				else function->generic = FieldList::ParseGenericDecl();
 			}
 		}

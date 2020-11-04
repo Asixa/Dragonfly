@@ -41,7 +41,7 @@ void AST::decl::Namespace::ParseSingle() {
 	case K_struct:      declarations.push_back(ClassDecl::Parse(ClassDecl::kStruct)); break;
 	case K_enum:        declarations.push_back(EnumDecl::Parse()); break;
 	default:
-		Debugger::Error(L"Unknonw Token");
+		Debugger::Error("Unexpected Token:{} ",Lexer::Token::Name(Lexer::token->type));
         return;
 	}
 }

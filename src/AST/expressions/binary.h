@@ -32,7 +32,7 @@ namespace AST {
                 auto op = Lexer::token->type;Lexer::Next();         \
                 if(Lexer::Check(NewLine)) {                         \
                     Debugger::CatchNewline();                       \
-                    Debugger::Error(L"unexpected EndOfLine");       \
+                    Debugger::Error("unexpected EndOfLine");       \
                     return nullptr;                                 \
                 }                                                   \
                 left= std::make_shared<Binary>(left, func(), op);   \

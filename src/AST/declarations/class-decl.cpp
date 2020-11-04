@@ -66,7 +66,7 @@ namespace AST {
 			case K_delete: {
 				auto func = FunctionDecl::Parse();
 				if (instance->destructor == nullptr)instance->destructor = func;
-				else Debugger::Error(L"Mutiple destructors is not allowed");
+				else Debugger::Error("Mutiple destructors is not allowed");
 				instance->functions.push_back(func);
 				break;
 			}
@@ -103,7 +103,7 @@ namespace AST {
         const auto full_name = GetFullname();
 		// Check duplicated class
 		if (ctx->ast->GetClass(full_name)) {
-			Debugger::ErrorV((std::string("type") + full_name + " is not defined").c_str(), line, ch);
+			Debugger::ErrorV(line, ch,"type {} is not defined", full_name);
 			return;
 		}
 		ctx->ast->AddClass(full_name,GetType());
@@ -129,9 +129,9 @@ namespace AST {
 						fields->content.insert(fields->content.begin(), std::make_shared<FieldDecl>("$base", base_type));
 					}
                     else if (cast->decl->category != kInterface)
-                         Debugger::ErrorV("Multiple inherting is not allowed,it must be interface", line, ch);
+                         Debugger::ErrorV(line, ch, "Multiple inherting is not allowed,it must be interface" );
                 }
-                else  Debugger::ErrorV("this Type is not inheritable", line, ch);
+                else  Debugger::ErrorV(line, ch,"Type '{}' is not inheritable",inherit->ToString());
             }
 		}
 	}

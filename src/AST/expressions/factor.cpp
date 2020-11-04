@@ -65,8 +65,7 @@ namespace AST {
 		case K_int: case K_short: case K_long: case K_float: case K_double:
 		case K_uint: case K_ushort: case K_ulong: case K_string:
 		default:
-			Debugger::Error(
-				(std::wstringstream() << "unexpected \"" << Lexer::Token::Name(Lexer::token->type) << "\" ").str());
+			Debugger::Error("unexpected '{}' ",Lexer::Token::Name(Lexer::token->type));
 			return nullptr;
 		}
 

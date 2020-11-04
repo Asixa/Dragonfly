@@ -32,7 +32,7 @@ namespace AST {
 		if (ctx->ast->GetField(name) != nullptr)
 		{
             //ERROR
-			Debugger::Error(L"name already existed");
+			Debugger::Error("{} already existed",name);
             return;
 		}
 		ctx->ast->AddField(name, value->Analysis(ctx));

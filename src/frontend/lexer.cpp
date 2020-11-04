@@ -189,7 +189,7 @@ void Lexer::NextOneToken() {
                     if (*src == '.') {
                         type = K_double;
                         if (decimal != 0) {
-                            Debugger::Error(L"There are more than 1 dot in the number");
+                            Debugger::Error("There are more than 1 dot in the number");
                             token = nullptr;
                             return;
                         }
@@ -212,7 +212,7 @@ void Lexer::NextOneToken() {
                     Move();
                     while ((*src >= '0' && *src <= '9') || *src == '.') {
                         if (*src == '.') {
-                            Debugger::Error(L"There are more than 1 dot in the number");
+                            Debugger::Error("There are more than 1 dot in the number");
                             token = nullptr;
                             return;
                         }
@@ -305,7 +305,7 @@ void Lexer::NextOneToken() {
         ASSGIN_OR_REPEAT_OP(D_SYMBOL)
         ASSGIN_AND_REPEAT_OP(T_SYMBOL)
 
-        Debugger::Error((std::wstringstream() << "invaild token: \"" << peek << "\" ").str());
+			Debugger::Error("invaild token: \"xxx\" ...");//TODO peek
         token = nullptr;
         return;
     }
@@ -335,9 +335,7 @@ void Lexer::Match(const int ty) {
 
     if (token->type != ty) {
         if (token->type == NewLine) { Debugger::CatchNewline(); }
-        Debugger::Error(
-            (std::wstringstream() << L"expected \"" << Token::Name(ty) << L"\" but got \"" << Token::Name(token->type)
-                << L"\" instead").str());
+        Debugger::Error("expected \" {} \" but got \"{}\" instead", Token::Name(ty), Token::Name(token->type));
         return;
     }
 	Next();

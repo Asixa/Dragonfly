@@ -26,7 +26,7 @@ namespace AST {
 
 		auto cond_v = condition->Gen(ctx);
 		if (!cond_v) {
-			Debugger::ErrorNonBreak(L"Error in condititon");
+			Debugger::ErrorNonBreak("Error in condititon");
 			return;
 		}
 		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->True, "cond");

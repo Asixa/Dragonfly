@@ -40,8 +40,8 @@ namespace AST {
 		const auto load_ptr = op == '=' || op >= AddAgn;
 		auto lhs = LHS->Gen(ctx, load_ptr);
 		auto rhs = RHS->Gen(ctx,load_ptr);
-		if (!lhs)return Debugger::ErrorV("left operands is NULL", line, ch);;
-		if (!rhs)return Debugger::ErrorV("right operands is NULL",line,ch);;
+		if (!lhs)return Debugger::ErrorV(line, ch,"left operands is NULL");
+		if (!rhs)return Debugger::ErrorV(line, ch,"right operands is NULL");
 
 
 		auto type = lhs->getType()->getTypeID();
@@ -75,10 +75,10 @@ namespace AST {
 				return ctx->builder->Create##f(lhs, rhs, #f"_tmp");                                  \
 			if (type == llvm::Type::IntegerTyID)                                                        \
 				return ctx->builder->Create##i(lhs, rhs, #i"_tmp");                                  \
-			return Debugger::ErrorV( std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Non-number operands\n"),line,ch); }();
+			return Debugger::ErrorV( line,ch,"{} operation cannot apply on Non-number operands",Lexer::Token::Name(op)); }();
 #define BITWISE(f)[&](){                                                                                                                             \
 			if (type == llvm::Type::IntegerTyID)return ctx->builder->Create##f(lhs, rhs, "and_tmp");                                         \
-			return Debugger::ErrorV(std::strcat(const_cast<char*>(Lexer::Token::Name(op)), " operation cannot apply on Integer operands\n"),line,ch); \
+			return Debugger::ErrorV(line,ch, "{} operation cannot apply on Integer operands",Lexer::Token::Name(op)); \
 		}();
 
 		switch (op) {
@@ -112,7 +112,7 @@ namespace AST {
 					ctx->builder->CreateCast(llvm::Instruction::SIToFP, lhs, llvm::Type::getDoubleTy(ctx->context)),
 					ctx->builder->CreateCast(llvm::Instruction::SIToFP, rhs, llvm::Type::getDoubleTy(ctx->context)),
 					"FDiv""_tmp");
-			return Debugger::ErrorV(" ""'/'"" operation cannot apply on Non-number operands\n", line, ch);
+			return Debugger::ErrorV(line, ch," ""'/'"" operation cannot apply on Non-number operands" );
 		}
 		case BAndAgn: { }
 		case BXORAgn: { }
@@ -120,7 +120,7 @@ namespace AST {
 
 		case '=': {
 			if (lhs->getType()->getTypeID() != llvm::Type::PointerTyID)
-				return Debugger::ErrorV("cannot reassign a constant\n",line,ch);
+				return Debugger::ErrorV(line, ch,"cannot reassign a constant");
 			auto rhv = rhs;
 			if (rhs->getType()->getTypeID() != lhs->getType()->getPointerElementType()->getTypeID())
 				rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
@@ -151,9 +151,9 @@ namespace AST {
 						return ctx->llvm->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
 					if (type == llvm::Type::IntegerTyID)																		\
 						return ctx->llvm->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
-					return Debugger::ErrorV(" "#d" operation cannot apply on Non-number variables\n",line,ch);							\
+					return Debugger::ErrorV(line,ch," "#d" operation cannot apply on Non-number variables");							\
 				}																										\
-				return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);														\
+				return Debugger::ErrorV(line,ch,"cannot reassign a constant");														\
 			}
 
 				  // #define  BITWISE_ASSGIN(a,b,c,d)case a: {\
@@ -189,12 +189,12 @@ namespace AST {
 						  }
 
 
-						  return Debugger::ErrorV(" ""/="" operation cannot apply on Non-number variables\n",line,ch);
+						  return Debugger::ErrorV(line, ch," ""/="" operation cannot apply on Non-number variables");
 					  }
-					  return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);
+					  return Debugger::ErrorV(line, ch, " cannot reassign a constant");
 				  }
 		default:
-			return Debugger::ErrorV("invalid binary operator",line,ch);
+			return Debugger::ErrorV(line, ch, "invalid binary operator");
 
 		}
 

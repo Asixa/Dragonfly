@@ -31,7 +31,7 @@ namespace AST {
 		switch (Lexer::token->type) {
 		case NewLine:
 			Debugger::CatchNewline();
-			Debugger::Error(L"unexpected EndOfLine");
+			Debugger::Error("unexpected EndOfLine");
 			return nullptr;
 		case '-':
 		case '!':
@@ -55,7 +55,7 @@ namespace AST {
 		case Inc:
 		case Dec:
 		default:
-			return Debugger::ErrorV("invalid unary operator",line,ch);
+			return Debugger::ErrorV(line, ch,"invalid unary operator");
 		}
 	}
 
