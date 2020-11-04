@@ -92,31 +92,27 @@ namespace frontend {
 		static llvm::Value* Debugger::ErrorV(const char* str, int line, int ch);
 
 		static void Warn(const std::wstring info);
-		template <typename... T> static void Info(std::string s, const T& ... args);
-		template <typename... T> static void Debug(std::string s, const T& ... args);
+		template <typename... T> static void Info(std::string s, const T& ... args) {
+			log_color = kGreen;
+			PrintHeader(L"info", line, ch);
+			const std::string  message = fmt::format(s, args...);
+			*out << message.c_str() << std::endl;
+			PrintCode();
+		}
+		template <typename... T> static void Debug(std::string s, const T& ... args) {
+			log_color = kBlue;
+			PrintHeader(L"debug", -1, ch);
+            const std::string  message = fmt::format(s, args...);
+			*out << message.c_str() << std::endl;
+			// PrintCode();
+		}
 
 		// this micro should be called each time AST parsed a node, to stop immediately if there are error.
 		// #define VERIFY {if(Debugger::error_occurred)return nullptr;}
 
 	};
 
-	template <typename ... T>
-	void Debugger::Info(std::string s, const T& ... args) {
-		log_color = kGreen;
-		PrintHeader(L"info", line, ch);
-		std::string  message = fmt::format(s, args...);
-		*out << message.c_str() << std::endl;
-		PrintCode();
-	}
 
-	template <typename ... T>
-	void Debugger::Debug(std::string s, const T& ... args) {
-		log_color = kBlue;
-		PrintHeader(L"debug", -1, ch);
-		std::string  message = fmt::format(s, args...);
-		*out << message.c_str() << std::endl;
-		// PrintCode();
-	}
 }
 
 struct wrapper {

@@ -128,7 +128,7 @@ namespace AST {
 		instance->generic_instance_info = param;
 		ctx->program->declarations.push_back(instance);
 		Debugger::Debug("[Instantiate Generic Function]:{}", instance->GetFullname());
-		ctx->functions_table[instance->GetFullname()] = instance;
+		ctx->ast->AddFunction(instance->GetFullname(), instance);
 		return instance;
 	}
 	void FunctionDecl::PassGeneric(std::shared_ptr<FieldList> generic_instance, std::shared_ptr<FieldList> generic_decl) {
@@ -156,10 +156,10 @@ namespace AST {
 		if (is_generic_template) {
 			for (int i = 0,size= args->content.size(); i <size; i++) 
                 args->content[i]->generic = generic->FindByName(args->content[i]->type->ToString());
-			ctx->function_template_table[full_name] = this;
+			ctx->ast->AddFuncTemplate(full_name,std::shared_ptr<FunctionDecl>(this));
 			return;
 		}
-		ctx->functions_table[full_name] = std::shared_ptr<FunctionDecl>(this);
+		ctx->ast->AddFunction(full_name,std::shared_ptr<FunctionDecl>(this));
 		// added this in the argument list
 		if (is_member_function) {
 			args->content.insert(args->content.begin(),
@@ -173,7 +173,7 @@ namespace AST {
 			const auto class_name = nested_name->GetClassName();
 			if (!class_name.empty()) {
 				// extension = true;
-				parent = ctx->types_table[class_name]->decl;
+				parent = ctx->ast->GetClassDecl(class_name);
 				return;
 			}
 		}
@@ -191,7 +191,7 @@ namespace AST {
 			// 	|| parameter->name == "this") {
 			// 	llvm_arg_types.push_back(parameter->type->ToLLVM(ctx)->getPointerTo());
 			// }
-            if(parameter->name=="this" &&ctx->types_table[parameter->type->ToString()]->decl->category== ClassDecl::kStruct)
+            if(parameter->name=="this" &&ctx->ast->GetClassDecl(parameter->type->ToString())->category== ClassDecl::kStruct)
 				llvm_arg_types.push_back(parameter->type->ToLLVM(ctx)->getPointerTo());
 			else llvm_arg_types.push_back(parameter->type->ToLLVM(ctx));
 		}
@@ -217,19 +217,19 @@ namespace AST {
     void FunctionDecl::Gen(std::shared_ptr<DFContext> ctx) {
 		if(keyword==K_extern|| is_generic_template)return;
 
-		auto function = ctx->GetFunction(GetFullname());
+		auto function = ctx->llvm->GetFunction(GetFullname());
 		//  create the basic block for the function.
-		const auto basic_block = ctx->CreateBasicBlock(function, nested_name->GetFunctionName() + "_entry");
+		const auto basic_block = ctx->llvm->CreateBasicBlock(function, nested_name->GetFunctionName() + "_entry");
 		ctx->builder->SetInsertPoint(basic_block);
 		ctx->llvm->CreateScope();
 		for (auto& arg : function->args()) {
 			// store the argument to argument table.
 			// if argment is a struct passed by value. we store its alloca to local_fields.
-			const auto arg_type_name = ctx->GetStructName(arg.getType());
-			if (ctx->GetCustomTypeCategory(arg_type_name)== ClassDecl::kStruct) {
-				if (ctx->GetPtrDepth(&arg) == 0) {
-					const auto alloca = ctx->CreateEntryBlockAlloca(arg.getType(), arg.getName());
-					ctx->AlignStore(ctx->builder->CreateStore(&arg, alloca));
+			const auto arg_type_name = ctx->llvm->GetStructName(arg.getType());
+			if (ctx->ast->GetCustomTypeCategory(arg_type_name)== ClassDecl::kStruct) {
+				if (ctx->llvm->GetPtrDepth(&arg) == 0) {
+					const auto alloca = ctx->llvm->CreateEntryBlockAlloca(arg.getType(), arg.getName());
+					ctx->llvm->AlignStore(ctx->builder->CreateStore(&arg, alloca));
 					ctx->llvm->AddField(arg.getName(),alloca);
 					continue;
 				}
@@ -241,9 +241,9 @@ namespace AST {
 		if (parent != nullptr) {
 			const auto self_decl = std::static_pointer_cast<ClassDecl>(parent);
 			if (self_decl->base_type!=nullptr) {
-				const auto alloca = ctx->CreateEntryBlockAlloca(self_decl->base_type->ToLLVM(ctx), BUILTIN_TAG"base", function);
+				const auto alloca = ctx->llvm->CreateEntryBlockAlloca(self_decl->base_type->ToLLVM(ctx), BUILTIN_TAG"base", function);
 				const auto base = ctx->llvm->GetMemberField(function->getArg(0), BUILTIN_TAG"base");
-				ctx->AlignStore(ctx->builder->CreateStore(base, alloca));
+				ctx->llvm->AlignStore(ctx->builder->CreateStore(base, alloca));
 				ctx->llvm->AddField(BUILTIN_TAG"base",alloca);
 			}
 		}

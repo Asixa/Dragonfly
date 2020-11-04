@@ -3,7 +3,7 @@
 #include <llvm/IR/Value.h>
 #include "frontend/debug.h"
 #include "LLVM/context.h"
-#include "frontend/symbol.h"
+#include "frontend/ast-symbol.h"
 
 namespace AST {
 	namespace expr {

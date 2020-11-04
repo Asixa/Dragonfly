@@ -83,12 +83,12 @@ std::shared_ptr<AST::CustomType> AST::CustomType::Match() {
 
 llvm::Type* AST::CustomType::ToLLVM(std::shared_ptr<DFContext> ctx) {
 	llvm::Type* llvm_type = nullptr;
-	if (ctx->IsCustomType(str)) {
+	if (ctx->ast->IsCustomType(str)) {
 		const auto ty = ctx->module->getTypeByName(str);
-		llvm_type = ctx->types_table[str]->decl->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
+		llvm_type = ctx->ast->GetClassDecl(str)->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
 	}
 	else {
-		if (decl == nullptr)decl = ctx->types_table[str]->decl;
+		if (decl == nullptr)decl = ctx->ast->GetClassDecl(str);
 		
 		llvm_type = ctx->module->getTypeByName(decl->GetFullname());
 		if (llvm_type == nullptr) {

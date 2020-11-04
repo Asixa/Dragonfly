@@ -1,7 +1,7 @@
 #ifndef DECLARATION_H
 #define DECLARATION_H
 #include "AST/statements/statement.h"
-#include "frontend/symbol.h"
+#include "frontend/ast-symbol.h"
 namespace AST {
 	namespace decl {
 		/**

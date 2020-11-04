@@ -21,11 +21,11 @@ namespace AST {
 		auto op_name = std::string(Lexer::Token::Name(op));
         const auto assign = op_name.size() > 1 && (op_name.back() == '=' && op> Ge);  // check if it is += -= /= *= ...
 		if (assign) op_name.pop_back();
-        const auto name=ctx->GetStructName(lhs)+op_name+ctx->GetStructName(rhs);
+        const auto name=ctx->llvm->GetStructName(lhs)+op_name+ctx->llvm->GetStructName(rhs);
 
         if(gens.find(name)!=gens.end()) gens[name](lhs, rhs, ctx);
 		else {
-			auto operator_func=ctx->GetFunction(name);
+			auto operator_func=ctx->llvm->GetFunction(name);
             if(operator_func) {
 				// ctx->builder->CreateCall(operator_func, args_v);
             }
@@ -124,9 +124,9 @@ namespace AST {
 			auto rhv = rhs;
 			if (rhs->getType()->getTypeID() != lhs->getType()->getPointerElementType()->getTypeID())
 				rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
-				? ctx->AlignLoad(ctx->builder->CreateLoad(rhs, "rhs"))
+				? ctx->llvm->AlignLoad(ctx->builder->CreateLoad(rhs, "rhs"))
 				: rhs;
-			ctx->AlignStore(ctx->builder->CreateStore(rhv, lhs));
+			ctx->llvm->AlignStore(ctx->builder->CreateStore(rhv, lhs));
 			return lhs;
 		}
 
@@ -142,15 +142,15 @@ namespace AST {
 			}
 #define BASIC_ASSGIN(a,b,c,d)case a:																					\
 			{																											\
-				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? ctx->AlignLoad(ctx->builder->CreateLoad(rhs,"rhs")) : rhs;			\
+				auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID ? ctx->llvm->AlignLoad(ctx->builder->CreateLoad(rhs,"rhs")) : rhs;			\
 				if (type == llvm::Type::PointerTyID)																			\
 				{																										\
 					type = lhs->getType()->getPointerElementType()->getTypeID();										\
-					const auto lhsv = ctx->AlignLoad(ctx->builder->CreateLoad(lhs,"lhs"));															\
+					const auto lhsv = ctx->llvm->AlignLoad(ctx->builder->CreateLoad(lhs,"lhs"));															\
 					if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)											\
-						return ctx->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
+						return ctx->llvm->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##b(lhsv, rhv, #b"_tmp"), lhs));						\
 					if (type == llvm::Type::IntegerTyID)																		\
-						return ctx->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
+						return ctx->llvm->AlignStore(ctx->builder->CreateStore(ctx->builder->Create##c(lhsv, rhv, #c"_tmp"), lhs));						\
 					return Debugger::ErrorV(" "#d" operation cannot apply on Non-number variables\n",line,ch);							\
 				}																										\
 				return Debugger::ErrorV(" cannot reassign a constant\n",line,ch);														\
@@ -169,13 +169,13 @@ namespace AST {
 
 		case DivAgn: {
 					  auto rhv = rhs->getType()->getTypeID() == llvm::Type::PointerTyID
-						  ? ctx->AlignLoad(ctx->builder->CreateLoad(rhs, "rhs"))
+						  ? ctx->llvm->AlignLoad(ctx->builder->CreateLoad(rhs, "rhs"))
 						  : rhs;
 					  if (type == llvm::Type::PointerTyID) {
 						  type = lhs->getType()->getPointerElementType()->getTypeID();
-						  const auto lhsv = ctx->AlignLoad(ctx->builder->CreateLoad(lhs, "lhs"));
+						  const auto lhsv = ctx->llvm->AlignLoad(ctx->builder->CreateLoad(lhs, "lhs"));
 						  if (type == llvm::Type::FloatTyID || type == llvm::Type::DoubleTyID)
-							  return ctx->AlignStore(
+							  return ctx->llvm->AlignStore(
 								  ctx->builder->CreateStore(ctx->builder->CreateFDiv(lhsv, rhv, "FDiv""_tmp"), lhs));
 						  if (type == llvm::Type::IntegerTyID) {
 							  const auto lhv_d = ctx->builder->CreateCast(llvm::Instruction::SIToFP, lhsv,
@@ -185,7 +185,7 @@ namespace AST {
 							  const auto div = ctx->builder->CreateFDiv(lhv_d, rhv_d, "div_tmp");
 							  const auto div_i = ctx->builder->CreateCast(llvm::Instruction::FPToUI, div,
 								  llvm::Type::getInt32Ty(ctx->context));
-							  return ctx->AlignStore(ctx->builder->CreateStore(div_i, lhs));
+							  return ctx->llvm->AlignStore(ctx->builder->CreateStore(div_i, lhs));
 						  }
 
 

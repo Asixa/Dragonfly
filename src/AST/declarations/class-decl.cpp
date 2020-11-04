@@ -97,16 +97,16 @@ namespace AST {
 #pragma region  Analysis
 	void ClassDecl::AnalysisHeader(std::shared_ptr<DFContext>ctx) {
 		if (is_template){
-			ctx->class_template_table[name] = this;
+			ctx->ast->AddClassTemplate(name, std::shared_ptr<ClassDecl>(this));
             return;
 		}
         const auto full_name = GetFullname();
 		// Check duplicated class
-		if (ctx->ExistClass(full_name)) {
+		if (ctx->ast->GetClass(full_name)) {
 			Debugger::ErrorV((std::string("type") + full_name + " is not defined").c_str(), line, ch);
 			return;
 		}
-		ctx->types_table[full_name] = GetType();
+		ctx->ast->AddClass(full_name,GetType());
         const auto this_ptr = std::shared_ptr<ClassDecl>(this);
 		// Add subfunction to global decalarations
 		for (auto& function : functions) {
@@ -154,13 +154,13 @@ namespace AST {
 
 		const auto full_name = instance->GetFullname();      //eg:  "NAMESPACE::CLASSNAME<int,float>"
 
-        if (context->ExistClass(full_name))return context->types_table[full_name]->decl;
+        if (context->ast->GetClass(full_name))return context->ast->GetClassDecl(full_name);
 
 		instance->Analysis(context);
 		for (int i=0;i<functions.size();i++)
             instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
 		context->program->declarations.push_back(instance);
-		context->types_table[full_name] = instance->GetType();
+		context->ast->AddClass(full_name,instance->GetType());
 		Debugger::Debug("[Instantiate Template]:{} {} {}", full_name, generic->ToString(), replace_by->ToString());
 		// printf("[Instantiate Template]:   %s   %s to %s\n", full_name.c_str(), generic->ToString().c_str(), replace_by->ToString().c_str());
 		for (auto& function : instance->functions) {

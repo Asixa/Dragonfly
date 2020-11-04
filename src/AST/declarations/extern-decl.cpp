@@ -83,11 +83,11 @@ namespace AST{
 		
 			param_name += "(";
 			for (int i = parent_type == nullptr ? 0 : 1, types_size = arg_types.size(); i < types_size; i++)
-				param_name += ctx->GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
+				param_name += ctx->llvm->GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
 			param_name += ")";
 			if (alias != nullptr&&(alias->type != 0||init)) {
 				printf(" set alias %s to %s\n", (func_name + param_name).c_str(), name.c_str());
-				ctx->func_alias_table[func_name + param_name] = name;
+				ctx->ast->AddAlias(func_name + param_name, name);
 			}
 
 

@@ -14,71 +14,23 @@
 std::vector<std::shared_ptr<DFContext>> DFContext::contexts;
 
 
-AST::decl::ClassDecl* DFContext::GetClassTemplate(const std::string name) {
-	if (class_template_table.find(name) == class_template_table.end())return nullptr;
-	return class_template_table[name];
-}
-
-AST::decl::FunctionDecl* DFContext::GetFuncTemplate(std::string name) {
-	if (function_template_table.find(name) == function_template_table.end())return nullptr;
-	return function_template_table[name];
-}
-
-std::shared_ptr<AST::decl::FunctionDecl> DFContext::GetFunctionDecl(std::string name) {
-	if (functions_table.find(name) != functions_table.end())
-		return functions_table[name];
-	if (extern_functions_table.find(name) != extern_functions_table.end())
-		return extern_functions_table[name];
-	return nullptr;
-}
-
-llvm::GlobalVariable* DFContext::CreateGlobal(const std::string name, llvm::Type* ty) {
-	module->getOrInsertGlobal(name, ty);
-	auto g_var = module->getNamedGlobal(name);
-	g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
-	g_var->setAlignment(4);
-	return g_var;
-}
 
 
 
-llvm::Function* DFContext::CreateMainFunc() {
-	const auto func_type = llvm::FunctionType::get(builder->getInt32Ty(), false);
-	const auto func = llvm::Function::Create(func_type, llvm::GlobalValue::ExternalLinkage, "main", module.get());
-	return func;
-}
-
-llvm::BasicBlock* DFContext::CreateBasicBlock(llvm::Function* func, const std::string name) {
-	return llvm::BasicBlock::Create(context, name, func);
-}
-
-llvm::AllocaInst* DFContext::CreateEntryBlockAlloca(llvm::Type* type, const std::string& var_name, llvm::Function* the_function) {
-	if (the_function == nullptr)
-		the_function = builder->GetInsertBlock()->getParent();
-	llvm::IRBuilder<> tmp_b(&the_function->getEntryBlock(), the_function->getEntryBlock().begin());
-	auto alloca = tmp_b.CreateAlloca(type, 0, var_name);
-	alloca->setAlignment(llvm::MaybeAlign(8));
-	return alloca;
-}
 
 
-llvm::StoreInst* DFContext::AlignStore(llvm::StoreInst* a) {
-	// a->setAlignment(MaybeAlign(8));
-	return a;
-}
 
-llvm::LoadInst* DFContext::AlignLoad(llvm::LoadInst* a) {
-	// a->setAlignment(MaybeAlign(8));
-	return a;
-}
+
+
+
+
 void DFContext::BuildInFunc(std::shared_ptr<DFContext> ctx,std::string name, std::shared_ptr<AST::Type> ret,  std::vector<std::shared_ptr<AST::Type>> args, const bool isVarArg)  {
-
 	auto decl = std::make_shared<AST::decl::FunctionDecl>();
 	decl->return_type = ret;
 	decl->args = std::make_shared<AST::decl::FieldList>(args);
 	decl->args->type = AST::decl::FieldList::Arguments;
 	if (isVarArg)decl->args->content.push_back(std::make_shared<AST::decl::FieldDecl>("...", nullptr)); // var
-	ctx->extern_functions_table[name] = decl;
+	ctx->ast->AddExternFunc(name,decl);
 
     std::vector<llvm::Type*> llvm_types;
     for (auto ty : args) llvm_types.push_back(ty->ToLLVM(ctx));
@@ -110,90 +62,6 @@ void DFContext::Write() {
 	WriteBitCodeIr(module.get(), (std::string(module->getModuleIdentifier().c_str()) + ".ll").c_str());
 }
 
-int DFContext::GetPtrDepth(llvm::Value* value) {
-	return GetPtrDepth(value->getType());
-}
-
-int DFContext::GetPtrDepth(llvm::Type* type) {
-	auto depth = 0;
-	while (type->getTypeID() == llvm::Type::PointerTyID) {
-		depth++;
-		type = type->getPointerElementType();
-	}
-	return depth;
-
-}
-
-std::string DFContext::GetStructName(llvm::Value* value) {
-	return GetStructName(value->getType());
-}
-
-std::string DFContext::GetStructName(llvm::Type* type) {
-	if (type == void_ptr)return "void*";
-	while (type->getTypeID() == llvm::Type::PointerTyID)
-		type = type->getPointerElementType();
-	switch (type->getTypeID()) {
-	case llvm::Type::DoubleTyID:
-		return "double";
-	case llvm::Type::IntegerTyID:
-		return "int";
-	case llvm::Type::FloatTyID:
-		return "float";
-	case llvm::Type::VoidTyID:
-		return "void";
-	default:
-		return type->getStructName();
-	}
-
-
-}
-
-llvm::Function* DFContext::GetFunction(std::string name) {
-	// printf("find %s in [", name.c_str());
-	// for (auto i : func_alias_table)printf("%s,", i.first.c_str());
-	// printf("]\n");
-	if (func_alias_table.find(name) != func_alias_table.end()) {
-		name = func_alias_table[name];
-	}
-
-	return module->getFunction(name);
-}
-
-std::string DFContext::DebugValue(llvm::Value* value) {
-	std::string ir;
-	llvm::raw_string_ostream ir_stream(ir);
-	value->print(ir_stream, true);
-	return ir;
-}
-
-llvm::Value* DFContext::Malloc(llvm::Type* type, bool cast) {
-	const auto ptr = builder->CreateCall(module->getFunction("malloc"),
-		llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), data_layout->getTypeStoreSize(type)));
-	return builder->CreateCast(llvm::Instruction::BitCast, ptr, type->getPointerTo());
-}
-
-void DFContext::Free(llvm::Value* value) {
-	builder->CreateCall(module->getFunction("free"),
-		builder->CreateCast(llvm::Instruction::BitCast, value, void_ptr));
-}
-
-
-bool DFContext::IsCustomType(std::string name) {
-	return types_table.find(name) != types_table.end();
-}
-
-int DFContext::GetCustomTypeCategory(llvm::Type* ty) {
-	return GetCustomTypeCategory(GetStructName(ty));
-}
-
-int DFContext::GetCustomTypeCategory(const std::string ty) {
-	return IsCustomType(ty) ? types_table[ty]->category : -1;
-}
-
-
-bool DFContext::ExistClass(std::string name) {
-	return  (types_table.find(name) != types_table.end());
-}
 
 
 

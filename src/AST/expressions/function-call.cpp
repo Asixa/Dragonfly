@@ -56,8 +56,8 @@ namespace AST {
 		callee_name = is_member_func ? parent->ToString() + JOINER_TAG + name : name;
 		
 		if (generic) {
-			const auto template_class_decl = ctx->GetClassTemplate(callee_name);
-			const auto template_func_decl = ctx->GetFuncTemplate(callee_name);
+			const auto template_class_decl = ctx->ast->GetClassTemplate(callee_name);
+			const auto template_func_decl = ctx->ast->GetFuncTemplate(callee_name);
 			if (template_class_decl != nullptr) {
 				class_type =template_class_decl->InstantiateTemplate(ctx, generic)->GetType();
 				callee_name += generic->ToString()+JOINER_TAG+BUILTIN_TAG+"init";
@@ -74,12 +74,12 @@ namespace AST {
 			}
 		}
         //check if is a constructor
-		if (ctx->IsCustomType(callee_name)) {
-            if(ctx->GetCustomTypeCategory(callee_name) < ClassDecl::kInterface) {
+		if (ctx->ast->IsCustomType(callee_name)) {
+            if(ctx->ast->GetCustomTypeCategory(callee_name) < ClassDecl::kInterface) {
 				Debugger::ErrorV("Cannot call a constructor of a interface or basic type", line, ch);
 				return nullptr;
             }
-			class_type = ctx->types_table[callee_name];
+			class_type = ctx->ast->GetClass(callee_name);
 			// now the function is a construtor, which is a special type of member function.
 			is_member_func = true;
 			callee_name = callee_name + JOINER_TAG + "$init";
@@ -93,8 +93,8 @@ namespace AST {
 		param_name += ")";
 
 
-		func = ctx->GetFunctionDecl(callee_name);
-		if (!func) func = ctx->GetFunctionDecl(callee_name + param_name);
+		func = ctx->ast->GetFunctionDecl(callee_name);
+		if (!func) func = ctx->ast->GetFunctionDecl(callee_name + param_name);
 		
         if(!func) {
 			 Debugger::ErrorV((std::string("Unknown function referenced:") + callee_name + param_name).c_str(), line, ch);
@@ -123,8 +123,8 @@ namespace AST {
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
 			// val is the llvm::Value* of current argument experssion.
 			auto val = args[i]->Gen(ctx,false);
-			if (ctx->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
-				while (ctx->GetPtrDepth(val) != 0)
+			if (ctx->llvm->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
+				while (ctx->llvm->GetPtrDepth(val) != 0)
 					val = ctx->builder->CreateLoad(val);
 			if (!val)return Debugger::ErrorV("arguments passed with error",line,ch);
 			args_v.push_back(val);
@@ -135,10 +135,10 @@ namespace AST {
 		if (is_constructor) {
 			switch (class_type->decl->category) {
 			case ClassDecl::kClass: 
-				_this = ctx->Malloc(class_type->ToLLVM(ctx)->getPointerElementType());
+				_this = ctx->llvm->Malloc(class_type->ToLLVM(ctx)->getPointerElementType());
 				break;
 			case ClassDecl::kStruct:
-				_this = ctx->CreateEntryBlockAlloca(class_type->ToLLVM(ctx), callee_name);
+				_this = ctx->llvm->CreateEntryBlockAlloca(class_type->ToLLVM(ctx), callee_name);
 				break;
 			case ClassDecl::kInterface:
 				return  Debugger::ErrorV("Cannot call a constructor of a interface type",line,ch);
@@ -149,7 +149,7 @@ namespace AST {
 
 		// now we add the hidden pointer to the args list if it is a member function. //TODO catch errors like pass a value
 		if (is_member_func) {
-			const auto ptr_depth = ctx->GetPtrDepth(_this);
+			const auto ptr_depth = ctx->llvm->GetPtrDepth(_this);
 			auto this_arg = _this;
 			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
 				this_arg = ctx->builder->CreateLoad(_this);
@@ -163,13 +163,13 @@ namespace AST {
 		if (!is_constructor) {
             const auto ty = ctx->module->getTypeByName(name);
 			if (ty) {
-				if (ctx->GetFunction(callee_name + param_name) != nullptr) {
+				if (ctx->llvm->GetFunction(callee_name + param_name) != nullptr) {
 					is_member_func = true;
 					callee_name +=param_name;
 					is_constructor = true;
                     //HACK
-					_this = ctx->Malloc(ty->getPointerTo());
-					const auto ptr_depth = ctx->GetPtrDepth(_this);
+					_this = ctx->llvm->Malloc(ty->getPointerTo());
+					const auto ptr_depth = ctx->llvm->GetPtrDepth(_this);
 					auto this_arg = _this;
 					if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
 						this_arg = ctx->builder->CreateLoad(_this);
@@ -177,27 +177,27 @@ namespace AST {
 				}
 			}
 		}
-		auto callee = ctx->GetFunction(callee_name);
+		auto callee = ctx->llvm->GetFunction(callee_name);
 		
 		// if the function not exist, maybe because it is a overloaded function.
 		// then the name should be "A::bar()" or "foo(int)" etc.
 		// we ignore the hidden pointer
 		if (!callee) {
 			callee_name += param_name;
-			callee = ctx->GetFunction(callee_name);
+			callee = ctx->llvm->GetFunction(callee_name);
 		}
   
 		// if we still cannot find the function, we could now throw a error.
 		if (!callee)
 			return Debugger::ErrorV((std::string("Unknown function referenced in GEN:") + callee_name).c_str(),line,ch);
 		
-        while (ctx->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
+        while (ctx->llvm->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
 			args_v[0] = ctx->builder->CreateLoad(args_v[0]);
 
         for(auto i=0;i<callee->arg_size();i++) {
 			// printf("%s *%d == %s *%d\n", ctx->GetStructName(callee->getArg(i)).c_str(), ctx->GetPtrDepth(callee->getArg(i)), ctx->GetStructName(args_v[i]).c_str(), ctx->GetPtrDepth(args_v[i]));
-            const auto want_ptr = ctx->GetPtrDepth(callee->getArg(i));
-            while (ctx->GetPtrDepth(args_v[i])>want_ptr) 
+            const auto want_ptr = ctx->llvm->GetPtrDepth(callee->getArg(i));
+            while (ctx->llvm->GetPtrDepth(args_v[i])>want_ptr)
 				args_v[i] = ctx->builder->CreateLoad(args_v[i]);
         }
 		// call the function and save it to v

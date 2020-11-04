@@ -41,12 +41,12 @@ namespace AST {
 		auto const function = ctx->builder->GetInsertBlock()->getParent();
 	
 		auto const expected = function->getReturnType();
-		if (ctx->GetStructName(expected) != ctx->GetStructName(val)) {
+		if (ctx->llvm->GetStructName(expected) != ctx->llvm->GetStructName(val)) {
 			Debugger::ErrorV("return type not same", line, ch);
 			return;
 		}
-		auto const expected_ptr_level = ctx->GetPtrDepth(expected);
-		auto val_ptr_level = ctx->GetPtrDepth(val);
+		auto const expected_ptr_level = ctx->llvm->GetPtrDepth(expected);
+		auto val_ptr_level = ctx->llvm->GetPtrDepth(val);
 		while (val_ptr_level > expected_ptr_level) {
 			val = ctx->builder->CreateLoad(val);
 			val_ptr_level--;

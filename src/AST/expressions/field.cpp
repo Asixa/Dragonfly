@@ -104,7 +104,7 @@ namespace AST {
 		else {
 			// we find parent's first-level-pointer.
 			// TODO load once is not safe, should loop untill it is first-level-pointer.
-			if (ctx->GetPtrDepth(parent) > 1)
+			if (ctx->llvm->GetPtrDepth(parent) > 1)
 				parent = ctx->builder->CreateLoad(parent);
 
 			v = ctx->llvm->GetMemberField(parent, name);
@@ -119,19 +119,19 @@ namespace AST {
   //       If we want the constant, when load the pointer.
 		// This only done in entry node where parent is null.
 		if (parent == nullptr) {
-			auto type = ctx->GetStructName(v->getType());
+			auto type = ctx->llvm->GetStructName(v->getType());
 			if (is_ptr) {  }
 			else if (v->getType()->getTypeID() != llvm::Type::PointerTyID) {  }
 			else if (child == nullptr && (name == "this" || name == "base")) {  }
 			else if (type == "void*") { }
-            else if(ctx->types_table.find(type)!=ctx->types_table.end() && ctx->types_table[type]->category== decl::ClassDecl::kClass) {
+            else if(ctx->ast->GetClass(type) && ctx->ast->GetClassDecl(type)->category== decl::ClassDecl::kClass) {
                  if(!is_ptr) {
-                     while (ctx->GetPtrDepth(v)>1) 
-						 v = ctx->AlignLoad(ctx->builder->CreateLoad(v));
+                     while (ctx->llvm->GetPtrDepth(v)>1) 
+						 v = ctx->llvm->AlignLoad(ctx->builder->CreateLoad(v));
                  }
             }
             else {
-                return ctx->AlignLoad(ctx->builder->CreateLoad(v));
+                return ctx->llvm->AlignLoad(ctx->builder->CreateLoad(v));
             }
         }
 		return v;

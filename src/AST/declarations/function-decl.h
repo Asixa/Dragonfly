@@ -19,47 +19,6 @@ namespace AST {
 	namespace decl {
 		class FieldDecl;
 		class FieldList;
-		/**
-		 * \brief class for matching function's parameters' declaration ; \n
-		 * `` NAME:TYPE,NAME:TYPE...``\n
-		 */
-		// class FuncParam {
-		// public:
-		// 	int size = 0;
-		// 	bool is_var_arg = false;
-		// 	std::vector<std::shared_ptr<FieldDecl>> fields;
-		//     // std::vector<std::string> names;
-		// 	// std::vector<std::shared_ptr<AST::Type>> types;
-		// 	std::vector<int>generic_id;
-		// 	static std::shared_ptr<FuncParam> Parse();
-		// 	FuncParam() {
-		// 		size = 0;
-		// 	}
-		// 	FuncParam(const std::shared_ptr<FuncParam> copy) {
-		// 		*this = *copy;
-		// 		// for (auto i : copy->types)types.push_back(i);
-		// 	}
-		// 	std::string ToString();
-		// };
-
-		// enum FunctionFlags
-		// {
-		// 	kNone = 0,
-		//
-		// 	kGenericTemplate = 32,
-		// 	kGenericInstance = 64
-		// };
-		// MAKE_FLAGS_ENUM(FunctionFlags, FunctionFlags)
-
-		/**
-		 * \brief class for matching function definition. \n
-		 * ``func NAME (FuncParam) {...} ``\n
-		 * ``dfunc NAME (FuncParam) {...} ``\n
-		 * ``kernel NAME (FuncParam) {...}`` \n
-		 * ``func CLASS::NAME (FuncParam) {...}`` \n
-		 */
-		//
-	
 
 		class FunctionDecl final : public Declaration {
 			std::shared_ptr<NestedName> nested_name;  //Deprecated after called AnalysisHeader

@@ -46,7 +46,7 @@ namespace AST {
 
 		if (constant) {
             // TODO ERROR, constant not supported yet!  current problem is constant object cannot be initeialized
-			const auto v = ctx->CreateGlobal(name, ty); 
+			const auto v = ctx->llvm->CreateGlobal(name, ty);
 			// v->setInitializer(val);
 			ctx->llvm->AddField(name,v);
 		}
@@ -54,14 +54,14 @@ namespace AST {
 			const auto the_function = ctx->builder->GetInsertBlock()->getParent();
 			if (the_function->getName() == "main") {
 				// All fields in main function are stored in heap.  // TODO
-				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name, the_function);
-				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
+				const auto alloca = ctx->llvm->CreateEntryBlockAlloca(ty, name, the_function);
+				ctx->llvm->AlignStore(ctx->builder->CreateStore(val, alloca));
 				ctx->llvm->AddField(name,alloca);
 			}
 			else {
 				// otherwise the local field store on stack. 
-				const auto alloca = ctx->CreateEntryBlockAlloca(ty, name,the_function);
-				ctx->AlignStore(ctx->builder->CreateStore(val, alloca));
+				const auto alloca = ctx->llvm->CreateEntryBlockAlloca(ty, name,the_function);
+				ctx->llvm->AlignStore(ctx->builder->CreateStore(val, alloca));
 				ctx->llvm->AddField(name, alloca);
 			}
 		}

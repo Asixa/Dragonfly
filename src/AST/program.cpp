@@ -65,11 +65,11 @@ namespace AST {
 			try { declaration->Gen(context); }catch (int e) {}
 
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(context->void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", context->module.get());
-		context->builder->SetInsertPoint(context->CreateBasicBlock(__df_global_var_init, "entry"));
+		context->builder->SetInsertPoint(context->llvm->CreateBasicBlock(__df_global_var_init, "entry"));
 		context->builder->CreateRetVoid();
 
-		const auto main_func = context->CreateMainFunc();
-		const auto entry = context->CreateBasicBlock(main_func, "entry");
+		const auto main_func = context->llvm->CreateMainFunc();
+		const auto entry = context->llvm->CreateBasicBlock(main_func, "entry");
 		context->builder->SetInsertPoint(entry);
 
 		context->llvm->CreateScope();
