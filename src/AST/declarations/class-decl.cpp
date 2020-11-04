@@ -161,12 +161,13 @@ namespace AST {
             instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
 		context->program->declarations.push_back(instance);
 		context->types_table[full_name] = instance->GetType();
-		printf("[Instantiate Template]:   %s   %s to %s\n", full_name.c_str(), generic->ToString().c_str(), replace_by->ToString().c_str());
+		Debugger::Debug("[Instantiate Template]:{} {} {}", full_name, generic->ToString(), replace_by->ToString());
+		// printf("[Instantiate Template]:   %s   %s to %s\n", full_name.c_str(), generic->ToString().c_str(), replace_by->ToString().c_str());
 		for (auto& function : instance->functions) {
 			function->parent= instance;
 			function->PassGeneric(replace_by, generic);
 			function->AnalysisHeader(context);
-			printf("        [Instantiate Template sub functions]:   %s   \n", function->GetFullname().c_str());
+			Debugger::Debug("          [Instantiate Template sub functions]:{}", function->GetFullname());
 			context->program->late_decl.push_back(function);
 		}
 	

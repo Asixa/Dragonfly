@@ -57,7 +57,7 @@ void Debugger::SetColor(const int c) {
     SetConsoleTextAttribute(handle, c);
 }
 
-void Debugger::PrintErrorInfo(const std::wstring type, int l, const int c) {
+void Debugger::PrintHeader(const std::wstring type, int l, const int c) {
     if (l!=-1) {
 		*out << L"[" << Preprocessor::MapFileNumber(l) << " ";
 		SetColor(kYellow);
@@ -70,7 +70,7 @@ void Debugger::PrintErrorInfo(const std::wstring type, int l, const int c) {
     SetColor(kWhite);
 }
 
-void Debugger::PrintErrorPostfix(int l, int c, int cp) {
+void Debugger::PrintCode(int l, int c, int cp) {
     if(l==-1) {
 		l = line;
 		c = ch;
@@ -108,20 +108,20 @@ void Debugger::CatchNewline() {
 llvm::Value* Debugger::ErrorV(const std::wstring info, int line, int ch) {
 	Debugger::error_existed = true;
 	Debugger::log_color = Debugger::kRed;
-	Debugger::PrintErrorInfo(L"error", line, ch);
+	Debugger::PrintHeader(L"error", line, ch);
 	*Debugger::out << info << std::endl;
-	if (line != -1)Debugger::PrintErrorPostfix(line, ch, ch);
-	throw(-1);
+	if (line != -1)Debugger::PrintCode(line, ch, ch);
+	throw-1;
 }
 
 
 void Debugger::ErrorNonBreak(const std::wstring info) {
     error_existed = true;
     log_color = kRed;
-    PrintErrorInfo(L"error",line,ch);
+    PrintHeader(L"error",line,ch);
     *out << info << std::endl;
-    PrintErrorPostfix();
-	throw (-1);
+    PrintCode();
+	throw -1;
 }
 llvm::Value* Debugger::ErrorV(const char* str, int line, int ch) {
 	return ErrorV(Lexer::Str2W(std::string(str)), line, ch);
@@ -134,7 +134,8 @@ void Debugger::Error(const std::wstring info) {
 
 void Debugger::Warn(const std::wstring info) {
     log_color = kYellow;
-    PrintErrorInfo(L"warning", line, ch);
+    PrintHeader(L"warning", line, ch);
     *out << info << std::endl;
-    PrintErrorPostfix();
+    PrintCode();
 }
+

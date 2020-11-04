@@ -39,9 +39,8 @@ namespace AST {
     std::shared_ptr<AST::Type> FuncCall::Analysis(const std::shared_ptr<DFContext>ctx) {
 		return AnalysisField(ctx, nullptr);
 	}
-
+	// TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
     std::shared_ptr<AST::Type> FuncCall::AnalysisField(std::shared_ptr<DFContext>ctx, std::shared_ptr<AST::Type>parent) {
-		
 		// the data structure of Field for exmaple: a.B().C().d is
 		//  [a]
 		//     \child
@@ -49,13 +48,8 @@ namespace AST {
 		//   left/  \child       because left recursion happens when parse nested funtion.
 		//  [B()]     [d]
 		// so here we DFS to generate previous nodes.
-
-		// true if nested function call like A().B(), then we left-DFS
-		// TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
 		
 		if (left != nullptr) parent = left->AnalysisField(ctx, parent);
-
-
 		// if is calling a member function, eg: a.bar(), a is any object of custom class or struct.
 		// if true, parent is the value of a.
         is_member_func = parent != nullptr;
@@ -69,7 +63,6 @@ namespace AST {
 				callee_name += generic->ToString()+JOINER_TAG+BUILTIN_TAG+"init";
 				is_constructor = true;
 				is_member_func = true;
-
 			}
 			else if (template_func_decl != nullptr) {
 				template_func_decl->InstantiateTemplate(ctx, generic);
@@ -80,7 +73,7 @@ namespace AST {
 				return nullptr;
 			}
 		}
-
+        //check if is a constructor
 		if (ctx->IsCustomType(callee_name)) {
             if(ctx->GetCustomTypeCategory(callee_name) < ClassDecl::kInterface) {
 				Debugger::ErrorV("Cannot call a constructor of a interface or basic type", line, ch);
@@ -88,13 +81,12 @@ namespace AST {
             }
 			class_type = ctx->types_table[callee_name];
 			// now the function is a construtor, which is a special type of member function.
-			// we add back the  front name.
 			is_member_func = true;
 			callee_name = callee_name + JOINER_TAG + "$init";
 			is_constructor = true;
 		}
 
-
+        //get string of args, eg (1+1,true) should be (int,boolean)
 		param_name += "(";
 		for (int i = 0, argv_size = args.size(); i < argv_size; i++)
 			param_name += args[i]->Analysis(ctx)->ToString() + (i == argv_size - 1 ? "" : ",");
@@ -110,8 +102,7 @@ namespace AST {
         }
 		// here we found the callee!
         // check if the function argument count matchs.
-        // some function could have varible arguments size when isVarArg is true.
-
+        // some function could have varible arguments size when IsVariableArgument() is true.
 		if (!func->args->IsVariableArgument()&&func->args->content.size() != args.size() + (is_member_func ? 1 : 0) ) {
 			Debugger::ErrorV((std::string("Incorrect # arguments passed: ") +
 				std::to_string(func->args->content.size()) + " needed, but got " + std::to_string(args.size() + (is_member_func ? 1 : 0)) +" instead").c_str(), line, ch);
@@ -122,17 +113,7 @@ namespace AST {
 
     llvm::Value* FuncCall::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* _this) {
 		// TODO function call like a()()
-        
-		// the data structure of Field for exmaple: a.B().C().d is
-		//  [a]
-		//     \child
-		//      [C()]            cannot be linked list:  a->B()->C()->d 
-		//   left/  \child       because left recursion happens when parse nested funtion.
-		//  [B()]     [d]
-		// so here we DFS to generate previous nodes.
-  
 		// true if nested function call like A().B(), then we left-DFS
-		// TODO:  test needed , I think it should be "parent = left->GenField(parent);" added fix arg_list
 		if (left != nullptr) _this = left->GenField(ctx,_this);
   
 
@@ -145,9 +126,7 @@ namespace AST {
 			if (ctx->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
 				while (ctx->GetPtrDepth(val) != 0)
 					val = ctx->builder->CreateLoad(val);
-			// here we catch if the val is null. 
-			if (!val)return Debugger::ErrorV("Incorrect # arguments passed with error",line,ch);
-			// add the value the the args list.
+			if (!val)return Debugger::ErrorV("arguments passed with error",line,ch);
 			args_v.push_back(val);
 		}
 

@@ -33,14 +33,9 @@ public:
 	std::unique_ptr<llvm::DataLayout> data_layout;
 
 	std::shared_ptr<AST::Program> program;
-
-	// std::stack<std::map<std::string,AST::Type>>symbols;
-
 	std::shared_ptr<frontend::Symbol> ast;
 	std::shared_ptr<frontend::LLVMSymbol> llvm;
 
-	// std::map<std::string, llvm::Value*> local_fields_table;
-	// std::map<std::string, llvm::Value*> global_fields_table;
 	std::map<std::string, std::string> func_alias_table;
 
 	std::map<std::string, AST::decl::ClassDecl*> class_template_table;
@@ -66,6 +61,7 @@ public:
 	AST::decl::FunctionDecl* current_function;
 
 	bool ExistClass(std::string);
+
 
 	explicit DFContext(){}
     explicit DFContext(std::shared_ptr<AST::Program> program);

@@ -48,7 +48,7 @@ const char* Lexer::Token::Name(const int type)
 
 void Lexer::LoadFile(const char* file) {
     std::wifstream wif(file);
-    if (wif.fail()) Debugger::PrintErrorInfo(L"No such file or directory");
+    if (wif.fail()) Debugger::PrintHeader(L"No such file or directory");
     wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
     std::wstringstream wss;
     wss << wif.rdbuf();

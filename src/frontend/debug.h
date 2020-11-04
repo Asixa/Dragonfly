@@ -15,6 +15,8 @@
 #ifndef DEBUG_H 
 #define DEBUG_H
 #include <llvm/Bitcode/BitcodeWriter.h>
+
+#include "fmt/core.h"
 namespace frontend {
 	class Debugger {
 	public:
@@ -76,10 +78,10 @@ namespace frontend {
 
 		// this function is implemented in main.cpp,
 		// because there are some issues with include<windows.h> before other headers.
-		static void PrintErrorInfo(const std::wstring type, int l = -1, int c = -1);
+		static void PrintHeader(const std::wstring type, int l = -1, int c = -1);
 
 		//This function will print the current token and the line of code it belongs.
-		static void PrintErrorPostfix(int l = -1, int c = -1, int cp = -1);
+		static void PrintCode(int l = -1, int c = -1, int cp = -1);
 
 		static void CatchNewline();
 
@@ -90,10 +92,48 @@ namespace frontend {
 		static llvm::Value* Debugger::ErrorV(const char* str, int line, int ch);
 
 		static void Warn(const std::wstring info);
+		template <typename... T> static void Info(std::string s, const T& ... args);
+		template <typename... T> static void Debug(std::string s, const T& ... args);
 
 		// this micro should be called each time AST parsed a node, to stop immediately if there are error.
 		// #define VERIFY {if(Debugger::error_occurred)return nullptr;}
 
 	};
+
+	template <typename ... T>
+	void Debugger::Info(std::string s, const T& ... args) {
+		log_color = kGreen;
+		PrintHeader(L"info", line, ch);
+		std::string  message = fmt::format(s, args...);
+		*out << message.c_str() << std::endl;
+		PrintCode();
+	}
+
+	template <typename ... T>
+	void Debugger::Debug(std::string s, const T& ... args) {
+		log_color = kBlue;
+		PrintHeader(L"debug", -1, ch);
+		std::string  message = fmt::format(s, args...);
+		*out << message.c_str() << std::endl;
+		// PrintCode();
+	}
 }
+
+struct wrapper {
+	std::wstring x;
+};
+
+template <>
+struct fmt::formatter<wrapper> {
+	[[maybe_unused]] static constexpr auto parse(const format_parse_context& ctx) { return ctx.begin(); }
+
+	template <typename FormatContext>
+	auto format(const wrapper& val, FormatContext& ctx) {
+		// convert wide string in val to utf-8 using some available library...
+		const char* utf8result = "converted wide string";
+		return format_to(ctx.out(), "{}", utf8result);
+	}
+};
+
+
 #endif

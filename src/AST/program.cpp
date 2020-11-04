@@ -117,8 +117,8 @@ namespace AST {
 		for (const auto& decl : declarations) if (decl->isClass&&!std::static_pointer_cast<ClassDecl>(decl)->is_template)decls.push_back(decl);
 		for (const auto& decl : declarations) if (!decl->isClass&&!std::static_pointer_cast<FunctionDecl>(decl)->is_generic_template)decls.push_back(decl);
 		declarations = decls;
-        for (const auto& decl : declarations)
-			printf("%s   %s\n", decl->isClass ? "Type:     " : "Function: ", decl->GetFullname().c_str());
+		for (const auto& decl : declarations)
+			Debugger::Debug("{}  {}", decl->isClass ? "Type:     " : "Function: ", decl->GetFullname());
   
 		// std::sort(declarations.begin(),declarations.end(), SortFunctor());
 

@@ -130,7 +130,7 @@ namespace AST {
 		instance->AnalysisHeader(ctx);
 		instance->generic_instance_info = param;
 		ctx->program->declarations.push_back(instance);
-		printf("[Instantiate Generic Function]:%s \n", instance->GetFullname().c_str());
+		Debugger::Debug("[Instantiate Generic Function]:{}", instance->GetFullname());
 		ctx->functions_table[instance->GetFullname()] = instance;
 		return instance;
 	}

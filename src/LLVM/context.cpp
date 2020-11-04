@@ -40,9 +40,7 @@ llvm::GlobalVariable* DFContext::CreateGlobal(const std::string name, llvm::Type
 	return g_var;
 }
 
-// llvm::ConstantInt* DFContext::CreateConstant(const int value) {
-// 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), value);
-// }
+
 
 llvm::Function* DFContext::CreateMainFunc() {
 	const auto func_type = llvm::FunctionType::get(builder->getInt32Ty(), false);
@@ -63,48 +61,6 @@ llvm::AllocaInst* DFContext::CreateEntryBlockAlloca(llvm::Type* type, const std:
 	return alloca;
 }
 
-// llvm::Type* DFContext::GetType(std::shared_ptr<AST::Type>  type) {
-//
-// 	llvm::Type* llvm_type = nullptr;
-// 	if (type->ty > 0) {
-// 		switch (type->ty) {
-// 		case K_void:
-// 		case 1:             llvm_type = llvm::Type::getVoidTy(context); break;
-// 		case K_byte:        llvm_type = llvm::Type::getInt8Ty(context); break;
-// 		case K_short:       llvm_type = llvm::Type::getInt16Ty(context); break;
-// 		case K_int:         llvm_type = llvm::Type::getInt32Ty(context); break;
-// 		case K_long:        llvm_type = llvm::Type::getInt64Ty(context); break;
-// 		case K_float:       llvm_type = llvm::Type::getFloatTy(context); break;
-// 		case K_double:      llvm_type = llvm::Type::getDoubleTy(context); break;
-// 		case K_bool:        llvm_type = llvm::Type::getInt1Ty(context); break;
-// 		case K_string:      llvm_type = llvm::Type::getInt8PtrTy(context); break;
-// 			// case K_ushort:       return llvm::Type::getInt16Ty(DFContext::context);break;
-// 			// case K_uint:         return llvm::Type::getInt32Ty(DFContext::context);break;
-// 			// case K_ulong:        return llvm::Type::getInt64Ty(DFContext::context);break;
-// 		default:
-// 			Debugger::ErrorV("in DFContext::GetType , unexpected typename", -1, -1);
-// 			return nullptr;
-// 		}
-// 	}
-// 	else {
-// 		if (IsCustomType(type->str)) {
-// 			const auto ty = module->getTypeByName(type->str);
-// 			llvm_type = types_table[type->str]->category == AST::decl::ClassDecl::kClass ? ty->getPointerTo() : static_cast<llvm::Type*>(ty);
-// 		}
-// 		else {
-//
-// 			llvm_type = module->getTypeByName(type->str);
-// 			if (llvm_type == nullptr) {
-// 				Debugger::ErrorV((std::string("Unknown Type: ") + type->str + "\n").c_str(), -1, -1);
-// 				return nullptr;
-// 			}
-// 		}
-// 	}
-//
-// 	if (type->array == -1)return llvm_type;
-// 	if (type->array == -2)return llvm_type->getPointerTo();
-// 	return llvm::ArrayType::get(llvm_type, type->array);
-// }
 
 llvm::StoreInst* DFContext::AlignStore(llvm::StoreInst* a) {
 	// a->setAlignment(MaybeAlign(8));
@@ -128,11 +84,7 @@ void DFContext::BuildInFunc(std::shared_ptr<DFContext> ctx,std::string name, std
     for (auto ty : args) llvm_types.push_back(ty->ToLLVM(ctx));
 	llvm::Function::Create(llvm::FunctionType::get(ret->ToLLVM(ctx), llvm_types, isVarArg), llvm::Function::ExternalLinkage, name,ctx->module.get());
 }
-// auto DFContext::BuildInFunc(const char* name, llvm::Type* ret, const std::vector<llvm::Type*> types,const bool isVarArg) const -> void {
-// 	std::vector<llvm::Type*> types;
-// 	llvm::Function::Create(llvm::FunctionType::get(ret, types, isVarArg), llvm::Function::ExternalLinkage, name,
-// 		module.get());
-// }
+
 
 void DFContext::WriteReadableIr(llvm::Module* module, const char* file, bool print) {
 	std::string ir;
@@ -242,6 +194,8 @@ int DFContext::GetCustomTypeCategory(const std::string ty) {
 bool DFContext::ExistClass(std::string name) {
 	return  (types_table.find(name) != types_table.end());
 }
+
+
 
 DFContext::DFContext(std::shared_ptr<AST::Program> program) {
     if(program==nullptr)return;

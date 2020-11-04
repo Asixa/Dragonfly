@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include <iostream>
 #include <sstream>
 
@@ -38,7 +39,6 @@ int main(int argc, char** argv) {
     Debugger::only_tokenize = argc > 2;
     
     const auto start = clock();
-	// Lexer::LoadFile(filename.c_str());
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
 
