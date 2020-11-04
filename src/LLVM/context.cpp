@@ -73,7 +73,7 @@ DFContext::DFContext(std::shared_ptr<AST::Program> program) {
     data_layout = std::make_unique < llvm::DataLayout>(module.get());
 
 	auto this_ptr = std::shared_ptr<DFContext>(this);
-	ast = std::make_shared<Symbol>(this_ptr);
+	ast = std::make_shared<ASTSymbol>(this_ptr);
 	llvm = std::make_shared<LLVMSymbol>(this_ptr);
 
     //states

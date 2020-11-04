@@ -28,7 +28,7 @@ public:
 	std::unique_ptr<llvm::DataLayout> data_layout;
 
 	std::shared_ptr<AST::Program> program;
-	std::shared_ptr<frontend::Symbol> ast;
+	std::shared_ptr<frontend::ASTSymbol> ast;
 	std::shared_ptr<frontend::LLVMSymbol> llvm;
 
 

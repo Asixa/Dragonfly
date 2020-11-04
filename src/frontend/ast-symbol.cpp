@@ -4,18 +4,15 @@
 #include "AST/declarations/field-list.h"
 #include "ast-symbol.h"
 #include "AST/type.h"
-void frontend::Symbol::CreateScope() {
+void frontend::ASTSymbol::CreateScope() {
 	fields.emplace_back(std::map<std::string, std::shared_ptr<AST::Type>>());
 }
-void frontend::Symbol::EndScope() {
+void frontend::ASTSymbol::EndScope() {
 	fields.pop_back();
 }
 
-void frontend::Symbol::AddField(const std::string k, const std::shared_ptr<AST::Type> v) {
-	fields.back()[k] = v;
-}
-
-std::shared_ptr<AST::Type> frontend::Symbol::GetField(std::string k) {
+#pragma region Get
+std::shared_ptr<AST::Type> frontend::ASTSymbol::GetField(std::string k) {
 	for (int i = fields.size() - 1; i >= 0; i--) {
 		if (fields[i].find(k) != fields[i].end())
 			return fields[i][k];
@@ -23,7 +20,7 @@ std::shared_ptr<AST::Type> frontend::Symbol::GetField(std::string k) {
 	return nullptr;
 }
 
-std::shared_ptr<AST::Type> frontend::Symbol::GetMemberField(const std::shared_ptr<AST::Type>type, const std::string name) {
+std::shared_ptr<AST::Type> frontend::ASTSymbol::GetMemberField(const std::shared_ptr<AST::Type>type, const std::string name) {
     if(type->category==AST::Type::Custom) {
 		auto decl =GetClassDecl(type->ToString());
 		if (!decl)return nullptr;
@@ -34,69 +31,75 @@ std::shared_ptr<AST::Type> frontend::Symbol::GetMemberField(const std::shared_pt
     return nullptr;
 }
 
-std::shared_ptr<AST::decl::ClassDecl> frontend::Symbol::GetClassTemplate(const std::string name) {
-	if (class_template_table.find(name) == class_template_table.end())return nullptr;
-	return class_template_table[name];
+std::shared_ptr<AST::decl::ClassDecl> frontend::ASTSymbol::GetClassTemplate(const std::string name) {
+	if (class_templates.find(name) == class_templates.end())return nullptr;
+	return class_templates[name];
 }
 
-std::shared_ptr<AST::decl::FunctionDecl>frontend::Symbol::GetFuncTemplate(std::string name) {
-	if (function_template_table.find(name) == function_template_table.end())return nullptr;
-	return function_template_table[name];
+std::shared_ptr<AST::decl::FunctionDecl>frontend::ASTSymbol::GetFuncTemplate(std::string name) {
+	if (function_templates.find(name) == function_templates.end())return nullptr;
+	return function_templates[name];
 }
 
-std::shared_ptr<AST::decl::FunctionDecl> frontend::Symbol::GetFunctionDecl(std::string name) {
-	if (functions_table.find(name) != functions_table.end())
-		return functions_table[name];
-	if (extern_functions_table.find(name) != extern_functions_table.end())
-		return extern_functions_table[name];
+std::shared_ptr<AST::decl::FunctionDecl> frontend::ASTSymbol::GetFunctionDecl(std::string name) {
+	if (functions.find(name) != functions.end())
+		return functions[name];
+	if (extern_functions.find(name) != extern_functions.end())
+		return extern_functions[name];
 	return nullptr;
 }
 
-bool frontend::Symbol::IsCustomType(const std::string name) {
-	return types_table.find(name) != types_table.end();
+std::shared_ptr<AST::CustomType> frontend::ASTSymbol::GetClass(std::string name) {
+	if (types.find(name) != types.end())return types[name];
+	return nullptr;
 }
 
-void frontend::Symbol::AddExternFunc(std::string name, std::shared_ptr<AST::decl::FunctionDecl> decl) {
-    extern_functions_table[name] = decl;
+std::shared_ptr<AST::decl::ClassDecl> frontend::ASTSymbol::GetClassDecl(std::string name) {
+	if (types.find(name) != types.end())return types[name]->decl;
+	return nullptr;
 }
 
-void frontend::Symbol::AddClassTemplate(std::string name, std::shared_ptr<AST::decl::ClassDecl> decl) {
-    class_template_table[name] = decl;
+int frontend::ASTSymbol::GetCustomTypeCategory(const std::string ty) {
+	return IsCustomType(ty) ? types[ty]->category : -1;
+}
+#pragma endregion
+
+#pragma region Add
+void frontend::ASTSymbol::AddField(const std::string k, const std::shared_ptr<AST::Type> v) {
+	fields.back()[k] = v;
 }
 
-void frontend::Symbol::AddFuncTemplate(std::string name, std::shared_ptr<AST::decl::FunctionDecl> decl) {
-    function_template_table[name] = decl;
+void frontend::ASTSymbol::AddExternFunc(std::string name, std::shared_ptr<AST::decl::FunctionDecl> decl) {
+    extern_functions[name] = decl;
 }
 
-void frontend::Symbol::AddAlias(std::string from, std::string to) {
-    func_alias_table[from] = to;
+void frontend::ASTSymbol::AddClassTemplate(std::string name, std::shared_ptr<AST::decl::ClassDecl> decl) {
+    class_templates[name] = decl;
 }
 
-void frontend::Symbol::AddClass(std::string name, std::shared_ptr<AST::CustomType> ty) {
-    types_table[name] = ty;
+void frontend::ASTSymbol::AddFuncTemplate(std::string name, std::shared_ptr<AST::decl::FunctionDecl> decl) {
+    function_templates[name] = decl;
 }
 
-void frontend::Symbol::AddFunction(std::string name, std::shared_ptr<AST::decl::FunctionDecl> decl) {
-    functions_table[name] = decl;
+void frontend::ASTSymbol::AddAlias(std::string from, std::string to) {
+    func_alias[from] = to;
 }
 
-std::shared_ptr<AST::CustomType> frontend::Symbol::GetClass(std::string name) {
-    if (types_table.find(name) != types_table.end())return types_table[name];
-    return nullptr;
+void frontend::ASTSymbol::AddClass(std::string name, std::shared_ptr<AST::CustomType> ty) {
+    types[name] = ty;
 }
 
-std::shared_ptr<AST::decl::ClassDecl> frontend::Symbol::GetClassDecl(std::string name) {
-    if (types_table.find(name) != types_table.end())return types_table[name]->decl;
-    return nullptr;
+void frontend::ASTSymbol::AddFunction(std::string name, std::shared_ptr<AST::decl::FunctionDecl> decl) {
+    functions[name] = decl;
+}
+#pragma endregion
+
+bool frontend::ASTSymbol::IsCustomType(const std::string name) {
+	return types.find(name) != types.end();
 }
 
-
-int frontend::Symbol::GetCustomTypeCategory(const std::string ty) {
-	return IsCustomType(ty) ? types_table[ty]->category : -1;
-}
-
-std::string frontend::Symbol::Alias(std::string name) {
-    if (func_alias_table.find(name) != func_alias_table.end())
-        return func_alias_table[name];
+std::string frontend::ASTSymbol::Alias(std::string name) {
+    if (func_alias.find(name) != func_alias.end())
+        return func_alias[name];
     return name;
 }
