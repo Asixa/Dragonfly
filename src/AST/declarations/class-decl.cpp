@@ -6,8 +6,7 @@
 namespace AST {
 	using namespace decl;
 
-   
-    // copy from
+    // copy 
     ClassDecl::ClassDecl(ClassDecl* from) {
 		fields = std::make_shared<FieldList>();
 		is_template = from->is_template;
@@ -96,35 +95,32 @@ namespace AST {
  
 #pragma region  Analysis
 	void ClassDecl::AnalysisHeader(std::shared_ptr<DFContext>ctx) {
-		if (is_template){
-			ctx->ast->AddClassTemplate(name, std::shared_ptr<ClassDecl>(this));
+		if (is_template){                                                               // we don't analysis the template, we use templates to generate decls.
+			ctx->ast->AddClassTemplate(name, std::shared_ptr<ClassDecl>(this));     // so we save it for later use.
             return;
 		}
-        const auto full_name = GetFullname();
-		// Check duplicated class
-		if (ctx->ast->GetClass(full_name)) {
-			Debugger::ErrorV(line, ch,"type {} is not defined", full_name);
+        const auto full_name = GetFullname();                  
+		if (ctx->ast->GetClass(full_name)) {                                            // Check duplicated class
+			Debugger::ErrorV(line, ch,"type {} is already defined", full_name);
 			return;
 		}
 		ctx->ast->AddClass(full_name,GetType());
-        const auto this_ptr = std::shared_ptr<ClassDecl>(this);
-		// Add subfunction to global decalarations
-		for (auto& function : functions) {
+        const auto this_ptr = std::shared_ptr<ClassDecl>(this);                  // make the shared ptr of this decl, and pass it to all sub functions.
+		for (auto& function : functions) {                                          // Add subfunction to global decalarations
 			function->parent= this_ptr;
-			if (generic_info)function->PassGeneric(generic_info,generic);
 			ctx->program->declarations.push_back(function);
 		}
 	}
 
-
     void ClassDecl::Analysis(std::shared_ptr<DFContext>ctx) {
-		if (is_template) return;
-		if (!interfaces.empty()) {
-            for(auto i=0;i<interfaces.size();i++) {
+		if (is_template) return;                                                    // we don't analysis the template,  we use templates to generate decls.
+
+		if (!interfaces.empty()) {                                                  // here we check the legality of the interfaces
+            for(int i=0,size = interfaces.size();i<size;i++) {                      // there should be only one class and others should be interface
 				auto inherit = interfaces[i];
-                if(inherit->category== Type::Custom) {
-					auto cast = std::static_pointer_cast<CustomType>(inherit);
-					if (i <= 0) {
+                if(inherit->category== Type::Custom) {                              // only custom type is inheritable
+                    const auto cast = std::static_pointer_cast<CustomType>(inherit);
+					if (i == 0) {
 						base_type = cast;
 						fields->content.insert(fields->content.begin(), std::make_shared<FieldDecl>("$base", base_type));
 					}
@@ -138,7 +134,7 @@ namespace AST {
 
 
     // Called at Analysis State
-	std::shared_ptr<ClassDecl> ClassDecl::InstantiateTemplate(std::shared_ptr<DFContext> context,std::shared_ptr<FieldList> replace_by) {
+	std::shared_ptr<ClassDecl> ClassDecl::InstantiateTemplate(const std::shared_ptr<DFContext>& context,std::shared_ptr<FieldList> replace_by) {
 
 		const auto instance = std::make_shared<ClassDecl>(this);
 		instance->is_template = false;
@@ -157,12 +153,12 @@ namespace AST {
         if (context->ast->GetClass(full_name))return context->ast->GetClassDecl(full_name);
 
 		instance->Analysis(context);
-		for (int i=0;i<functions.size();i++)
+		for (auto i=0;i<functions.size();i++)
             instance->functions.push_back(std::make_shared<FunctionDecl>(functions[i]));
+
 		context->program->declarations.push_back(instance);
 		context->ast->AddClass(full_name,instance->GetType());
 		Debugger::Debug("[Instantiate Template]:{} {} {}", full_name, generic->ToString(), replace_by->ToString());
-		// printf("[Instantiate Template]:   %s   %s to %s\n", full_name.c_str(), generic->ToString().c_str(), replace_by->ToString().c_str());
 		for (auto& function : instance->functions) {
 			function->parent= instance;
 			function->PassGeneric(replace_by, generic);
@@ -170,8 +166,6 @@ namespace AST {
 			Debugger::Debug("          [Instantiate Template sub functions]:{}", function->GetFullname());
 			context->program->late_decl.push_back(function);
 		}
-	
-		// instance->AnalysisHeader(context);
 		return instance;
 	}
 

@@ -111,8 +111,8 @@ namespace frontend {
 		}
 
 		template <typename... T>  static void Warn(const std::string s, const T& ... args) {
-			log_color = kGreen;
-			PrintHeader(L"info", line, ch);
+			log_color = kYellow;
+			PrintHeader(L"warning", line, ch);
 			const std::string  message = fmt::format(s, args...);
 			*out << message.c_str() << std::endl;
 			PrintCode();

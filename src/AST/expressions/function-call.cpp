@@ -32,10 +32,6 @@ namespace AST {
 		return func_call;
 	}
 
-	llvm::Value* FuncCall::Gen(const std::shared_ptr<DFContext> context,bool is_var) {
-		return GenField(context,nullptr);
-	}
-
     std::shared_ptr<AST::Type> FuncCall::Analysis(const std::shared_ptr<DFContext>ctx) {
 		return AnalysisField(ctx, nullptr);
 	}
@@ -69,7 +65,7 @@ namespace AST {
 				callee_name += generic->ToString();
 			}
 			else {
-				Debugger::ErrorV(line, ch,"Template '{}' not found ", callee_name);
+				Debugger::ErrorV(line, ch,"Template '{}' not defined", callee_name);
 				return nullptr;
 			}
 		}
@@ -104,12 +100,16 @@ namespace AST {
         // check if the function argument count matchs.
         // some function could have varible arguments size when IsVariableArgument() is true.
 		if (!func->args->IsVariableArgument()&&func->args->content.size() != args.size() + (is_member_func ? 1 : 0) ) {
-			Debugger::ErrorV(line, ch,"Incorrect # arguments passed: {} needed, but got {} instead",
-				std::to_string(func->args->content.size()) ,
-				std::to_string(args.size() + (is_member_func ? 1 : 0)));
+			Debugger::ErrorV(line, ch,"Incorrect # arguments passed: {} needed, but got {} instead", 
+				    std::to_string(func->args->content.size()) ,std::to_string(args.size() + (is_member_func ? 1 : 0)));
 			return nullptr;
 		}
 		return is_constructor?class_type:func->return_type;
+	}
+
+
+	llvm::Value* FuncCall::Gen(const std::shared_ptr<DFContext> context, bool is_var) {
+		return GenField(context, nullptr);
 	}
 
     llvm::Value* FuncCall::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* _this) {
@@ -117,34 +117,26 @@ namespace AST {
 		// true if nested function call like A().B(), then we left-DFS
 		if (left != nullptr) _this = left->GenField(ctx,_this);
   
-
 		// Here we generate all the parameters for the Call, store the values into args_v
 		// hidden pointer for member func is not added here. will added later.
 		std::vector<llvm::Value*> args_v;
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
-			// val is the llvm::Value* of current argument experssion.
-			auto val = args[i]->Gen(ctx,false);
-			if (ctx->llvm->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)
+			auto val = args[i]->Gen(ctx,false); 	// val is the llvm::Value* evaluation of current argument experssion.
+			if (ctx->llvm->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)    // TODO check basic type 
 				while (ctx->llvm->GetPtrDepth(val) != 0)
 					val = ctx->builder->CreateLoad(val);
 			if (!val)return Debugger::ErrorV(line, ch,"arguments passed with error");
 			args_v.push_back(val);
 		}
 
-  
-		// here we check if the func is a constructor
+		//  if the func is a constructor, then it should pass a 'this' pointer to init.
+        // class and struct use different ways to create. class stores on heap, struct stores on stack.
 		if (is_constructor) {
 			switch (class_type->decl->category) {
-			case ClassDecl::kClass: 
-				_this = ctx->llvm->Malloc(class_type->ToLLVM(ctx)->getPointerElementType());
-				break;
-			case ClassDecl::kStruct:
-				_this = ctx->llvm->CreateEntryBlockAlloca(class_type->ToLLVM(ctx), callee_name);
-				break;
-			case ClassDecl::kInterface:
-				return  Debugger::ErrorV(line, ch,"Cannot call a constructor of a interface type");
-			default: //here the category should be -1
-				return Debugger::ErrorV(line, ch,"Cannot call a constructor of a basic type");
+			case ClassDecl::kClass:  _this = ctx->llvm->Malloc(class_type->ToLLVM(ctx)->getPointerElementType()); break;
+			case ClassDecl::kStruct: _this = ctx->llvm->CreateEntryBlockAlloca(class_type->ToLLVM(ctx), callee_name); break;
+			case ClassDecl::kInterface: return Debugger::ErrorV(line, ch,"Cannot call a constructor of a interface type");
+			default:  return Debugger::ErrorV(line, ch,"Cannot call a constructor of a basic type"); //here the category should be -1
 			}
 		}
 
@@ -152,7 +144,7 @@ namespace AST {
 		if (is_member_func) {
 			const auto ptr_depth = ctx->llvm->GetPtrDepth(_this);
 			auto this_arg = _this;
-			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
+			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*        // TODO this is to catch class this. X**. we also need to check struct.
 				this_arg = ctx->builder->CreateLoad(_this);
 			args_v.insert(args_v.begin(), this_arg);
 		}
@@ -161,23 +153,24 @@ namespace AST {
 		// now, callee_name is the full function name, eg: "A::bar" or "foo"  etc.
 		// and we try get the fuction.
 	 
-		if (!is_constructor) {
-            const auto ty = ctx->module->getTypeByName(name);
-			if (ty) {
-				if (ctx->llvm->GetFunction(callee_name + param_name) != nullptr) {
-					is_member_func = true;
-					callee_name +=param_name;
-					is_constructor = true;
-                    //HACK
-					_this = ctx->llvm->Malloc(ty->getPointerTo());
-					const auto ptr_depth = ctx->llvm->GetPtrDepth(_this);
-					auto this_arg = _this;
-					if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
-						this_arg = ctx->builder->CreateLoad(_this);
-					args_v.insert(args_v.begin(), this_arg);
-				}
-			}
-		}
+		// if (!is_constructor) {
+  //           const auto ty = ctx->module->getTypeByName(name);
+		// 	if (ty) {
+		// 		if (ctx->llvm->GetFunction(callee_name + param_name) != nullptr) {
+		// 			is_member_func = true;
+		// 			callee_name +=param_name;
+		// 			is_constructor = true;
+  //                   //HACK
+		// 			_this = ctx->llvm->Malloc(ty->getPointerTo());
+		// 			const auto ptr_depth = ctx->llvm->GetPtrDepth(_this);
+		// 			auto this_arg = _this;
+		// 			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
+		// 				this_arg = ctx->builder->CreateLoad(_this);
+		// 			args_v.insert(args_v.begin(), this_arg);
+		// 		}
+		// 	}
+		// }
+	
 		auto callee = ctx->llvm->GetFunction(callee_name);
 		
 		// if the function not exist, maybe because it is a overloaded function.
@@ -190,25 +183,20 @@ namespace AST {
   
 		// if we still cannot find the function, we could now throw a error.
 		if (!callee)
-			return Debugger::ErrorV(line, ch,"Unknown function referenced: {}",callee_name);
+			return Debugger::ErrorV(line, ch,"Unknown function referenced: {}",callee_name); // this should never happen since we have Semantic Analysis.
 		
-        while (ctx->llvm->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
-			args_v[0] = ctx->builder->CreateLoad(args_v[0]);
+   //      while (ctx->llvm->GetPtrDepth(args_v[0])>1)                               // TODO this is a hack, should be removed
+			// args_v[0] = ctx->builder->CreateLoad(args_v[0]);
 
-        for(auto i=0;i<callee->arg_size();i++) {
-			// printf("%s *%d == %s *%d\n", ctx->GetStructName(callee->getArg(i)).c_str(), ctx->GetPtrDepth(callee->getArg(i)), ctx->GetStructName(args_v[i]).c_str(), ctx->GetPtrDepth(args_v[i]));
+        for(int i=0,size= callee->arg_size();i<size;i++) {                                      // TODO this is also a hack, but it works
             const auto want_ptr = ctx->llvm->GetPtrDepth(callee->getArg(i));
             while (ctx->llvm->GetPtrDepth(args_v[i])>want_ptr)
 				args_v[i] = ctx->builder->CreateLoad(args_v[i]);
         }
-		// call the function and save it to v
-		llvm::Value* value = ctx->builder->CreateCall(callee, args_v);
 		
-		// since constructor returns void, the value shoud be the initized 'parent'
-		if (is_constructor) value = _this;
-		// it the field is not done yet. continue.
-		
-		if (child != nullptr) {
+		llvm::Value* value = ctx->builder->CreateCall(callee, args_v);  // call the function and save it to v
+		if (is_constructor) value = _this;                              // since constructor returns void, the value shoud be the initized 'parent'
+		if (child != nullptr) {                                         // it the field is not done yet. continue.
 			child->is_ptr = is_ptr;
 			value = child->GenField(ctx, value);
 		}

@@ -59,7 +59,7 @@ namespace AST {
 			 * \param context the DFContext object that requried to generate IR.
 			 * \param param the generic types will be replaced by this list of types after instantiation.
 			 */
-			std::shared_ptr<ClassDecl> InstantiateTemplate(std::shared_ptr<DFContext> context, std::shared_ptr<FieldList> param);
+			std::shared_ptr<ClassDecl> InstantiateTemplate(const std::shared_ptr<DFContext>& context, std::shared_ptr<FieldList> param);
 
 			std::shared_ptr<CustomType>GetType();
 		};

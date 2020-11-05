@@ -23,16 +23,15 @@ namespace AST {
 		if (assign) op_name.pop_back();
         const auto name=ctx->llvm->GetStructName(lhs)+op_name+ctx->llvm->GetStructName(rhs);
 
-        if(gens.find(name)!=gens.end()) gens[name](lhs, rhs, ctx);
+		llvm::Value* result;
+        if(gens.find(name)!=gens.end()) result=gens[name](lhs, rhs, ctx);
 		else {
-			auto operator_func=ctx->llvm->GetFunction(name);
-            if(operator_func) {
-				// ctx->builder->CreateCall(operator_func, args_v);
-            }
+            const auto operator_func=ctx->llvm->GetFunction(name);
+			if (operator_func) result = ctx->builder->CreateCall(operator_func, { lhs,rhs });
+			else return  Debugger::ErrorV(line, ch, "There is no operator override of {} between {} and {}",Lexer::Token::Name(op), ctx->llvm->GetStructName(lhs), ctx->llvm->GetStructName(rhs));
 		}
-
 		if (op == '=' || assign)
-			return ctx->builder->CreateStore(lhs,rhs);
+			return ctx->builder->CreateStore(result,lhs);
 	}
 
     llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx, bool is_ptr) {
