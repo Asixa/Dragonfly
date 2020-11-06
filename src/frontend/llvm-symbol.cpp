@@ -8,6 +8,31 @@
 void frontend::LLVMSymbol::CreateScope() {
 	fields.push_back(std::map<std::string, llvm::Value*>());
 }
+
+llvm::GlobalVariable* frontend::LLVMSymbol::CreateGlobal(const std::string name, llvm::Type* ty) {
+	ctx->module->getOrInsertGlobal(name, ty);
+	auto g_var = ctx->module->getNamedGlobal(name);
+	// g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
+	g_var->setAlignment(4);
+	g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
+	if (ty->isAggregateType()) {
+
+		Debugger::Debug("{} is isAggregateType", ctx->llvm->GetStructName(ty));
+	    g_var->setInitializer(llvm::ConstantAggregateZero::get(ty));
+	}
+	else {
+        switch (ty->getTypeID()) {
+		    case llvm::Type::IntegerTyID: g_var->setInitializer(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->context), 0)); break;
+		    case llvm::Type::PointerTyID: g_var->setInitializer(
+                    llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(ty)));
+				
+                break;
+        }
+	   
+	}
+	return g_var;
+}
+
 void frontend::LLVMSymbol::EndScope() {
 	fields.pop_back();
 }
@@ -161,13 +186,7 @@ llvm::AllocaInst* frontend::LLVMSymbol::CreateEntryBlockAlloca(llvm::Type* type,
 	return alloca;
 }
 
-llvm::GlobalVariable* frontend::LLVMSymbol::CreateGlobal(const std::string name, llvm::Type* ty) {
-	ctx->module->getOrInsertGlobal(name, ty);
-	auto g_var = ctx->module->getNamedGlobal(name);
-	g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
-	g_var->setAlignment(4);
-	return g_var;
-}
+
 
 llvm::Function* frontend::LLVMSymbol::GetFunction(std::string name) {
 	return ctx->module->getFunction(ctx->ast->Alias(name));

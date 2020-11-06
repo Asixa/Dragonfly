@@ -12,25 +12,30 @@ void CPUContext::BuiltinCudaCheck() {
 	builder->SetInsertPoint(entry);
 
     // CUdevice device;
-    const auto device = llvm->CreateEntryBlockAlloca(driver.CUdevice,"device",func);
+	// const auto device = llvm->CreateEntryBlockAlloca(driver.CUdevice, "device", func);
+	const auto device= llvm->CreateGlobal("device", driver.CUdevice);
+	// const auto device = llvm->CreateEntryBlockAlloca(driver.CUdevice, "device", func);
+
     // char name[128];
 	llvm::Value* name=llvm->CreateEntryBlockAlloca(llvm::ArrayType::get(llvm::Type::getInt8Ty(context), 128),"GPUName", func);
     // char* namePtr=name;
-    auto namePtr = builder->CreateStructGEP(name, 0);
+    const auto name_ptr = builder->CreateStructGEP(name, 0);
     // cuInit(0);
 	builder->CreateCall(driver.init, { llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0) });
 	// cuDeviceGet(&device, 0)
     builder->CreateCall(driver.device_get, { device,llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),0) });
 
+	// builder->CreateStore(builder->CreateLoad(device), deviceGlobal);
+
 	// cuDeviceGetName(name, 128, device);
 	builder->CreateCall(driver.device_get_name, { 
-		namePtr,
+		name_ptr,
 	    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 128),
 	    builder->CreateLoad(device) });
 	// printf("Using CUDA Device %s\n",namePtr);
 	builder->CreateCall(llvm->GetFunction("printf"), { 
-	    builder->CreateGlobalStringPtr("Using CUDA Device %s\n"),namePtr });
-    //return
+	    builder->CreateGlobalStringPtr("Using CUDA Device %s\n"),name_ptr });
+    //return;
 	builder->CreateRetVoid();
 
 
@@ -58,13 +63,11 @@ std::shared_ptr<CPUContext> CPUContext::Create(std::shared_ptr<AST::Program> pro
 }
 
 void CPUContext::BuiltIn(std::shared_ptr<DFContext> ptr) {
-	DFContext::BuildInFunc(ptr, "malloc", AST::BasicType::Void_Ptr, {AST::BasicType::Int });
-	DFContext::BuildInFunc(ptr, "memcpy", AST::BasicType::Void_Ptr, {AST::BasicType::Void_Ptr, AST::BasicType::Void_Ptr, AST::BasicType::Int });
-	DFContext::BuildInFunc(ptr, "free", AST::BasicType::Void_Ptr, {AST::BasicType::Void_Ptr });
-	DFContext::BuildInFunc(ptr, "printf", AST::BasicType::Void, {AST::BasicType::Void_Ptr }, true);
+	BuildInFunc(ptr, "malloc", AST::BasicType::Void_Ptr, {AST::BasicType::Int });
+	BuildInFunc(ptr, "memcpy", AST::BasicType::Void_Ptr, {AST::BasicType::Void_Ptr, AST::BasicType::Void_Ptr, AST::BasicType::Int });
+	BuildInFunc(ptr, "free", AST::BasicType::Void_Ptr, {AST::BasicType::Void_Ptr });
+	BuildInFunc(ptr, "printf", AST::BasicType::Void, { AST::BasicType::Void_Ptr }, true);
 
-
-	frontend::Debugger::Debug("BuiltIn");
 	const auto int32 = llvm::Type::getInt32Ty(context);
 	const auto size_t = llvm::Type::getInt64Ty(context);
 	const auto floatPtr = llvm::Type::getFloatPtrTy(context);
