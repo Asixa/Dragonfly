@@ -7,7 +7,7 @@
 
 void CPUContext::BuiltinCudaCheck() {
 	const auto func_type = llvm::FunctionType::get(builder->getVoidTy(), false);
-	const auto func = llvm::Function::Create(func_type, llvm::GlobalValue::ExternalLinkage, "CudaCheck", module.get());
+	const auto func = llvm::Function::Create(func_type, llvm::GlobalValue::ExternalLinkage, "InitCuda", module.get());
 	const auto entry = llvm->CreateBasicBlock(func, "entry");
 	builder->SetInsertPoint(entry);
 
@@ -44,7 +44,7 @@ void CPUContext::BuiltinCudaCheck() {
 	decl->return_type = AST::BasicType::Void;
 	decl->args = std::make_shared<AST::decl::FieldList>();
 	decl->args->type = AST::decl::FieldList::Arguments;
-	ast->AddExternFunc("CudaCheck", decl);
+	ast->AddExternFunc("InitCuda", decl);
 
 }
 

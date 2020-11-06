@@ -1,5 +1,5 @@
 printf("***************************\n")
-CudaCheck()
+InitCuda() // will call hiddenly in the future
 printf("***************************\n")
 
 class A
