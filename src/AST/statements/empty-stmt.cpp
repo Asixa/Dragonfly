@@ -10,7 +10,11 @@ namespace AST {
 			return instance;
 	}
 
-	void Empty::Gen(std::shared_ptr<DFContext> context) {
+    void Empty::Analysis(std::shared_ptr<DFContext>ctx) {
+		value->Analysis(ctx);
+	}
+
+    void Empty::Gen(std::shared_ptr<DFContext> context) {
 		value->Gen(context);
 	}
 

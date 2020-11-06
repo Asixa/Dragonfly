@@ -9,7 +9,9 @@ namespace AST {
 	    *Debugger::out << "[Factor]";
 	}
 
-	std::shared_ptr<Expr> Factor::Parse() {
+    std::shared_ptr<AST::Type> Factor::Analysis(std::shared_ptr<DFContext>) { return nullptr; }
+
+    std::shared_ptr<Expr> Factor::Parse() {
 		std::shared_ptr<Expr> factor;
 		switch (Lexer::token->type) {
 		case '(': {
@@ -63,8 +65,7 @@ namespace AST {
 		case K_int: case K_short: case K_long: case K_float: case K_double:
 		case K_uint: case K_ushort: case K_ulong: case K_string:
 		default:
-			Debugger::Error(
-				(std::wstringstream() << "unexpected \"" << Lexer::Token::Name(Lexer::token->type) << "\" ").str());
+			Debugger::Error("unexpected '{}' ",Lexer::Token::Name(Lexer::token->type));
 			return nullptr;
 		}
 
@@ -72,7 +73,7 @@ namespace AST {
 	}
 
 
-	llvm::Value* Factor::Gen(std::shared_ptr<DFContext> context,int cmd) {
+	llvm::Value* Factor::Gen(std::shared_ptr<DFContext> context, bool is_ptr) {
 		return nullptr;
 	}
 }

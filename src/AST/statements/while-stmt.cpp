@@ -19,11 +19,14 @@ namespace AST {
 		else instance->stmts = Statement::Parse();
 		return instance;
 	}
-	void While::Gen(std::shared_ptr<DFContext> ctx) {
+
+    void While::Analysis(std::shared_ptr<DFContext>) {}
+
+    void While::Gen(std::shared_ptr<DFContext> ctx) {
 
 		auto cond_v = condition->Gen(ctx);
 		if (!cond_v) {
-			Debugger::ErrorNonBreak(L"Error in condititon");
+			Debugger::ErrorNonBreak("Error in condititon");
 			return;
 		}
 		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->True, "cond");

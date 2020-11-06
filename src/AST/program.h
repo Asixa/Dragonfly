@@ -34,9 +34,8 @@
 
 #include "AST/declarations/declaration.h"
 #include "AST/declarations/function-decl.h"
-#include "AST/declarations/field-decl.h"
+#include "AST/declarations/variable-decl.h"
 #include "AST/declarations/class-decl.h"
-#include "AST/declarations/extension.h"
 
 #include "AST/statements/statement.h"
 #include "AST/statements/statements.h"
@@ -57,9 +56,10 @@ namespace AST {
 		void ParseSingle();
     public:
 		std::vector<std::shared_ptr<decl::Declaration>> declarations;
-		std::vector<std::shared_ptr<decl::Declaration>> late_gen;
+		std::vector<std::shared_ptr<decl::Declaration>> late_decl;
 		static std::shared_ptr<Program> Parse();
-        void Gen(std::shared_ptr<DFContext>);
+		void Gen(std::shared_ptr<DFContext>);
+		void Analysis(std::shared_ptr<DFContext> context);
     };
 	std::shared_ptr<Program> Parse();
 };

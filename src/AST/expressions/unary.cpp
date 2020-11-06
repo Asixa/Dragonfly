@@ -25,11 +25,13 @@ namespace AST {
 		return ParsePostfix();
 	}
 
+	std::shared_ptr<AST::Type> expr::Unary::Analysis(const std::shared_ptr<DFContext> ctx) { return expr->Analysis(ctx); }
+
 	std::shared_ptr<expr::Expr> expr::Unary::ParsePrefix() {
 		switch (Lexer::token->type) {
 		case NewLine:
 			Debugger::CatchNewline();
-			Debugger::Error(L"unexpected EndOfLine");
+			Debugger::Error("unexpected EndOfLine");
 			return nullptr;
 		case '-':
 		case '!':
@@ -43,7 +45,7 @@ namespace AST {
 			return Factor::Parse();
 		}
 	}
-	llvm::Value* expr::Unary::Gen(std::shared_ptr<DFContext> context, int cmd) {
+	llvm::Value* expr::Unary::Gen(std::shared_ptr<DFContext> context, bool is_ptr) {
 		const auto v = expr->Gen(context);
 		if (!v)return nullptr;
 		switch (op) {
@@ -53,7 +55,7 @@ namespace AST {
 		case Inc:
 		case Dec:
 		default:
-			return Debugger::ErrorV("invalid unary operator",line,ch);
+			return Debugger::ErrorV(line, ch,"invalid unary operator");
 		}
 	}
 

@@ -4,6 +4,7 @@
 #include "AST/declarations/enum-decl.h"
 #include "AST/declarations/extern-decl.h"
 #include "llvm/IR/Verifier.h"
+#include "AST/type.h"
 namespace AST {
 	using namespace decl;
     void Program::ParseSingle() {
@@ -55,18 +56,6 @@ namespace AST {
 
 	void Program::Gen(std::shared_ptr<DFContext> context) {
 
-        
-
-		context->BuildInFunc("malloc", context->void_ptr,std::vector<llvm::Type*>{context->int32});
-
-		context->BuildInFunc("memcpy", context->void_ptr,
-			std::vector<llvm::Type*>{context->void_ptr, context->void_ptr, context->int32});
-
-		context->BuildInFunc("free", context->void_type,std::vector<llvm::Type*>{context->void_ptr});
-
-		context->BuildInFunc("printf", context->void_type,std::vector<llvm::Type*>{context->void_ptr}, true);
-
-
         // DO not make it into the form like below, because the array will change.
 		for (auto i = 0; i < declarations.size(); i++)
 			try { declarations[i]->GenHeader(context); }
@@ -75,34 +64,62 @@ namespace AST {
 		for (auto& declaration : declarations) 
 			try { declaration->Gen(context); }catch (int e) {}
 
-		// for (auto i = 0; i < late_declarations.size(); i++)
-		// 	try { late_declarations[i]->GenHeader(); } catch (int e) {}
-         
-
-
 		const auto __df_global_var_init = llvm::Function::Create(llvm::FunctionType::get(context->void_type, false), llvm::GlobalValue::ExternalLinkage, "__df_global_var_init", context->module.get());
-		context->builder->SetInsertPoint(context->CreateBasicBlock(__df_global_var_init, "entry"));
+		context->builder->SetInsertPoint(context->llvm->CreateBasicBlock(__df_global_var_init, "entry"));
 		context->builder->CreateRetVoid();
 
-		const auto main_func = context->CreateMainFunc();
-		const auto entry = context->CreateBasicBlock(main_func, "entry");
+		const auto main_func = context->llvm->CreateMainFunc();
+		const auto entry = context->llvm->CreateBasicBlock(main_func, "entry");
 		context->builder->SetInsertPoint(entry);
 
-        
+		context->llvm->CreateScope();
 		for (auto& statement : statements)
 			try {if (statement != nullptr)statement->Gen(context);}catch (int e){}
 		context->builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context->context), 0));
-
-		for (auto i = 0; i < late_gen.size(); i++)
-			try { late_gen[i]->Gen(context); }catch (int e) {}
+		context->llvm->EndScope();
 
 
 		verifyFunction(*main_func);
 	}
+	static bool sortByName(std::shared_ptr<decl::Declaration> a, std::shared_ptr<decl::Declaration>b) {
+		return a->isClass;
+    }
+
+
+
+    void Program::Analysis(std::shared_ptr<DFContext> context) {
+
+		for (auto i = 0; i < declarations.size(); i++)
+			try { declarations[i]->AnalysisHeader(context);  }
+		catch (int e) {}
+
+		for (auto i = 0; i < declarations.size(); i++)
+			try { declarations[i]->Analysis(context);}
+		catch (int e) {}
+
+		context->ast->CreateScope();
+		for (auto& statement : statements)
+			try { if (statement != nullptr)statement->Analysis(context); }
+		catch (int e) {}
+		context->ast->EndScope();
+
+		for (auto i = 0; i < late_decl.size(); i++)
+			try { late_decl[i]->Analysis(context); }
+		catch (int e) {}
+
+        
+        for (const auto& decl : late_decl) declarations.push_back(decl);
+		std::vector<std::shared_ptr<decl::Declaration>> decls;
+		for (const auto& decl : declarations) if (decl->isClass&&!std::static_pointer_cast<ClassDecl>(decl)->is_template)decls.push_back(decl);
+		for (const auto& decl : declarations) if (!decl->isClass&&!std::static_pointer_cast<FunctionDecl>(decl)->is_generic_template)decls.push_back(decl);
+		declarations = decls;
+		for (const auto& decl : declarations)
+			Debugger::Debug("{}  {}", decl->isClass ? "Type:     " : "Function: ", decl->GetFullname());
+  
+		// std::sort(declarations.begin(),declarations.end(), SortFunctor());
+
+    }
 }
 
        
-// 		Match(']');
-// 	}
-// 	return type;
-// }
+

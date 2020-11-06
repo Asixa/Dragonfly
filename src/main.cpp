@@ -11,14 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include <iostream>
 #include <sstream>
+
 
 #include "frontend/lexer.h"
 #include "AST/program.h"
 #include "frontend/package-manager.h"
 #include "frontend/preprocessor.h"
 #include "backend/cuda/cuda-context.h"
+#include "backend/cpu/cpu-context.h"
 
 int main(int argc, char** argv) {
 
@@ -36,20 +39,19 @@ int main(int argc, char** argv) {
 
     Debugger::SetStream(argc == 1);
     Debugger::only_tokenize = argc > 2;
-	std::wcout.imbue(std::locale(""));
-
     
     const auto start = clock();
-	// Lexer::LoadFile(filename.c_str());
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
 
 	// auto ctx = CudaContext::Create(nullptr);
-	const auto context = DFContext::Create(AST::Parse()); 
-
+	const auto context = CPUContext::Create(AST::Parse());
+	printf("--------------------analysis-----------------------\n");
+	DFContext::Analysis();
     if (!Debugger::is_std_out)
         std::wcout << dynamic_cast<std::wstringstream*>(Debugger::out)->str();
-	DFContext::Gen();
+	printf("--------------------gen-----------------------\n");
+	if(!Debugger::error_existed)DFContext::Gen();
     Debugger::WriteOutput("log.txt");
 
 	std::cout << "took a total of " << static_cast<double>(clock() - start) << "ms\n\n";

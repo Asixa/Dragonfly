@@ -15,10 +15,12 @@ namespace AST {
 		}
 		instance->value = expr::Binary::Parse();
 		Lexer::MatchSemicolon();
-		*Debugger::out << "[Parsed] Return Statement\n";
 		return instance;
 	}
-	void Return::Gen(std::shared_ptr<DFContext> ctx) {
+
+    void Return::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Return::Gen(std::shared_ptr<DFContext> ctx) {
 		//////////////////////////////////////////////////////////////////////////////
 		/// State 1£¬ Gen the value, and check.
 		//////////////////////////////////////////////////////////////////////////////
@@ -27,9 +29,9 @@ namespace AST {
 			return;
 		}
 
-		auto val = value->Gen(ctx,1);
+		auto val = value->Gen(ctx);
 		if (!val) {
-			Debugger::ErrorV("Error in return", line, ch);
+			Debugger::ErrorV(line, ch,"Error in return");
 			return;
 		}
 
@@ -39,12 +41,12 @@ namespace AST {
 		auto const function = ctx->builder->GetInsertBlock()->getParent();
 	
 		auto const expected = function->getReturnType();
-		if (ctx->GetStructName(expected) != ctx->GetStructName(val)) {
-			Debugger::ErrorV("return type not same", line, ch);
+		if (ctx->llvm->GetStructName(expected) != ctx->llvm->GetStructName(val)) {
+			Debugger::ErrorV(line, ch,"return type not same" );
 			return;
 		}
-		auto const expected_ptr_level = ctx->GetPtrDepth(expected);
-		auto val_ptr_level = ctx->GetPtrDepth(val);
+		auto const expected_ptr_level = ctx->llvm->GetPtrDepth(expected);
+		auto val_ptr_level = ctx->llvm->GetPtrDepth(val);
 		while (val_ptr_level > expected_ptr_level) {
 			val = ctx->builder->CreateLoad(val);
 			val_ptr_level--;

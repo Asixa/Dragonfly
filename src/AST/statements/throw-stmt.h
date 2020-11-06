@@ -9,6 +9,7 @@ namespace AST {
 			std::shared_ptr<expr::Expr> value;
 		public:
 			static std::shared_ptr<Throw> Parse();
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 		};
 	}

@@ -1,5 +1,6 @@
 #include "AST/declarations/extern-decl.h"
-#include <iostream>
+#include "AST/declarations/class-decl.h"
+#include "AST/declarations/field-list.h"
 using namespace frontend;
 namespace AST{
 
@@ -14,7 +15,7 @@ namespace AST{
 			Lexer::Match(Id);
 			if (Lexer::Check(K_as)) {
 				Lexer::Next();
-				instance->alias = Name::Parse(Name::kClass);
+				instance->alias = NestedName::Parse(NestedName::kClass);
 			}
 			Lexer::MatchSemicolon();
 		}
@@ -23,38 +24,39 @@ namespace AST{
 			instance->name = Lexer::string_val;
 			instance->type = K_func;
 			Lexer::Match(Id);
-
-			Lexer::Match('(');
-			instance->args = FuncParam::Parse();
-			Lexer::Match(')');
+            instance->args = FieldList::ParseArguments(true,true);
 			if (Lexer::Check(':')) {
 				Lexer::Next();
 				instance->return_type = Type::Match();
 			}
-			else instance->return_type->ty = K_void;
+			else instance->return_type=BasicType::Void;
 			if (Lexer::Check(K_as)) {
 				Lexer::Next();
-				instance->alias = Name::Parse(Name::kFunction);
+				instance->alias = NestedName::Parse(NestedName::kFunction);
 				if (Lexer::Check(':')) {
 					Lexer::Match(':');
 					Lexer::Match(':');
 					instance->init = true;
-					instance->alias->type = Name::kClass;
+					instance->alias->type = NestedName::kClass;
 					Lexer::Match(K_init);
 				}
 
 			}
 			Lexer::MatchSemicolon();
 		}
-		else Debugger::Error(L"Expected class or func");
+		else Debugger::Error("Expected class or func");
 		return instance;
 	}
-	void Extern::GenHeader(std::shared_ptr<DFContext> ctx) {
+
+    void Extern::AnalysisHeader(std::shared_ptr<DFContext>) {}
+    void Extern::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Extern::GenHeader(std::shared_ptr<DFContext> ctx) {
 		if (type == K_func) {
 			std::string func_name = name;
 			std::vector<llvm::Type*> arg_types;
-			for (auto i = 0; i < args->size; i++)
-				arg_types.push_back(ctx->GetType(args->types[i]));
+			for (int i = 0,size= args->content.size(); i <size ; i++)
+				arg_types.push_back(args->content[i]->type->ToLLVM(ctx));
 			std::string param_name = "";
 			
 			llvm::Type* parent_type = nullptr;
@@ -63,7 +65,7 @@ namespace AST{
 				if (!alias->GetClassName().empty()) {
 					parent_type = ctx->module->getTypeByName(alias->GetClassName());
 					if (parent_type && parent_type != arg_types[0]) {
-						Debugger::ErrorV("the first argument nust be the member Class if it is a member function", line, ch);
+						Debugger::ErrorV(line, ch,"the first argument nust be the member Class if it is a member function");
 						return;
 					}
 					arg_types[0] = arg_types[0]->getPointerTo();
@@ -75,29 +77,25 @@ namespace AST{
 			if (init) {
 				func_name = alias->GetFullNameWithoutFunc();
 				func_name += parent_type->getStructName();
-				printf("parent is null? %s -  %d  %d\n", func_name.c_str() , parent_type == nullptr, alias->type);
-			
 			}
 		
 			param_name += "(";
 			for (int i = parent_type == nullptr ? 0 : 1, types_size = arg_types.size(); i < types_size; i++)
-				param_name += ctx->GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
+				param_name += ctx->llvm->GetStructName(arg_types[i]) + (i == arg_types.size() - 1 ? "" : ",");
 			param_name += ")";
-			if (alias != nullptr&&(alias->type != 0||init)) {
-				printf(" set alias %s to %s\n", (func_name + param_name).c_str(), name.c_str());
-				ctx->func_alias_table[func_name + param_name] = name;
-			}
+			if (alias != nullptr&&(alias->type != 0||init)) ctx->ast->AddAlias(func_name + param_name, name);
+			
 
 
 			auto the_function = ctx->module->getFunction(name);
 			if (!the_function) {
-				const auto func_type = llvm::FunctionType::get(ctx->GetType(return_type), arg_types, args->is_var_arg);
+				const auto func_type = llvm::FunctionType::get(return_type->ToLLVM(ctx), arg_types, args->IsVariableArgument());
 				the_function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name, ctx->module.get());
 				unsigned idx = 0;
 				for (auto& arg : the_function->args())
-					arg.setName(args->names[idx++]);
+					arg.setName(args->content[idx++]->name);
 			}
-			else  Debugger::ErrorV((std::string("function ") + name + std::string(" already defined\n")).c_str(), line, ch);
+			else  Debugger::ErrorV(line, ch,"function {} already defined", name);
 		}
 		else  if (type == K_class) {
 			auto the_struct = ctx->module->getTypeByName(name);
@@ -105,7 +103,7 @@ namespace AST{
 				the_struct = llvm::StructType::create(ctx->context, name);
 			}
 			else {
-				*Debugger::out << "Type " << name.c_str() << " already defined" << std::endl;
+				Debugger::ErrorV(line, ch, "Type {} already defined", name);
 				return;
 			}
 		}
@@ -114,5 +112,7 @@ namespace AST{
 	void Extern::Gen(std::shared_ptr<DFContext> context) {
 
 	}
+
+	std::string Extern::GetName() { return name; }
 
 }

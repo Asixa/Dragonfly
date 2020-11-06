@@ -14,14 +14,18 @@ namespace AST {
 		public:
 			int type = 0;
 			std::string name;
-			std::shared_ptr<Name> alias;
-			std::shared_ptr<FuncParam> args;
+			std::shared_ptr<NestedName> alias;
+			std::shared_ptr<FieldList> args;
 			std::shared_ptr<AST::Type> return_type;
 			bool init;
-			Extern() { return_type = std::make_shared<Type>(); }
+			Extern() {  }
 			static std::shared_ptr<Extern>Parse();
+
+			void AnalysisHeader(std::shared_ptr<DFContext>) override;
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
+			std::string GetName() override;
 		};
 	}
 }

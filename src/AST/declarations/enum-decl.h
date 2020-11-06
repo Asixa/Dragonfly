@@ -12,9 +12,12 @@ namespace AST {
 		class EnumDecl final : public Declaration {
 		public:
 			bool anonymous = false;
+			void AnalysisHeader(std::shared_ptr<DFContext>) override;
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void GenHeader(std::shared_ptr<DFContext> context) override;
 			void Gen(std::shared_ptr<DFContext> context) override;
 			static std::shared_ptr<EnumDecl>Parse();
+			std::string GetName() override;
 		};
 	}
 }

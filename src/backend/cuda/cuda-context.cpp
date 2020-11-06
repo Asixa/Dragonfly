@@ -13,6 +13,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "nvvm.h"
 #include "cuda.h"
+#include "AST/Type.h"
 
 std::string CudaContext::GenPTX() {
 
@@ -105,14 +106,29 @@ CudaContext::CudaContext(std::shared_ptr<AST::Program> program): DFContext(progr
 			"v64:64:64-v128:128:128-n16:32:64");
 		module->setTargetTriple("nvptx-nvidia-cuda");
 	}
+	const auto this_ptr = std::shared_ptr<CudaContext>(this);
+	ast = std::make_shared<frontend::ASTSymbol>(this_ptr);
+	llvm = std::make_shared<frontend::LLVMSymbol>(this_ptr);
 
+	BuiltIn(this_ptr);
 	GenSample();
  //    llvm::MDNode* kernelMD = llvm::MDNode::get(context, mdVals);
  //    llvm::NamedMDNode* nvvmAnnot = module->getOrInsertNamedMetadata("nvvm.annotations");
 	// nvvmAnnot->addOperand(kernelMD);
 
 }
+/*******************************************************************
+Example annotation from llvm PTX doc:
 
+define void @kernel(float addrspace(1)* %A,
+					float addrspace(1)* %B,
+					float addrspace(1)* %C);
+
+!nvvm.annotations = !{!0}
+!0 = !{void (float addrspace(1)*,
+			 float addrspace(1)*,
+			 float addrspace(1)*)* @kernel, !"kernel", i32 1}
+*******************************************************************/
 void CudaContext::GenSample() {
     const auto voidTy = llvm::Type::getVoidTy(context);
     const auto floatTy = llvm::Type::getFloatTy(context);
@@ -125,7 +141,7 @@ void CudaContext::GenSample() {
     const auto mandelbrotFunc = module->getOrInsertFunction("mandelbrot",mandelbrotTy);
 
 	// Kernel argument types
-    llvm::Type* paramTys[] = { floatGenericPtrTy };
+    llvm::Type* paramTys[] = { llvm::Type::getInt32PtrTy(context,1),llvm::Type::getInt32PtrTy(context,1),llvm::Type::getInt32PtrTy(context,1) };
 
 	// Kernel function type
     llvm::FunctionType* funcTy = llvm::FunctionType::get(voidTy, paramTys, false);
@@ -141,22 +157,47 @@ void CudaContext::GenSample() {
 	// Build the entry block
     llvm::IRBuilder<> builder(entry);
 
-	builder.CreateCall(mandelbrotFunc, func->arg_begin());
+	// builder.CreateCall(mandelbrotFunc, func->arg_begin());
 
 	builder.CreateRetVoid();
 
-	// Create kernel metadata
- //    llvm::Value* mdVals[] = {
-	//   func, llvm::MDString::get(context, "kernel") , llvm::ConstantInt::get(i32Ty, 1)
-	// };
-	llvm::Metadata* mdVals[] = {
-	  llvm::ValueAsMetadata::get(func), llvm::MDString::get(context, "kernel") , llvm::ValueAsMetadata::get(llvm::ConstantInt::get(i32Ty, 1))
-	};
-	// builder->CreateGlobalStringPtr(llvm::StringRef(frontend::Lexer::MangleStr(value)));
-    llvm::MDNode* kernelMD = llvm::MDNode::get(context, mdVals);
+	MarkAsKernel(func);
+}
 
-    llvm::NamedMDNode* nvvmAnnot = module->getOrInsertNamedMetadata("nvvm.annotations");
-	nvvmAnnot->addOperand(kernelMD);
+void CudaContext::BuiltIn(std::shared_ptr < DFContext> ptr) {
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.x", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.y", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.z", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.ntid.x", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.ntid.y", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.ntid.z", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.ctaid.x", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.ctaid.y", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.ctaid.z", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.nctaid.x", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.nctaid.y", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.nctaid.z", AST::BasicType::Int, {});
+	BuildInFunc(ptr, "llvm.nvvm.read.ptx.sreg.tid.nctaid.warpsize", AST::BasicType::Int,{});
+
+	
+	
+	// auto ty=llvm::Type::getInt32PtrTy(context,1);
+}
+
+void CudaContext::MarkAsKernel(llvm::Function* func, int dim) {
+	InsertNvvmAnnotation(func, "kernel", 1);
+    if(dim==0)return;
+	InsertNvvmAnnotation(func, "maxntidx", dim);
+	InsertNvvmAnnotation(func, "minctasm", 2);
+}
+
+void CudaContext::InsertNvvmAnnotation(llvm::Function* f, std::string key, int val) {
+	llvm::Metadata* md_args[] = {
+	    llvm::ValueAsMetadata::get(f),
+	    llvm::MDString::get(context, key),llvm::ValueAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), val))
+	};
+    llvm::MDNode* md_node = llvm::MDNode::get(context, md_args);
+	f->getParent() ->getOrInsertNamedMetadata("nvvm.annotations") ->addOperand(md_node);
 }
 
 

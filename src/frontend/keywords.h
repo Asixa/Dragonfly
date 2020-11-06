@@ -15,6 +15,10 @@
 #ifndef KEYWORDS_H
 #define KEYWORDS_H
 
+// F(int8) F(int32) F(int64) F(int128)				            \
+// F(float32) F(float64) F(float128) 				            \
+
+
 #define KEYWORDS(F)\
 	F(string) F(number) F(bool)									\
 	F(int) F(short) F(long) F(float) F(byte) F(void)			\
@@ -78,6 +82,9 @@ return;}
 		F('>', Ge, Shr, ShrAgn)
 
 #define OTHER_KEYWORDS Num = 128,Str, Id, NewLine,
+
+# define JOINER_TAG "::"
+# define BUILTIN_TAG "$"
 
 enum {
 	OTHER_KEYWORDS

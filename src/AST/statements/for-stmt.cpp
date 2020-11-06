@@ -43,7 +43,9 @@ namespace AST {
 		return instance;
 	}
 
-	void For::Gen(std::shared_ptr<DFContext> context) {
+    void For::Analysis(std::shared_ptr<DFContext>) {}
+
+    void For::Gen(std::shared_ptr<DFContext> context) {
 		auto* const function = context->builder->GetInsertBlock()->getParent();
 
 		init->Gen(context);
@@ -90,7 +92,9 @@ namespace AST {
 		return instance;
 	}
 
-	void ForIterator::Gen(std::shared_ptr<DFContext>) {
+    void ForIterator::Analysis(std::shared_ptr<DFContext>) {}
+
+    void ForIterator::Gen(std::shared_ptr<DFContext>) {
 		
 	}
 }

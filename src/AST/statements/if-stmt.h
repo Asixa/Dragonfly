@@ -13,6 +13,7 @@ namespace AST {
 			std::shared_ptr<Statement> else_stmts;
 		public:
 			static std::shared_ptr<If> Parse();
+			void Analysis(std::shared_ptr<DFContext>) override;
 			void Gen(std::shared_ptr<DFContext>) override;
 		};
 	}

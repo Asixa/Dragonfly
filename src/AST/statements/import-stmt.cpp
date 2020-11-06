@@ -7,6 +7,8 @@ namespace AST {
 			return instance;
 		}
 
-		void Import::Gen(std::shared_ptr<DFContext> context) { }
+    void Import::Analysis(std::shared_ptr<DFContext>) {}
+
+    void Import::Gen(std::shared_ptr<DFContext> context) { }
 	
 }

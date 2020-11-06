@@ -100,10 +100,13 @@ include_directories(
 
 	    ${PROJECT_SOURCE_DIR}/src
 	    ${PROJECT_SOURCE_DIR}/thirdparty/json
+	    #${PROJECT_SOURCE_DIR}/thirdparty/spdlog
+	    ${PROJECT_SOURCE_DIR}/thirdparty/fmt/include
 )
  
 file(GLOB_RECURSE all_SRCS
 	    "${PROJECT_SOURCE_DIR}/src/*.cpp" 
+		${PROJECT_SOURCE_DIR}/thirdparty/fmt/src/*.cc
         )
 
 add_executable (${PROJECT_NAME} ${all_SRCS})

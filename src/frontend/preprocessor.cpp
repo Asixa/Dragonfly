@@ -14,7 +14,7 @@ std::vector<std::wstring>Preprocessor::lines;
 
 std::wstring Preprocessor::LoadFile(const std::string file) {
 	std::wifstream wif(file);
-	if (wif.fail()) Debugger::PrintErrorInfo(L"No such file or directory");
+	if (wif.fail()) Debugger::PrintHeader(L"No such file or directory");
 	wif.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
 	std::wstringstream wss;
 	wss << wif.rdbuf();
