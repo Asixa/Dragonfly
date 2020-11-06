@@ -14,16 +14,6 @@
 std::vector<std::shared_ptr<DFContext>> DFContext::contexts;
 
 
-
-
-
-
-
-
-
-
-
-
 void DFContext::BuildInFunc(std::shared_ptr<DFContext> ctx,std::string name, std::shared_ptr<AST::Type> ret,  std::vector<std::shared_ptr<AST::Type>> args, const bool isVarArg)  {
 	auto decl = std::make_shared<AST::decl::FunctionDecl>();
 	decl->return_type = ret;
@@ -33,10 +23,18 @@ void DFContext::BuildInFunc(std::shared_ptr<DFContext> ctx,std::string name, std
 	ctx->ast->AddExternFunc(name,decl);
 
     std::vector<llvm::Type*> llvm_types;
-    for (auto ty : args) llvm_types.push_back(ty->ToLLVM(ctx));
-	llvm::Function::Create(llvm::FunctionType::get(ret->ToLLVM(ctx), llvm_types, isVarArg), llvm::Function::ExternalLinkage, name,ctx->module.get());
+    for (const auto ty : args) llvm_types.push_back(ty->ToLLVM(ctx));
+	auto f=llvm::Function::Create(llvm::FunctionType::get(ret->ToLLVM(ctx), llvm_types, isVarArg), llvm::Function::ExternalLinkage, name,ctx->module.get());
+	// f->addAttribute(1, llvm::Attribute::ReadNone);
+	// f->addAttribute(2, llvm::Attribute::NoUnwind);
 }
 
+llvm::Function* DFContext::BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg) {
+	return llvm::Function::Create(llvm::FunctionType::get(ret, types, isVarArg), llvm::Function::ExternalLinkage, name,module.get());
+}
+llvm::StructType* DFContext::BuildInType(const char* name) {
+	return llvm::StructType::create(context, name);
+}
 
 void DFContext::WriteReadableIr(llvm::Module* module, const char* file, bool print) {
 	std::string ir;
@@ -72,10 +70,6 @@ DFContext::DFContext(std::shared_ptr<AST::Program> program) {
     builder = std::make_unique<llvm::IRBuilder<>>(context);
     data_layout = std::make_unique < llvm::DataLayout>(module.get());
 
-	auto this_ptr = std::shared_ptr<DFContext>(this);
-	ast = std::make_shared<ASTSymbol>(this_ptr);
-	llvm = std::make_shared<LLVMSymbol>(this_ptr);
-
     //states
 	is_sub_block = false;
 	block_begin = nullptr;
@@ -89,7 +83,6 @@ DFContext::DFContext(std::shared_ptr<AST::Program> program) {
 	void_ptr = llvm::Type::getInt8PtrTy(context);
 	void_type = llvm::Type::getVoidTy(context);
 	int32 = llvm::Type::getInt32Ty(context);
-
 	this->program = program;
 
 }
@@ -111,8 +104,3 @@ void DFContext::Analysis() {
 	}
 }
 
-std::shared_ptr<DFContext> DFContext::Create(std::shared_ptr<AST::Program> program) {
-	auto ptr = std::make_shared<DFContext>(program);
-	contexts.push_back(ptr);
-	return ptr;
-}

@@ -88,10 +88,6 @@ namespace AST {
 
 
     void Program::Analysis(std::shared_ptr<DFContext> context) {
-		DFContext::BuildInFunc(context, "malloc", BasicType::Void_Ptr, { BasicType::Int });
-		DFContext::BuildInFunc(context, "memcpy", BasicType::Void_Ptr, { BasicType::Void_Ptr, BasicType::Void_Ptr,  BasicType::Int });
-		DFContext::BuildInFunc(context, "free", BasicType::Void_Ptr, { BasicType::Void_Ptr });
-		DFContext::BuildInFunc(context, "printf", BasicType::Void, { BasicType::Void_Ptr }, true);
 
 		for (auto i = 0; i < declarations.size(); i++)
 			try { declarations[i]->AnalysisHeader(context);  }

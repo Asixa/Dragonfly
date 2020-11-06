@@ -32,8 +32,6 @@ public:
 	std::shared_ptr<frontend::LLVMSymbol> llvm;
 
 
-
-
 	llvm::Value* True;
 	llvm::Value* False;
 	// static llvm::Value* Null;
@@ -51,18 +49,20 @@ public:
 	// bool ExistClass(std::string);
 
 
-	explicit DFContext(){}
+	
     explicit DFContext(std::shared_ptr<AST::Program> program);
 	static void Gen();
 	static void Analysis();
 
-	static std::shared_ptr<DFContext> Create(std::shared_ptr<AST::Program> program);
+	
 	static void BuildInFunc(std::shared_ptr<DFContext> ctx, std::string name, std::shared_ptr<AST::Type> ret, 
 		const std::vector<std::shared_ptr<AST::Type>> args, const bool isVarArg = false);
 
 
-	
+	llvm::Function* BuildInFunc(const char* name, llvm::Type* ret, std::vector<llvm::Type*> types, bool isVarArg = false);
+	llvm::StructType* BuildInType(const char* name);
 	virtual void Write();
+	virtual void BuiltIn(std::shared_ptr < DFContext> ptr)=0;
 };
 
 #endif

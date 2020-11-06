@@ -110,6 +110,7 @@ namespace AST {
 	}
 
     bool FieldList::IsVariableArgument() {
+		if (content.size() == 0)return false;
 		return content.back()->name == "..." && type == Arguments;
 	}
 }

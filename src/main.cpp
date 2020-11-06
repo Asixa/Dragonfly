@@ -15,11 +15,13 @@
 #include <iostream>
 #include <sstream>
 
+
 #include "frontend/lexer.h"
 #include "AST/program.h"
 #include "frontend/package-manager.h"
 #include "frontend/preprocessor.h"
 #include "backend/cuda/cuda-context.h"
+#include "backend/cpu/cpu-context.h"
 
 int main(int argc, char** argv) {
 
@@ -43,7 +45,7 @@ int main(int argc, char** argv) {
 	Preprocessor::Process();
 
 	// auto ctx = CudaContext::Create(nullptr);
-	const auto context = DFContext::Create(AST::Parse());
+	const auto context = CPUContext::Create(AST::Parse());
 	printf("--------------------analysis-----------------------\n");
 	DFContext::Analysis();
     if (!Debugger::is_std_out)
