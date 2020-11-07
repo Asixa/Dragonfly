@@ -166,12 +166,15 @@ namespace AST {
 		if (is_member_function) {       //TODO check if it is an extension function, if so, we find its parent class
 			const auto class_name = nested_name->GetClassName();
 			if (!class_name.empty()) {
-				// extension = true;
 				parent = ctx->ast->GetClassDecl(class_name);
 				return;
 			}
 		}
-
+		ctx->ast->CreateScope();
+		for (auto& i : args->content) 
+			ctx->ast->AddField(i->name, i->type);
+		statements->Analysis(ctx);
+		ctx->ast->EndScope();
 	
 	}
 

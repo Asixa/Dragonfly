@@ -70,7 +70,6 @@ namespace AST {
 
 		std::shared_ptr<AST::Type> v;
         if(!parent) {
-
 			v = ctx->ast->GetField(name);
             if(!v) {
 				Debugger::ErrorV(line, ch,"Unknown Variable : {}",name );

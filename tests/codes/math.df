@@ -1,5 +1,9 @@
 
 
-
-printf("%f\n",1/0.2f)
-
+class A
+{
+  value:int;
+  init(x:int){ value =x;}
+}
+var a = A(2)
+printf("%d\n",a+1)

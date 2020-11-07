@@ -77,6 +77,7 @@ namespace AST {
 			case K_interface:   instance->declarations.push_back(ClassDecl::Parse(ClassDecl::kInterface)); break;
 			case K_struct:      instance->declarations.push_back(ClassDecl::Parse(ClassDecl::kStruct)); break;
 			case K_enum:        instance->declarations.push_back(EnumDecl::Parse()); break;
+			case K_operator:    break;
 			default:
 				if (instance->category == kInterface)break;
 				auto field_name=Lexer::string_val;

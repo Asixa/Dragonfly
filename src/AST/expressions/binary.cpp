@@ -16,13 +16,12 @@ namespace AST {
 		assign = op == '=' || op >= AddAgn;  // check if it is += -= /= *= ...
 		if (assign) op_name.pop_back();
 		const auto lhs_type = LHS->Analysis(ctx), rhs_type = RHS->Analysis(ctx);
-		
+		if (assign) { return lhs_type; }
         if(lhs_type->category==Type::Basic && rhs_type->category == Type::Basic) {
             const auto lhs_basic = std::static_pointer_cast<BasicType>(lhs_type);
             const auto rhs_basic =std::static_pointer_cast<BasicType>(rhs_type);
 			func_name = lhs_type->ToString() + op_name + rhs_type->ToString();
 			if (lhs_basic->detail == rhs_basic->detail)return lhs_type;
-			if (assign) {  return lhs_type; }
 			auto max = std::max(lhs_basic->detail, rhs_basic->detail);
 			auto max_type = std::make_shared<BasicType>(max);
 			targetTy = max_type->ToLLVM(ctx)->getTypeID();
@@ -35,7 +34,7 @@ namespace AST {
 		func_name = lhs_type->ToString()+ op_name + rhs_type->ToString();
         const auto func=ctx->ast->GetFunctionDecl(func_name);
 		if (func)return func->return_type;
-	    Debugger::Error("{} operation is not defined between {} and {}", op_name, lhs_type->ToString(), rhs_type->ToString());
+	    Debugger::ErrorV(line,ch,"binary operation '{}' between '{}' and '{}' is not found", op_name, lhs_type->ToString(), rhs_type->ToString());
         return nullptr;
     }
 
@@ -49,7 +48,6 @@ namespace AST {
 		v = ctx->builder->CreateCast(llvm::Instruction::SExt, v, llvm::Type::getDoubleTy(ctx->context));
 		auto t=llvm::Type::getInt8Ty(ctx->context);
 		return v;
-        // t.get
 	}
 
 	llvm::Value* Binary::Gen(std::shared_ptr<DFContext> ctx, bool is_ptr) {
@@ -57,11 +55,12 @@ namespace AST {
         const auto lhs = assign?ctx->builder->CreateLoad(lhs_raw):lhs_raw,rhs = RHS->Gen(ctx);
 		const auto lhv = targetTy == 0 ? lhs:  Conv(ctx, lhs, targetTy);
         const auto rhv = targetTy == 0 ? rhs : Conv(ctx, rhs, targetTy);
-        const auto result = gens.find(func_name) != gens.end()
+		llvm::Value* result = nullptr;
+        if(op=='=') result=rhs;
+        else result = gens.find(func_name) != gens.end()
                                   ? gens[func_name](lhv, rhv, ctx)
                                   : ctx->builder->CreateCall(ctx->llvm->GetFunction(func_name), {lhv, rhv});
-		if (op == '=' || assign) 
-			ctx->builder->CreateStore(result, lhs_raw);
+		if (assign) ctx->builder->CreateStore(result, lhs_raw);
 			// if (!is_ptr) result = ctx->builder->CreateLoad(lhs_raw);
 		return result;
 	}
@@ -84,7 +83,6 @@ namespace AST {
 		{"int>int",     [](ARGUMENTS) {return ctx->builder->CreateCast(llvm::Instruction::ZExt, ctx->builder->CreateICmpUGT(left,right,"cmp_tmp"),ctx->constant.int8);     }},
 		{"int==int",    [](ARGUMENTS) {return ctx->builder->CreateCast(llvm::Instruction::ZExt, ctx->builder->CreateICmpEQ(left,right,"cmp_tmp"), ctx->constant.int8);     }},
 		{"int!=int",    [](ARGUMENTS) {return ctx->builder->CreateCast(llvm::Instruction::ZExt, ctx->builder->CreateICmpNE(left,right,"cmp_tmp"), ctx->constant.int8);     }},
-
 
 		{"float+float",     [](ARGUMENTS) {return ctx->builder->CreateFAdd(left,right,"add_tmp");      }},
 		{"float-float",     [](ARGUMENTS) {return ctx->builder->CreateFSub(left,right,"sub_tmp");      }},

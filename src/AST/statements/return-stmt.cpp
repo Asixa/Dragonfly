@@ -18,7 +18,9 @@ namespace AST {
 		return instance;
 	}
 
-    void Return::Analysis(std::shared_ptr<DFContext>) {}
+    void Return::Analysis(std::shared_ptr<DFContext>ctx) {
+		value->Analysis(ctx);
+	}
 
     void Return::Gen(std::shared_ptr<DFContext> ctx) {
 		//////////////////////////////////////////////////////////////////////////////

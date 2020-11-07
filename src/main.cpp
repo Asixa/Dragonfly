@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
     std::wcout.imbue(std::locale(""));
 	PackageManager::QueryPackages();
     std::string filename;
+	
+
     if (argc == 1) {
 		// filename = "../tests/codes/default3.df";
 		filename = "../tests/codes/math.df";
@@ -43,9 +45,9 @@ int main(int argc, char** argv) {
     const auto start = clock();
 	Preprocessor::AddFile(filename);
 	Preprocessor::Process();
-
+	
 	// auto ctx = CudaContext::Create(nullptr);
-	const auto context = CPUContext::Create(AST::Parse());
+	const auto context = CPUContext::Create(AST::Parse()); 
 	printf("--------------------analysis-----------------------\n");
 	DFContext::Analysis();
     if (!Debugger::is_std_out)

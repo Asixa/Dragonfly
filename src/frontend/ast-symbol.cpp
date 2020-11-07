@@ -12,12 +12,23 @@ void frontend::ASTSymbol::EndScope() {
 }
 
 #pragma region Get
-std::shared_ptr<AST::Type> frontend::ASTSymbol::GetField(std::string k) {
+std::shared_ptr<AST::Type> frontend::ASTSymbol::GetField(std::string name) {
+	std::shared_ptr<AST::Type>  v = nullptr;
 	for (int i = fields.size() - 1; i >= 0; i--) {
-		if (fields[i].find(k) != fields[i].end())
-			return fields[i][k];
+		if (fields[i].find(name) != fields[i].end()) {
+			v = fields[i][name];
+			break;
+		}
 	}
-	return nullptr;
+	if (!v && fields.back().find("this") != fields.back().end()) {
+        const auto this_ptr = fields.back()["this"];
+        const auto this_decl = std::static_pointer_cast<AST::CustomType>(this_ptr)->decl;
+		auto this_fields = this_decl->fields;
+        const auto idx = this_fields->FindByName(name);
+		if (idx != -1) v= this_fields->content[idx]->type;
+	}
+    //TODO find in Base
+	return v;
 }
 
 std::shared_ptr<AST::Type> frontend::ASTSymbol::GetMemberField(const std::shared_ptr<AST::Type>type, const std::string name) {
@@ -66,6 +77,7 @@ int frontend::ASTSymbol::GetCustomTypeCategory(const std::string ty) {
 
 #pragma region Add
 void frontend::ASTSymbol::AddField(const std::string k, const std::shared_ptr<AST::Type> v) {
+	Debugger::Debug("Add field {}:{}", k, v->ToString());
 	fields.back()[k] = v;
 }
 
