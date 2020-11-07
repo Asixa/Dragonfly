@@ -15,6 +15,6 @@ namespace AST {
 	}
 
     llvm::Value* Boolean::Gen(std::shared_ptr<DFContext> ctx, bool is_ptr) {
-		return value ? ctx->True : ctx->False;;
+		return value ? ctx->constant.True : ctx->constant.False;;
 	}
 }

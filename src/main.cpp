@@ -24,13 +24,13 @@
 #include "backend/cpu/cpu-context.h"
 
 int main(int argc, char** argv) {
-
+   
     std::wcout.imbue(std::locale(""));
 	PackageManager::QueryPackages();
     std::string filename;
     if (argc == 1) {
 		// filename = "../tests/codes/default3.df";
-		filename = "../tests/codes/generic2.df";
+		filename = "../tests/codes/math.df";
 		// filename = "../tests/codes/b/input.df";
     }
     else if (argc > 1) {

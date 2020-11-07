@@ -4,6 +4,8 @@
 #include "LLVM/context.h"
 class CudaDriver {
 public:
+	llvm::GlobalValue* cuda_device,*cuda_module,*cuda_context;
+	llvm::Constant* ptx;
 	llvm::Function* init,
 		* driver_get_version,
 		* device_get_count,
@@ -46,6 +48,7 @@ public:
 
 class CPUContext :public DFContext {
 	void BuiltinCudaCheck();
+	void BuiltinAssert();
 public:
 	CudaDriver driver;
 	explicit  CPUContext(std::shared_ptr<AST::Program> program);

@@ -30,7 +30,7 @@ namespace AST {
 			Debugger::ErrorNonBreak("Error in condititon");
 			return;
 		}
-		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->True, "cond");
+		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->constant.True, "cond");
 		const auto function = ctx->builder->GetInsertBlock()->getParent();
 		const auto while_bb = llvm::BasicBlock::Create(ctx->context, "do", function);
 		const auto end_bb = llvm::BasicBlock::Create(ctx->context, "end_do");

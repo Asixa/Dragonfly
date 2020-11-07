@@ -105,30 +105,3 @@ void Debugger::CatchNewline() {
     skip_line = false;
 }
 
-// llvm::Value* Debugger::ErrorV(const std::wstring info, int line, int ch) {
-// 	Debugger::error_existed = true;
-// 	Debugger::log_color = Debugger::kRed;
-// 	Debugger::PrintHeader(L"error", line, ch);
-// 	*Debugger::out << info << std::endl;
-// 	if (line != -1)Debugger::PrintCode(line, ch, ch);
-// 	throw -1;
-// }
-//
-//
-// // void Debugger::ErrorNonBreak(const std::wstring info);
-// llvm::Value* Debugger::ErrorV(const char* str, int line, int ch) {
-// 	return ErrorV(Lexer::Str2W(std::string(str)), line, ch);
-// }
-
-// void Debugger::Error(const std::wstring info) {
-//     error_occurred = true;
-//     ErrorNonBreak(info);
-// }
-
-// void Debugger::Warn(const std::wstring info) {
-//     log_color = kYellow;
-//     PrintHeader(L"warning", line, ch);
-//     *out << info << std::endl;
-//     PrintCode();
-// }
-

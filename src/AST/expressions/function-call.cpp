@@ -112,16 +112,61 @@ namespace AST {
 		return GenField(context, nullptr);
 	}
 
+	llvm::Value* HiddenConvert(const std::shared_ptr<DFContext> ctx, llvm::Value* val, llvm::Type* target) {
+
+		switch (val->getType()->getTypeID()) {
+
+		case llvm::Type::IntegerTyID:
+
+			if (target)
+			{
+				const auto val_ty = val->getType();
+				if (target->getTypeID() == llvm::Type::IntegerTyID) {
+					if (target->getIntegerBitWidth() > val_ty->getIntegerBitWidth())
+						val = ctx->builder->CreateCast(llvm::Instruction::SExt, val, target);
+					else if (target->getIntegerBitWidth() < val_ty->getIntegerBitWidth())
+						val = ctx->builder->CreateCast(llvm::Instruction::Trunc, val, target);
+				}
+			}
+			else if (val->getType()->getIntegerBitWidth() < 32)
+				val = ctx->builder->CreateCast(llvm::Instruction::SExt, val, ctx->constant.int32);
+
+			break;
+
+		case llvm::Type::FloatTyID:
+			if (target)
+			{
+				const auto val_ty = val->getType();
+				if (target->getTypeID() == llvm::Type::DoubleTyID)
+					val = ctx->builder->CreateCast(llvm::Instruction::SExt, val, target);
+				else if (target->getTypeID() == llvm::Type::IntegerTyID) 
+					val = ctx->builder->CreateCast(llvm::Instruction::FPToSI, val, target);
+			}
+			else  val = ctx->builder->CreateCast(llvm::Instruction::FPExt, val, ctx->constant.double_type);
+			break;
+		}
+		return  val;
+
+	}
+
     llvm::Value* FuncCall::GenField(std::shared_ptr<DFContext> ctx,llvm::Value* _this) {
 		// TODO function call like a()()
 		// true if nested function call like A().B(), then we left-DFS
 		if (left != nullptr) _this = left->GenField(ctx,_this);
-  
+
+		auto callee = ctx->llvm->GetFunction(callee_name);
+		if (!callee) {
+			callee_name += param_name;
+			callee = ctx->llvm->GetFunction(callee_name);
+		}
+
 		// Here we generate all the parameters for the Call, store the values into args_v
 		// hidden pointer for member func is not added here. will added later.
 		std::vector<llvm::Value*> args_v;
 		for (unsigned i = 0, e = args.size(); i != e; ++i) {
 			auto val = args[i]->Gen(ctx,false); 	// val is the llvm::Value* evaluation of current argument experssion.
+            // hidden convert
+			val = HiddenConvert(ctx,val, callee->isVarArg() ? nullptr : callee->getArg(i)->getType());
 			if (ctx->llvm->GetCustomTypeCategory(val->getType()) == ClassDecl::kStruct)    // TODO check basic type 
 				while (ctx->llvm->GetPtrDepth(val) != 0)
 					val = ctx->builder->CreateLoad(val);
@@ -149,38 +194,6 @@ namespace AST {
 			args_v.insert(args_v.begin(), this_arg);
 		}
 
-		
-		// now, callee_name is the full function name, eg: "A::bar" or "foo"  etc.
-		// and we try get the fuction.
-	 
-		// if (!is_constructor) {
-  //           const auto ty = ctx->module->getTypeByName(name);
-		// 	if (ty) {
-		// 		if (ctx->llvm->GetFunction(callee_name + param_name) != nullptr) {
-		// 			is_member_func = true;
-		// 			callee_name +=param_name;
-		// 			is_constructor = true;
-  //                   //HACK
-		// 			_this = ctx->llvm->Malloc(ty->getPointerTo());
-		// 			const auto ptr_depth = ctx->llvm->GetPtrDepth(_this);
-		// 			auto this_arg = _this;
-		// 			if (ptr_depth == 2) // ptr_depth = 2 means it is X**, but we want X*
-		// 				this_arg = ctx->builder->CreateLoad(_this);
-		// 			args_v.insert(args_v.begin(), this_arg);
-		// 		}
-		// 	}
-		// }
-	
-		auto callee = ctx->llvm->GetFunction(callee_name);
-		
-		// if the function not exist, maybe because it is a overloaded function.
-		// then the name should be "A::bar()" or "foo(int)" etc.
-		// we ignore the hidden pointer
-		if (!callee) {
-			callee_name += param_name;
-			callee = ctx->llvm->GetFunction(callee_name);
-		}
-  
 		// if we still cannot find the function, we could now throw a error.
 		if (!callee)
 			return Debugger::ErrorV(line, ch,"Unknown function referenced: {}",callee_name); // this should never happen since we have Semantic Analysis.

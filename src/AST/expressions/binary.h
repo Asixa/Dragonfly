@@ -11,17 +11,28 @@ namespace AST {
 		// Expression node for all binary expressions
 		class Binary final : public Expr {
 			static std::map<std::string, std::function<llvm::Value* (llvm::Value*, llvm::Value*, std::shared_ptr<DFContext>)>> gens;
+			std::string func_name;
+			bool assign;
 		public:
 			int op;
 			std::shared_ptr<Expr> LHS, RHS;
+			llvm::Type::TypeID targetTy=llvm::Type::VoidTyID;
+
 			Binary(std::shared_ptr<Expr> lhs, std::shared_ptr<Expr> rhs, int op) : op(op), LHS(lhs), RHS(rhs) {}
 			void ToString() override;
 			std::shared_ptr<AST::Type> Analysis(std::shared_ptr<DFContext>) override;
 			llvm::Value* Gen(std::shared_ptr<DFContext>, bool is_ptr) override;
-			llvm::Value* Gen2(std::shared_ptr<DFContext>);
+			llvm::Value* Gen2(std::shared_ptr<DFContext>, bool is_ptr);
 			Binary() {}
 			Binary(const std::string lhs, const std::string rhs, const int o) :LHS(std::make_shared<Field>(lhs)), RHS(std::make_shared<Field>(rhs)), op(o) {}
-			// This part might be hard to understand.
+
+
+
+
+
+
+
+			// / This part might be hard to understand.
 			// PARSE is a Macro to generate functions.
 			// When parsing binary Expressions, This start from top to bottom.
 			// The order of operators is important. shown below as Sub1 ~ Sub7.

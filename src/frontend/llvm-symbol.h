@@ -8,6 +8,31 @@
 #include <llvm/IR/Instructions.h>
 class DFContext;
 namespace frontend {
+	class Constant {
+		
+	public:
+		std::shared_ptr<DFContext> ctx;
+		llvm::Type* int32;
+		llvm::Type* int8;
+		llvm::Type* double_type;
+		llvm::Type* float_type;
+		llvm::Type * void_type;
+        llvm::Type * size_t;
+        llvm::Type * float_ptr;
+        llvm::Type * char_ptr;
+        llvm::Type * int32_ptr;
+        llvm::Type * void_ptr;
+        llvm::Type * unsigned_int;
+        llvm::Type * void_ptr_ptr;
+		llvm::Type* null;
+
+		llvm::Value* True;
+		llvm::Value* False;
+		llvm::Value* zero;
+
+		llvm::Value* Get(int v);
+		void Init(std::shared_ptr<DFContext> ctx);
+    };
 
 	class LLVMSymbol {
 		std::shared_ptr<DFContext> ctx;
@@ -15,7 +40,6 @@ namespace frontend {
 
 	public:
 		LLVMSymbol(const std::shared_ptr<DFContext> ctx) :ctx(ctx) {}
-
 		void CreateScope();
 		void EndScope();
 		void AddField(std::string, llvm::Value*);
@@ -65,6 +89,7 @@ namespace frontend {
 
 		llvm::Function* GetFunction(std::string name);
 
+		
 		/**
 		 * \brief Get the ir code for this value.
 		 * \param value The value want to debug.

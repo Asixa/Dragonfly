@@ -27,7 +27,7 @@ namespace AST {
 		switch (type) {
 		case K_float: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(static_cast<float>(value)));
 		case K_double: return llvm::ConstantFP::get(ctx->context, llvm::APFloat(value));
-		case K_int: return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->context), static_cast<int>(value));
+		case K_int: return ctx->constant.Get(static_cast<int>(value));
 		default: return Debugger::ErrorV(line, ch,"Unknown number type");
 		}
 	}

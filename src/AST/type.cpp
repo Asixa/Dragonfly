@@ -42,7 +42,7 @@ llvm::Type* AST::BasicType::ToLLVM(std::shared_ptr<DFContext>context) {
 	    case K_long:        llvm_type = llvm::Type::getInt64Ty(context->context); break;
 	    case K_float:       llvm_type = llvm::Type::getFloatTy(context->context); break;
 	    case K_double:      llvm_type = llvm::Type::getDoubleTy(context->context); break;
-	    case K_bool:        llvm_type = llvm::Type::getInt1Ty(context->context); break;
+	    case K_bool:        llvm_type = llvm::Type::getInt8Ty(context->context); break;
 	    case K_string:      llvm_type = llvm::Type::getInt8PtrTy(context->context); break;
 	}
 	return llvm_type;

@@ -109,7 +109,7 @@ CudaContext::CudaContext(std::shared_ptr<AST::Program> program): DFContext(progr
 	const auto this_ptr = std::shared_ptr<CudaContext>(this);
 	ast = std::make_shared<frontend::ASTSymbol>(this_ptr);
 	llvm = std::make_shared<frontend::LLVMSymbol>(this_ptr);
-
+	constant.Init(this_ptr);
 	BuiltIn(this_ptr);
 	GenSample();
  //    llvm::MDNode* kernelMD = llvm::MDNode::get(context, mdVals);

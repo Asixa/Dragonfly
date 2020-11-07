@@ -8,6 +8,8 @@ namespace AST {
 	    *frontend::Debugger::out << "[\"" << value << "\"]";
 	}
 	llvm::Value* expr::String::Gen(std::shared_ptr<DFContext> ctx, bool is_ptr) {
+		// llvm::Constant::replaceUndefsWith();
+        // llvm::UndefValue::get()
 		return ctx->builder->CreateGlobalStringPtr(llvm::StringRef(frontend::Lexer::MangleStr(value)));
 	}
 

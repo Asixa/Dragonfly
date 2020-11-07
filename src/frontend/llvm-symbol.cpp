@@ -5,11 +5,35 @@
 #include "AST/declarations/field-list.h"
 
 
+llvm::Value* frontend::Constant::Get(int v) {
+	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->context), v);
+}
+
+void frontend::Constant::Init(const std::shared_ptr<DFContext> c) {
+	this->ctx = c;
+	int32 = llvm::Type::getInt32Ty(ctx->context);
+	int8 = llvm::Type::getInt8Ty(ctx->context);
+	double_type = llvm::Type::getDoubleTy(ctx->context);
+	float_type = llvm::Type::getFloatTy(ctx->context);
+	size_t = llvm::Type::getInt64Ty(ctx->context);
+	float_ptr = llvm::Type::getFloatPtrTy(ctx->context);
+	char_ptr = llvm::Type::getInt8PtrTy(ctx->context);
+	int32_ptr = llvm::Type::getInt32PtrTy(ctx->context);
+	void_type = llvm::Type::getVoidTy(ctx->context);
+	void_ptr = char_ptr;
+	unsigned_int = int32;
+	void_ptr_ptr = void_ptr->getPointerTo();
+	True = llvm::ConstantInt::get(llvm::IntegerType::get(ctx->context, 8), 1);
+	False = llvm::ConstantInt::get(llvm::IntegerType::get(ctx->context, 8), 0);
+	zero = Get(0);
+}
+
 void frontend::LLVMSymbol::CreateScope() {
 	fields.push_back(std::map<std::string, llvm::Value*>());
 }
 
 llvm::GlobalVariable* frontend::LLVMSymbol::CreateGlobal(const std::string name, llvm::Type* ty) {
+	
 	ctx->module->getOrInsertGlobal(name, ty);
 	auto g_var = ctx->module->getNamedGlobal(name);
 	// g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
@@ -22,7 +46,7 @@ llvm::GlobalVariable* frontend::LLVMSymbol::CreateGlobal(const std::string name,
 	}
 	else {
         switch (ty->getTypeID()) {
-		    case llvm::Type::IntegerTyID: g_var->setInitializer(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->context), 0)); break;
+		    case llvm::Type::IntegerTyID: g_var->setInitializer(llvm::ConstantInt::get(ctx->constant.int32, 0)); break;
 		    case llvm::Type::PointerTyID: g_var->setInitializer(
                     llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(ty)));
 				
@@ -124,7 +148,7 @@ std::string frontend::LLVMSymbol::GetStructName(llvm::Value* value) {
 }
 
 std::string frontend::LLVMSymbol::GetStructName(llvm::Type* type) {
-	if (type == ctx->void_ptr)return "void*";
+	if (type == ctx->constant.void_ptr)return "void*";
 	while (type->getTypeID() == llvm::Type::PointerTyID)
 		type = type->getPointerElementType();
 	switch (type->getTypeID()) {
@@ -136,6 +160,8 @@ std::string frontend::LLVMSymbol::GetStructName(llvm::Type* type) {
 		return "float";
 	case llvm::Type::VoidTyID:
 		return "void";
+	case llvm::Type::ArrayTyID:
+		return "array";
 	default:
 		return type->getStructName();
 	}
@@ -192,6 +218,8 @@ llvm::Function* frontend::LLVMSymbol::GetFunction(std::string name) {
 	return ctx->module->getFunction(ctx->ast->Alias(name));
 }
 
+
+
 std::string frontend::LLVMSymbol::DebugValue(llvm::Value* value) {
 	std::string ir;
 	llvm::raw_string_ostream ir_stream(ir);
@@ -207,5 +235,5 @@ llvm::Value* frontend::LLVMSymbol::Malloc(llvm::Type* type, bool cast) {
 
 void frontend::LLVMSymbol::Free(llvm::Value* value) {
 	ctx->builder->CreateCall(ctx->module->getFunction("free"),
-	ctx->builder->CreateCast(llvm::Instruction::BitCast, value, ctx->void_ptr));
+	ctx->builder->CreateCast(llvm::Instruction::BitCast, value, ctx->constant.void_ptr));
 }

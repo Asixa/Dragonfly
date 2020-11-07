@@ -58,7 +58,7 @@ namespace AST {
 		context->builder->SetInsertPoint(cond_bb);
 		auto* cond_v = condition->Gen(context);
 		
-		cond_v = context->builder->CreateICmpEQ(cond_v, context->True, "forcond");
+		cond_v = context->builder->CreateICmpEQ(cond_v, context->constant.True, "forcond");
 		context->builder->CreateCondBr(cond_v, stmt_bb, end_bb);
 
 		context->builder->SetInsertPoint(stmt_bb);

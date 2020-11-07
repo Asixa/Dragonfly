@@ -76,13 +76,6 @@ DFContext::DFContext(std::shared_ptr<AST::Program> program) {
 	block_end = nullptr;
 	current_function = nullptr;
 
-    //constant
-	True = llvm::ConstantInt::get(llvm::IntegerType::get(context, 1), 1);
-	False = llvm::ConstantInt::get(llvm::IntegerType::get(context, 1), 0);
-	// llvm::Value* CodeGen::Null = llvm::Constant::getNullValue();
-	void_ptr = llvm::Type::getInt8PtrTy(context);
-	void_type = llvm::Type::getVoidTy(context);
-	int32 = llvm::Type::getInt32Ty(context);
 	this->program = program;
 
 }

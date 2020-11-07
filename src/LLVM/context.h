@@ -23,6 +23,7 @@ public:
 	static std::vector<std::shared_ptr<DFContext>> contexts;
 
 	llvm::LLVMContext context;
+	frontend::Constant constant;
 	std::unique_ptr<llvm::Module> module;
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	std::unique_ptr<llvm::DataLayout> data_layout;
@@ -32,13 +33,13 @@ public:
 	std::shared_ptr<frontend::LLVMSymbol> llvm;
 
 
-	llvm::Value* True;
-	llvm::Value* False;
-	// static llvm::Value* Null;
-
-	llvm::Type* void_ptr;
-	llvm::Type* void_type;
-	llvm::Type* int32;
+	// llvm::Value* True;
+	// llvm::Value* False;
+	// // static llvm::Value* Null;
+	//
+	// llvm::Type* void_ptr;
+	// llvm::Type* void_type;
+	// llvm::Type* int32;
 
 	// True is in subblock like for or while
 	bool is_sub_block;

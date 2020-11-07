@@ -42,7 +42,7 @@ namespace AST {
 			return;
 		}
 
-		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->True, "ifcond");
+		cond_v = ctx->builder->CreateICmpEQ(cond_v, ctx->constant.True, "ifcond");
 		auto function = ctx->builder->GetInsertBlock()->getParent();
 
 		auto then_bb = llvm::BasicBlock::Create(ctx->context, "then", function);
