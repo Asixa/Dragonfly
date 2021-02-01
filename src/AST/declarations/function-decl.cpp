@@ -36,6 +36,14 @@ namespace AST {
 			has_name = false;
 			function->nested_name->Set(Lexer::Check(K_init)?BUILTIN_TAG"init":BUILTIN_TAG"delete");
 		}
+		if (Lexer::Check(K_operator)) {
+			has_name = false;
+			Lexer::Next();
+            switch (Lexer::token->type) {
+                
+            }
+			function->nested_name->Set(Lexer::Check(K_init) ? BUILTIN_TAG"init" : BUILTIN_TAG"delete");
+		}
 		Lexer::Next();
 
 		if (has_name == false || Lexer::Check(Id)) {

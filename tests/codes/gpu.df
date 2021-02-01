@@ -1,0 +1,20 @@
+class Range			//Iterator
+{
+	size:int;
+	init(x:int){ size =x;}
+	def get(x:int):int{ 
+		return x
+	}
+}
+
+var a =  [0,0,0,0,0,0,0]
+var b =  [1,2,3,4,5,6,7]
+
+// for(var i in Range(20)){
+// 	a[i]=b[i]*2
+// }
+
+for(var i=0;i<20;i++)
+{
+	print("%d\n",a[i])
+}
